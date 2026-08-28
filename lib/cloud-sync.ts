@@ -19,15 +19,19 @@ export type CloudAccount = {
 export type CloudSyncResult<T> = { account: CloudAccount; remote: T | null };
 
 let browserClient: SupabaseClient | null | undefined;
+const configuredSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const configuredSupabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-export function cloudSyncConfigured(env: Record<string, string | undefined> = process.env): boolean {
-  return Boolean(env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+export function cloudSyncConfigured(env?: Record<string, string | undefined>): boolean {
+  return env
+    ? Boolean(env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+    : Boolean(configuredSupabaseUrl && configuredSupabaseKey);
 }
 
 export function getSupabaseBrowserClient(): SupabaseClient | null {
   if (browserClient !== undefined) return browserClient;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const url = configuredSupabaseUrl;
+  const key = configuredSupabaseKey;
   browserClient = url && key
     ? createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })
     : null;
