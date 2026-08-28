@@ -1,0 +1,15 @@
+{
+  "name": "Lóng — Chinese for your world",
+  "short_name": "Lóng",
+  "description": "A personalized Chinese learning adventure.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "en",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fffdf8",
+  "theme_color": "#163f36",
+  "categories": ["education", "productivity"],
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
