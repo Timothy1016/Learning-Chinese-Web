@@ -1,6 +1,6 @@
 import { courseQuestionsByLevel } from './hsk-course-content.ts';
 
-export type PathId = 'General' | 'Computer Science' | 'International Business';
+export type PathId = 'General' | 'Computer Science' | 'International Business' | 'Medicine & Health' | 'Engineering' | 'Academic Research' | 'Tourism & Hospitality';
 
 export type PracticeQuestion = { prompt: string; choices: string[]; answer: string; explanation: string };
 
@@ -81,6 +81,46 @@ export const pathPacks = {
       { prompt:'Ask the supplier for a new quotation.',choices:['请给我们一份新的报价。','请给我一张地铁票。','我想调试合同。'],answer:'请给我们一份新的报价。',explanation:'一份报价 is the measure-word phrase for a quotation.' },
       { prompt:'The delivery date is too late.',choices:['交货期太晚了。','市场在三楼。','供应商有头疼。'],answer:'交货期太晚了。',explanation:'交货期 is the agreed delivery date or delivery period.' },
       { prompt:'Propose long-term cooperation.',choices:['我们希望长期合作。','我们想买一张菜单。','这个利润是教室。'],answer:'我们希望长期合作。',explanation:'长期合作 means long-term cooperation.' },
+    ],
+  },
+  'Medicine & Health': {
+    careers: ['Medical Student','Healthcare Professional','Public Health Researcher'],
+    words: [['症状','zhèngzhuàng','symptom'],['诊断','zhěnduàn','diagnosis'],['治疗','zhìliáo','treatment'],['病历','bìnglì','medical record'],['处方','chǔfāng','prescription'],['过敏','guòmǐn','allergy'],['检查','jiǎnchá','examination'],['康复','kāngfù','recovery']],
+    mission: 'Describe symptoms and understand a clinical plan', gameTitle: 'Clinic Communication',
+    gameQuestions: [
+      {prompt:'Ask whether the patient has an allergy.',choices:['您对什么药过敏吗？','您的算法在哪里？','我们几点登机？'],answer:'您对什么药过敏吗？',explanation:'药物过敏 is essential safety information in a clinical conversation.'},
+      {prompt:'The doctor wants an examination first.',choices:['医生建议先做检查。','医生建议签合同。','医生建议换站台。'],answer:'医生建议先做检查。',explanation:'做检查 means to undergo a medical examination.'},
+      {prompt:'Ask how often to take the medicine.',choices:['这个药一天吃几次？','这个药怎么部署？','这个药在哪儿退房？'],answer:'这个药一天吃几次？',explanation:'一天几次 asks for daily dosage frequency.'},
+    ],
+  },
+  Engineering: {
+    careers: ['Mechanical Engineer','Civil Engineer','Product Engineer'],
+    words: [['设计','shèjì','design'],['材料','cáiliào','material'],['结构','jiégòu','structure'],['测量','cèliáng','measurement'],['设备','shèbèi','equipment'],['故障','gùzhàng','fault'],['安全','ānquán','safety'],['标准','biāozhǔn','standard']],
+    mission: 'Explain a design issue during an engineering review', gameTitle: 'Design Review',
+    gameQuestions: [
+      {prompt:'Report that the equipment has a fault.',choices:['这台设备出现了故障。','这台设备正在谈判。','这台设备需要挂号。'],answer:'这台设备出现了故障。',explanation:'出现故障 is the standard phrase for equipment developing a fault.'},
+      {prompt:'Ask whether the material meets the standard.',choices:['这种材料符合标准吗？','这种材料需要退房吗？','这种材料会说中文吗？'],answer:'这种材料符合标准吗？',explanation:'符合标准 means to meet or conform to a standard.'},
+      {prompt:'Safety must come first.',choices:['我们必须先确认安全。','我们必须先点咖啡。','我们必须先加微信。'],answer:'我们必须先确认安全。',explanation:'确认安全 means to confirm that conditions are safe.'},
+    ],
+  },
+  'Academic Research': {
+    careers: ['Master’s Student','PhD Researcher','University Lecturer'],
+    words: [['研究','yánjiū','research'],['论文','lùnwén','thesis / paper'],['文献','wénxiàn','literature'],['方法','fāngfǎ','method'],['数据','shùjù','data'],['假设','jiǎshè','hypothesis'],['结果','jiéguǒ','result'],['答辩','dábiàn','thesis defense']],
+    mission: 'Discuss a research proposal with a supervisor', gameTitle: 'Research Lab',
+    gameQuestions: [
+      {prompt:'Explain that you reviewed the literature.',choices:['我已经查阅了相关文献。','我已经办理了入住。','我已经换了站台。'],answer:'我已经查阅了相关文献。',explanation:'查阅文献 is the academic phrase for consulting literature.'},
+      {prompt:'Ask for feedback on your method.',choices:['您对这个研究方法有什么建议？','您对这份菜单有什么建议？','您对登机口有什么建议？'],answer:'您对这个研究方法有什么建议？',explanation:'This politely requests academic feedback on methodology.'},
+      {prompt:'The data does not support the hypothesis.',choices:['数据不支持原来的假设。','数据不支持我的护照。','数据不支持这张桌子。'],answer:'数据不支持原来的假设。',explanation:'支持假设 is the conventional research collocation.'},
+    ],
+  },
+  'Tourism & Hospitality': {
+    careers: ['Hotel Manager','Tour Guide','Airline Professional'],
+    words: [['预订','yùdìng','reservation'],['入住','rùzhù','check in'],['退房','tuìfáng','check out'],['行程','xíngchéng','itinerary'],['景点','jǐngdiǎn','attraction'],['导游','dǎoyóu','tour guide'],['接待','jiēdài','reception'],['投诉','tóusù','complaint']],
+    mission: 'Help a guest solve a travel problem', gameTitle: 'Guest Experience',
+    gameQuestions: [
+      {prompt:'Confirm the guest’s reservation.',choices:['请问您的预订姓名是什么？','请问您的数据库是什么？','请问您的论文是什么？'],answer:'请问您的预订姓名是什么？',explanation:'预订姓名 asks for the name used for a reservation.'},
+      {prompt:'Tell a guest checkout is before noon.',choices:['请在中午十二点前退房。','请在中午十二点前部署。','请在中午十二点前答辩。'],answer:'请在中午十二点前退房。',explanation:'退房 is the standard hotel term for checking out.'},
+      {prompt:'Offer help with the itinerary.',choices:['我可以帮您调整行程。','我可以帮您诊断行程。','我可以帮您编译行程。'],answer:'我可以帮您调整行程。',explanation:'调整行程 means to modify an itinerary.'},
     ],
   },
 } satisfies Record<PathId, { careers:string[]; words:string[][]; mission:string; gameTitle:string; gameQuestions:PracticeQuestion[] }>;

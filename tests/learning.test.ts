@@ -26,6 +26,7 @@ import { readerCoverage, segmentChineseText } from '../lib/reader.ts';
 import { tonePairQuestions, tonePairs } from '../app/pronunciation-content.ts';
 import { buildLibraryBank, filterLibraryBank, libraryBankCounts } from '../lib/library-bank.ts';
 import { advanceRecallQueue, recallMatches } from '../lib/review-queue.ts';
+import { newestSnapshot, validCloudSnapshot } from '../lib/cloud-sync.ts';
 
 const now = new Date('2026-08-24T00:00:00Z');
 const card: ReviewCard = { wordId: 'menu', dueAt: now.toISOString(), intervalDays: 0, ease: 2.5, repetitions: 0, mastery: 10 };
@@ -39,6 +40,15 @@ test('active recall accepts meaningful synonyms but rejects unrelated guesses', 
 test('wrong recall returns to the back while correct recall leaves the session', () => {
   assert.deepEqual(advanceRecallQueue(['爱','学','看'],'爱',false), ['学','看','爱']);
   assert.deepEqual(advanceRecallQueue(['爱','学','看'],'爱',true), ['学','看']);
+});
+
+test('cloud sync accepts versioned snapshots and chooses the newest copy', () => {
+  const local = { schemaVersion: 1, savedAt: '2026-08-28T10:00:00.000Z', profile: {}, learning: {}, voice: {} };
+  const remote = { ...local, savedAt: '2026-08-28T11:00:00.000Z' };
+  assert.equal(validCloudSnapshot(local), true);
+  assert.equal(validCloudSnapshot({ ...local, schemaVersion: 2 }), false);
+  assert.equal(newestSnapshot(local, remote), 'remote');
+  assert.equal(newestSnapshot(remote, local), 'local');
 });
 
 test('smart reader uses longest HSK matches and reports coverage', () => {

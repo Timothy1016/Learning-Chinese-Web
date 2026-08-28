@@ -131,4 +131,8 @@ export const specializationContent = {
   'Computer Science': { label: 'Computer Science', chinese: '计算机科学', words: ['程序', '数据库', '算法'], next: 'Developer stand-up listening' },
   'International Business': { label: 'International Business', chinese: '国际商务', words: ['合同', '供应商', '谈判'], next: 'Supplier negotiation practice' },
   'General': { label: 'Everyday Chinese', chinese: '日常中文', words: ['习惯', '计划', '交流'], next: 'Natural daily conversation' },
+  'Medicine & Health': { label: 'Medicine & Health', chinese: '医学与健康', words: ['症状', '诊断', '治疗'], next: 'Patient and clinic communication' },
+  'Engineering': { label: 'Engineering', chinese: '工程技术', words: ['设计', '材料', '设备'], next: 'Technical review practice' },
+  'Academic Research': { label: 'Academic Research', chinese: '学术研究', words: ['研究', '论文', '文献'], next: 'Supervisor and seminar Chinese' },
+  'Tourism & Hospitality': { label: 'Tourism & Hospitality', chinese: '旅游与酒店', words: ['预订', '行程', '接待'], next: 'Guest service scenarios' },
 } as const;
