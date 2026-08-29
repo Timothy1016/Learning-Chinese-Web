@@ -17,6 +17,7 @@ export type CloudAccount = {
 };
 
 export type CloudSyncResult<T> = { account: CloudAccount; remote: T | null };
+export type LeaderboardEntry = { display_name:string; xp:number; hsk:number; streak:number; updated_at:string };
 
 let browserClient: SupabaseClient | null | undefined;
 const configuredSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -90,6 +91,16 @@ export async function connectGoogle(): Promise<void> {
     ? await client.auth.linkIdentity({ provider: 'google', options })
     : await client.auth.signInWithOAuth({ provider: 'google', options });
   if (result.error) throw result.error;
+}
+
+export async function publishLeaderboardProfile(displayName:string,xp:number,hsk:number,streak:number):Promise<void>{
+  const client=getSupabaseBrowserClient();if(!client)throw new Error('Cloud sync is not configured yet.');
+  const {data:{user},error}=await client.auth.getUser();if(error||!user)throw error??new Error('Sign in before joining the leaderboard.');
+  const result=await client.from('learning_leaderboard').upsert({user_id:user.id,display_name:displayName.slice(0,32),xp,hsk,streak,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(result.error)throw result.error;
+}
+
+export async function fetchLeaderboard():Promise<LeaderboardEntry[]>{
+  const client=getSupabaseBrowserClient();if(!client)return[];const result=await client.from('learning_leaderboard').select('display_name,xp,hsk,streak,updated_at').order('xp',{ascending:false}).limit(20);if(result.error)throw result.error;return(result.data??[]) as LeaderboardEntry[];
 }
 
 export function validCloudSnapshot(value: unknown): value is CloudSnapshot {
