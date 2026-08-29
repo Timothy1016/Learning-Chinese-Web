@@ -57,3 +57,14 @@ export const specializedTracks:SpecializedTrack[]=[
     {prompt:'Which phrase means privacy protection?',choices:['隐私保护','数据清洗','网络攻击'],answer:'隐私保护',explanation:'隐私 is privacy and 保护 is protection.'},
   ]},
 ];
+
+const extendedTracks=[
+  ['data-science','Data Science','数据科学','Work with statistics, dashboards, experiments, and evidence.',[['统计模型','tǒngjì móxíng','statistical model'],['数据可视化','shùjù kěshìhuà','data visualization'],['相关性','xiāngguānxìng','correlation'],['因果关系','yīnguǒ guānxì','causal relationship'],['异常值','yìchángzhí','outlier'],['预测','yùcè','prediction']]],
+  ['engineering','Engineering','工程技术','Discuss design, materials, safety, manufacturing, and quality.',[['设计图','shèjìtú','design drawing'],['材料','cáiliào','material'],['设备','shèbèi','equipment'],['安全标准','ānquán biāozhǔn','safety standard'],['故障','gùzhàng','fault'],['质量控制','zhìliàng kòngzhì','quality control']]],
+  ['business','Business & Management','商业与管理','Negotiate, present strategy, and understand operations.',[['市场份额','shìchǎng fèn’é','market share'],['供应商','gōngyìngshāng','supplier'],['合同条款','hétong tiáokuǎn','contract terms'],['预算','yùsuàn','budget'],['现金流','xiànjīnliú','cash flow'],['谈判','tánpàn','negotiation']]],
+  ['medicine','Medicine & Healthcare','医学与健康','Communicate symptoms, diagnosis, treatment, and patient safety.',[['症状','zhèngzhuàng','symptom'],['诊断','zhěnduàn','diagnosis'],['治疗方案','zhìliáo fāng’àn','treatment plan'],['处方','chǔfāng','prescription'],['副作用','fùzuòyòng','side effect'],['康复','kāngfù','recovery']]],
+  ['academic','Academic Research','学术研究','Present methods, evidence, peer review, and research ethics.',[['文献综述','wénxiàn zōngshù','literature review'],['研究方法','yánjiū fāngfǎ','research method'],['假设','jiǎshè','hypothesis'],['样本','yàngběn','sample'],['同行评审','tóngháng píngshěn','peer review'],['研究伦理','yánjiū lúnlǐ','research ethics']]],
+  ['tourism','Tourism & Hospitality','旅游与酒店管理','Guide visitors, handle reservations, and solve service issues.',[['旅游路线','lǚyóu lùxiàn','travel itinerary'],['景点','jǐngdiǎn','attraction'],['导游','dǎoyóu','tour guide'],['入住率','rùzhùlǜ','occupancy rate'],['客户投诉','kèhù tóusù','customer complaint'],['文化遗产','wénhuà yíchǎn','cultural heritage']]],
+] as const;
+
+for(const [id,title,chinese,goal,words] of extendedTracks){specializedTracks.push({id,title,chinese,goal,words:words.map(([hanzi,pinyin,english])=>({hanzi,pinyin,english,example:`我们今天讨论${hanzi}。`})),questions:words.slice(0,3).map(([hanzi,pinyin,english],index)=>({prompt:`Which term means “${english}”?`,choices:[hanzi,words[(index+2)%words.length][0],words[(index+4)%words.length][0]],answer:hanzi,explanation:`${hanzi} (${pinyin}) means ${english}.`}))})}
