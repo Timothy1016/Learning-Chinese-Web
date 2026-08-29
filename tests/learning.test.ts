@@ -272,8 +272,8 @@ test('interactive textbook and workbook bank covers every supplied HSK lesson',(
   }
 });
 
-test('specialized Chinese paths cover graduate CS, AI, software, and data security',()=>{
-  assert.deepEqual(specializedTracks.map(track=>track.id),['graduate-cs','ai-research','software-engineering','data-cyber']);
+test('specialized Chinese paths cover ten technical and professional fields',()=>{
+  assert.deepEqual(specializedTracks.map(track=>track.id),['graduate-cs','ai-research','software-engineering','data-cyber','data-science','engineering','business','medicine','academic','tourism']);
   for(const track of specializedTracks){assert.ok(track.words.length>=6);assert.ok(track.questions.length>=3);for(const question of track.questions)assert.ok(question.choices.includes(question.answer))}
 });
 
