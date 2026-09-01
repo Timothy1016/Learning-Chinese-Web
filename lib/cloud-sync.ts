@@ -16,7 +16,7 @@ export type CloudAccount = {
   anonymous: boolean;
 };
 
-export type CloudSyncResult<T> = { account: CloudAccount; remote: T | null };
+export type CloudSyncResult<T> = { account: CloudAccount | null; remote: T | null };
 export type LeaderboardEntry = { display_name:string; xp:number; hsk:number; streak:number; updated_at:string };
 
 let browserClient: SupabaseClient | null | undefined;
@@ -48,13 +48,14 @@ export async function initializeCloudSync<T>(): Promise<CloudSyncResult<T> | nul
   if (!client) return null;
   const current = await client.auth.getSession();
   if (current.error) throw current.error;
-  let session = current.data.session;
-  if (!session) {
-    const anonymous = await client.auth.signInAnonymously();
-    if (anonymous.error) throw anonymous.error;
-    session = anonymous.data.session;
+  const session = current.data.session;
+  if (!session?.user) return { account: null, remote: null };
+  // Older builds created a persistent anonymous Supabase user automatically.
+  // End that legacy session so a shared browser never looks like the owner's account.
+  if (session.user.is_anonymous) {
+    await client.auth.signOut();
+    return { account: null, remote: null };
   }
-  if (!session?.user) throw new Error('Supabase did not return a user session.');
   const response = await client.from('learning_snapshots').select('payload').eq('user_id', session.user.id).maybeSingle();
   if (response.error) throw response.error;
   return { account: accountFromUser(session.user), remote: (response.data?.payload as T | undefined) ?? null };
@@ -71,13 +72,8 @@ export async function connectEmail(email: string): Promise<'verification' | 'mag
   const client = getSupabaseBrowserClient();
   if (!client) throw new Error('Cloud sync is not configured yet.');
   const { data: { user } } = await client.auth.getUser();
-  if (user?.is_anonymous) {
-    const linked = await client.auth.updateUser({ email });
-    if (!linked.error) return 'verification';
-    if (!/already|registered|exists/i.test(linked.error.message)) throw linked.error;
-    await client.auth.signOut();
-  }
-  const result = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin, shouldCreateUser: false } });
+  if (user?.is_anonymous) await client.auth.signOut();
+  const result = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin, shouldCreateUser: true } });
   if (result.error) throw result.error;
   return 'magic-link';
 }
@@ -87,9 +83,15 @@ export async function connectGoogle(): Promise<void> {
   if (!client) throw new Error('Cloud sync is not configured yet.');
   const { data: { user } } = await client.auth.getUser();
   const options = { redirectTo: window.location.origin };
-  const result = user?.is_anonymous
-    ? await client.auth.linkIdentity({ provider: 'google', options })
-    : await client.auth.signInWithOAuth({ provider: 'google', options });
+  if (user?.is_anonymous) await client.auth.signOut();
+  const result = await client.auth.signInWithOAuth({ provider: 'google', options });
+  if (result.error) throw result.error;
+}
+
+export async function signOutCloud(): Promise<void> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return;
+  const result = await client.auth.signOut();
   if (result.error) throw result.error;
 }
 
