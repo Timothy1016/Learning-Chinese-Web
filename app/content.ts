@@ -123,6 +123,124 @@ export const adventureChapters: Chapter[] = [
       { id: 'a', text: '我们一起吃饭吧。', pinyin: 'Wǒmen yìqǐ chīfàn ba.' }, { id: 'b', text: '我要去医院。', pinyin: 'Wǒ yào qù yīyuàn.' }, { id: 'c', text: '这个多少钱？', pinyin: 'Zhège duōshao qián?' },
     ], answer: 'a', explanation: '一起 means “together,” and sentence-final 吧 makes the suggestion friendly and natural.' },
   },
+  {
+    id: 'sightseeing', icon: '景', title: 'Sightseeing & Museums', chinese: '景点和博物馆', description: 'Tickets, opening hours, guided visits, and cultural sites.', mission: 'Explore a museum like a local',
+    vocabulary: [
+      { id: 'museum', hanzi: '博物馆', pinyin: 'bówùguǎn', english: 'museum', example: { hanzi: '博物馆几点开门？', pinyin: 'Bówùguǎn jǐ diǎn kāimén?', english: 'What time does the museum open?' } },
+      { id: 'entrance-ticket', hanzi: '门票', pinyin: 'ménpiào', english: 'entrance ticket', example: { hanzi: '我已经买好门票了。', pinyin: 'Wǒ yǐjīng mǎi hǎo ménpiào le.', english: 'I have already bought the entrance ticket.' } },
+      { id: 'guided-tour', hanzi: '讲解', pinyin: 'jiǎngjiě', english: 'guided explanation', example: { hanzi: '这里有中文讲解吗？', pinyin: 'Zhèlǐ yǒu Zhōngwén jiǎngjiě ma?', english: 'Is there a Chinese guided explanation here?' } },
+    ],
+    question: { prompt: 'At the entrance, how do you ask what time the museum opens?', chinesePrompt: '博物馆几点开门？', choices: [
+      { id: 'a', text: '博物馆几点开门？', pinyin: 'Bówùguǎn jǐ diǎn kāimén?' }, { id: 'b', text: '地铁在哪里换乘？', pinyin: 'Dìtiě zài nǎli huànchéng?' }, { id: 'c', text: '我想要一杯咖啡。', pinyin: 'Wǒ xiǎng yào yì bēi kāfēi.' },
+    ], answer: 'a', explanation: '几点 asks “what time,” and 开门 means a place opens to visitors.' },
+  },
+  {
+    id: 'payments', icon: '付', title: 'Banking & Mobile Payments', chinese: '银行和移动支付', description: 'QR payments, bank counters, cash, and payment problems.', mission: 'Pay confidently in China',
+    vocabulary: [
+      { id: 'mobile-payment', hanzi: '移动支付', pinyin: 'yídòng zhīfù', english: 'mobile payment', example: { hanzi: '这里可以用移动支付吗？', pinyin: 'Zhèlǐ kěyǐ yòng yídòng zhīfù ma?', english: 'Can I use mobile payment here?' } },
+      { id: 'qr-code', hanzi: '二维码', pinyin: 'èrwéimǎ', english: 'QR code', example: { hanzi: '请扫这个二维码。', pinyin: 'Qǐng sǎo zhège èrwéimǎ.', english: 'Please scan this QR code.' } },
+      { id: 'bank-counter', hanzi: '银行柜台', pinyin: 'yínháng guìtái', english: 'bank counter', example: { hanzi: '请去三号柜台办理。', pinyin: 'Qǐng qù sān hào guìtái bànlǐ.', english: 'Please go to counter number three.' } },
+    ],
+    question: { prompt: 'How do you ask whether mobile payment is accepted?', chinesePrompt: '这里可以用移动支付吗？', choices: [
+      { id: 'a', text: '这里可以用移动支付吗？', pinyin: 'Zhèlǐ kěyǐ yòng yídòng zhīfù ma?' }, { id: 'b', text: '这里可以寄行李吗？', pinyin: 'Zhèlǐ kěyǐ jì xíngli ma?' }, { id: 'c', text: '这里可以点咖啡吗？', pinyin: 'Zhèlǐ kěyǐ diǎn kāfēi ma?' },
+    ], answer: 'a', explanation: '可以用 asks whether something can be used, followed by 移动支付, “mobile payment.”' },
+  },
+  {
+    id:'apartment',icon:'家',title:'Renting an Apartment',chinese:'租房生活',description:'Viewings, rent, utilities, repairs, and neighbors.',mission:'Find a place to call home',
+    vocabulary:[
+      {id:'rent',hanzi:'房租',pinyin:'fángzū',english:'rent',example:{hanzi:'房租一个月多少钱？',pinyin:'Fángzū yí ge yuè duōshao qián?',english:'How much is the monthly rent?'}},
+      {id:'landlord',hanzi:'房东',pinyin:'fángdōng',english:'landlord',example:{hanzi:'我需要联系房东。',pinyin:'Wǒ xūyào liánxì fángdōng.',english:'I need to contact the landlord.'}},
+      {id:'repair',hanzi:'维修',pinyin:'wéixiū',english:'repair',example:{hanzi:'空调需要维修。',pinyin:'Kōngtiáo xūyào wéixiū.',english:'The air conditioner needs repair.'}},
+    ],question:{prompt:'How do you ask the monthly rent?',chinesePrompt:'房租一个月多少钱？',choices:[{id:'a',text:'房租一个月多少钱？',pinyin:'Fángzū yí ge yuè duōshao qián?'},{id:'b',text:'地铁几点关门？',pinyin:'Dìtiě jǐ diǎn guānmén?'},{id:'c',text:'我要点一杯咖啡。',pinyin:'Wǒ yào diǎn yì bēi kāfēi.'}],answer:'a',explanation:'房租 names the rent, 一个月 sets the monthly period, and 多少钱 asks the price.'}
+  },
+  {
+    id:'delivery',icon:'包',title:'Delivery & Couriers',chinese:'外卖和快递',description:'Addresses, pickup codes, delivery notes, and missing parcels.',mission:'Receive a delivery smoothly',
+    vocabulary:[
+      {id:'courier',hanzi:'快递员',pinyin:'kuàidìyuán',english:'courier',example:{hanzi:'快递员已经到楼下了。',pinyin:'Kuàidìyuán yǐjīng dào lóuxià le.',english:'The courier is already downstairs.'}},
+      {id:'pickup-code',hanzi:'取件码',pinyin:'qǔjiànmǎ',english:'pickup code',example:{hanzi:'请告诉我取件码。',pinyin:'Qǐng gàosu wǒ qǔjiànmǎ.',english:'Please tell me the pickup code.'}},
+      {id:'address',hanzi:'收货地址',pinyin:'shōuhuò dìzhǐ',english:'delivery address',example:{hanzi:'请确认收货地址。',pinyin:'Qǐng quèrèn shōuhuò dìzhǐ.',english:'Please confirm the delivery address.'}},
+    ],question:{prompt:'The courier is downstairs. What do you ask for?',chinesePrompt:'请告诉我取件码。',choices:[{id:'a',text:'请告诉我取件码。',pinyin:'Qǐng gàosu wǒ qǔjiànmǎ.'},{id:'b',text:'请给我看菜单。',pinyin:'Qǐng gěi wǒ kàn càidān.'},{id:'c',text:'我的课在三楼。',pinyin:'Wǒ de kè zài sān lóu.'}],answer:'a',explanation:'取件码 is the pickup code used to identify and collect a parcel.'}
+  },
+  {
+    id:'workplace',icon:'职',title:'Workplace & Meetings',chinese:'职场沟通',description:'Meetings, deadlines, updates, feedback, and teamwork.',mission:'Join your first Chinese meeting',
+    vocabulary:[
+      {id:'meeting',hanzi:'会议',pinyin:'huìyì',english:'meeting',example:{hanzi:'会议十点开始。',pinyin:'Huìyì shí diǎn kāishǐ.',english:'The meeting starts at ten.'}},
+      {id:'deadline',hanzi:'截止日期',pinyin:'jiézhǐ rìqī',english:'deadline',example:{hanzi:'截止日期是星期五。',pinyin:'Jiézhǐ rìqī shì xīngqīwǔ.',english:'The deadline is Friday.'}},
+      {id:'progress-update',hanzi:'进度汇报',pinyin:'jìndù huìbào',english:'progress update',example:{hanzi:'我来做进度汇报。',pinyin:'Wǒ lái zuò jìndù huìbào.',english:'I will give the progress update.'}},
+    ],question:{prompt:'How do you say the meeting starts at ten?',chinesePrompt:'会议十点开始。',choices:[{id:'a',text:'会议十点开始。',pinyin:'Huìyì shí diǎn kāishǐ.'},{id:'b',text:'十点买两张票。',pinyin:'Shí diǎn mǎi liǎng zhāng piào.'},{id:'c',text:'会议在房间贵。',pinyin:'Huìyì zài fángjiān guì.'}],answer:'a',explanation:'Chinese puts the time before the verb: 会议 + 十点 + 开始.'}
+  },
+  {
+    id:'rail',icon:'铁',title:'High-Speed Rail',chinese:'高铁出行',description:'Stations, train numbers, platforms, seats, and connections.',mission:'Catch the right high-speed train',
+    vocabulary:[
+      {id:'high-speed-rail',hanzi:'高铁',pinyin:'gāotiě',english:'high-speed rail',example:{hanzi:'我们坐高铁去南京。',pinyin:'Wǒmen zuò gāotiě qù Nánjīng.',english:'We take high-speed rail to Nanjing.'}},
+      {id:'platform',hanzi:'站台',pinyin:'zhàntái',english:'platform',example:{hanzi:'请去八号站台。',pinyin:'Qǐng qù bā hào zhàntái.',english:'Please go to platform eight.'}},
+      {id:'carriage',hanzi:'车厢',pinyin:'chēxiāng',english:'train carriage',example:{hanzi:'我的座位在五号车厢。',pinyin:'Wǒ de zuòwèi zài wǔ hào chēxiāng.',english:'My seat is in carriage five.'}},
+    ],question:{prompt:'Where is your seat?',chinesePrompt:'我的座位在五号车厢。',choices:[{id:'a',text:'我的座位在五号车厢。',pinyin:'Wǒ de zuòwèi zài wǔ hào chēxiāng.'},{id:'b',text:'我的房租一个月。',pinyin:'Wǒ de fángzū yí ge yuè.'},{id:'c',text:'我的药一天两次。',pinyin:'Wǒ de yào yì tiān liǎng cì.'}],answer:'a',explanation:'五号车厢 means carriage number five; 在 marks the location.'}
+  },
+  {
+    id:'emergency',icon:'急',title:'Emergencies & Safety',chinese:'紧急情况',description:'Ask for urgent help, report loss, and understand warnings.',mission:'Get help in an emergency',
+    vocabulary:[
+      {id:'emergency-number',hanzi:'报警电话',pinyin:'bàojǐng diànhuà',english:'emergency police number',example:{hanzi:'报警电话是110。',pinyin:'Bàojǐng diànhuà shì yāo-yāo-líng.',english:'The police emergency number is 110.'}},
+      {id:'lost',hanzi:'丢了',pinyin:'diū le',english:'lost',example:{hanzi:'我的钱包丢了。',pinyin:'Wǒ de qiánbāo diū le.',english:'My wallet is lost.'}},
+      {id:'help',hanzi:'求助',pinyin:'qiúzhù',english:'seek help',example:{hanzi:'我需要向警察求助。',pinyin:'Wǒ xūyào xiàng jǐngchá qiúzhù.',english:'I need to ask the police for help.'}},
+    ],question:{prompt:'How do you report a lost wallet?',chinesePrompt:'我的钱包丢了。',choices:[{id:'a',text:'我的钱包丢了。',pinyin:'Wǒ de qiánbāo diū le.'},{id:'b',text:'我的咖啡少糖。',pinyin:'Wǒ de kāfēi shǎo táng.'},{id:'c',text:'我的会议十点。',pinyin:'Wǒ de huìyì shí diǎn.'}],answer:'a',explanation:'丢了 marks that an item has been lost; place the item before it.'}
+  },
+  {
+    id:'public-services',icon:'办',title:'Public Services',chinese:'办事大厅',description:'Forms, documents, queues, certificates, and official counters.',mission:'Complete an official process',
+    vocabulary:[
+      {id:'form',hanzi:'申请表',pinyin:'shēnqǐngbiǎo',english:'application form',example:{hanzi:'请先填写申请表。',pinyin:'Qǐng xiān tiánxiě shēnqǐngbiǎo.',english:'Please fill in the application form first.'}},
+      {id:'certificate',hanzi:'证明',pinyin:'zhèngmíng',english:'certificate / proof',example:{hanzi:'我需要一份在读证明。',pinyin:'Wǒ xūyào yí fèn zàidú zhèngmíng.',english:'I need a proof of enrollment.'}},
+      {id:'queue-number',hanzi:'排队号码',pinyin:'páiduì hàomǎ',english:'queue number',example:{hanzi:'请先取排队号码。',pinyin:'Qǐng xiān qǔ páiduì hàomǎ.',english:'Please take a queue number first.'}},
+    ],question:{prompt:'What must you fill in first?',chinesePrompt:'请先填写申请表。',choices:[{id:'a',text:'请先填写申请表。',pinyin:'Qǐng xiān tiánxiě shēnqǐngbiǎo.'},{id:'b',text:'请先打开菜单。',pinyin:'Qǐng xiān dǎkāi càidān.'},{id:'c',text:'请先喝热拿铁。',pinyin:'Qǐng xiān hē rè nátiě.'}],answer:'a',explanation:'填写 means fill in, and 申请表 is an application form.'}
+  },
+  {
+    id:'fitness',icon:'动',title:'Fitness & Sports',chinese:'运动健身',description:'Gym memberships, equipment, training, and healthy routines.',mission:'Join a fitness class',
+    vocabulary:[
+      {id:'gym',hanzi:'健身房',pinyin:'jiànshēnfáng',english:'gym',example:{hanzi:'健身房几点关门？',pinyin:'Jiànshēnfáng jǐ diǎn guānmén?',english:'What time does the gym close?'}},
+      {id:'membership',hanzi:'会员卡',pinyin:'huìyuánkǎ',english:'membership card',example:{hanzi:'我想办一张会员卡。',pinyin:'Wǒ xiǎng bàn yì zhāng huìyuánkǎ.',english:'I would like to get a membership card.'}},
+      {id:'warm-up',hanzi:'热身',pinyin:'rèshēn',english:'warm up',example:{hanzi:'运动前要先热身。',pinyin:'Yùndòng qián yào xiān rèshēn.',english:'Warm up before exercising.'}},
+    ],question:{prompt:'What should you do before exercising?',chinesePrompt:'运动前要先热身。',choices:[{id:'a',text:'运动前要先热身。',pinyin:'Yùndòng qián yào xiān rèshēn.'},{id:'b',text:'运动前要先退房。',pinyin:'Yùndòng qián yào xiān tuìfáng.'},{id:'c',text:'运动前要先取票。',pinyin:'Yùndòng qián yào xiān qǔpiào.'}],answer:'a',explanation:'运动前 means before exercise; 先热身 means warm up first.'}
+  },
+  {
+    id:'festivals',icon:'节',title:'Festivals & Traditions',chinese:'节日文化',description:'Greetings, customs, family gatherings, and traditional food.',mission:'Celebrate a Chinese festival',
+    vocabulary:[
+      {id:'spring-festival',hanzi:'春节',pinyin:'Chūnjié',english:'Spring Festival',example:{hanzi:'春节我们回家团聚。',pinyin:'Chūnjié wǒmen huí jiā tuánjù.',english:'We go home for a reunion at Spring Festival.'}},
+      {id:'red-envelope',hanzi:'红包',pinyin:'hóngbāo',english:'red envelope',example:{hanzi:'孩子们收到红包。',pinyin:'Háizimen shōudào hóngbāo.',english:'The children receive red envelopes.'}},
+      {id:'reunion-dinner',hanzi:'年夜饭',pinyin:'niányèfàn',english:'New Year reunion dinner',example:{hanzi:'全家一起吃年夜饭。',pinyin:'Quánjiā yìqǐ chī niányèfàn.',english:'The whole family eats reunion dinner together.'}},
+    ],question:{prompt:'What does the whole family eat together?',chinesePrompt:'全家一起吃年夜饭。',choices:[{id:'a',text:'全家一起吃年夜饭。',pinyin:'Quánjiā yìqǐ chī niányèfàn.'},{id:'b',text:'全家一起坐地铁。',pinyin:'Quánjiā yìqǐ zuò dìtiě.'},{id:'c',text:'全家一起填表。',pinyin:'Quánjiā yìqǐ tián biǎo.'}],answer:'a',explanation:'年夜饭 is the reunion dinner traditionally shared on New Year’s Eve.'}
+  },
+  {
+    id:'technology',icon:'数',title:'Technology & Repairs',chinese:'数码生活',description:'Devices, connectivity, accounts, repairs, and technical support.',mission:'Solve a device problem',
+    vocabulary:[
+      {id:'network',hanzi:'网络',pinyin:'wǎngluò',english:'network / internet',example:{hanzi:'这里的网络不稳定。',pinyin:'Zhèlǐ de wǎngluò bù wěndìng.',english:'The internet here is unstable.'}},
+      {id:'charge',hanzi:'充电',pinyin:'chōngdiàn',english:'charge a device',example:{hanzi:'我的手机需要充电。',pinyin:'Wǒ de shǒujī xūyào chōngdiàn.',english:'My phone needs charging.'}},
+      {id:'technical-support',hanzi:'技术支持',pinyin:'jìshù zhīchí',english:'technical support',example:{hanzi:'请联系技术支持。',pinyin:'Qǐng liánxì jìshù zhīchí.',english:'Please contact technical support.'}},
+    ],question:{prompt:'The internet is unstable. Who should you contact?',chinesePrompt:'请联系技术支持。',choices:[{id:'a',text:'请联系技术支持。',pinyin:'Qǐng liánxì jìshù zhīchí.'},{id:'b',text:'请联系餐厅服务员。',pinyin:'Qǐng liánxì cāntīng fúwùyuán.'},{id:'c',text:'请联系博物馆导游。',pinyin:'Qǐng liánxì bówùguǎn dǎoyóu.'}],answer:'a',explanation:'技术支持 is technical support, the correct help channel for a device or network issue.'}
+  },
+  {
+    id:'gym',icon:'健',title:'Build Your Strength',chinese:'力量训练',description:'Memberships, equipment, sets, rest, and asking a trainer for help.',mission:'Complete a guided strength session',
+    vocabulary:[
+      {id:'trainer',hanzi:'健身教练',pinyin:'jiànshēn jiàoliàn',english:'fitness trainer',example:{hanzi:'我想请教一下健身教练。',pinyin:'Wǒ xiǎng qǐngjiào yíxià jiànshēn jiàoliàn.',english:'I would like to ask the trainer for advice.'}},
+      {id:'equipment',hanzi:'健身器材',pinyin:'jiànshēn qìcái',english:'gym equipment',example:{hanzi:'这个健身器材怎么用？',pinyin:'Zhège jiànshēn qìcái zěnme yòng?',english:'How do I use this gym equipment?'}},
+      {id:'set',hanzi:'一组',pinyin:'yì zǔ',english:'one set',example:{hanzi:'每个动作做三组。',pinyin:'Měi ge dòngzuò zuò sān zǔ.',english:'Do three sets of each movement.'}},
+    ],question:{prompt:'How do you ask how to use the equipment?',chinesePrompt:'这个健身器材怎么用？',choices:[{id:'a',text:'这个健身器材怎么用？',pinyin:'Zhège jiànshēn qìcái zěnme yòng?'},{id:'b',text:'这个车厢在哪里？',pinyin:'Zhège chēxiāng zài nǎli?'},{id:'c',text:'这个红包多少钱？',pinyin:'Zhège hóngbāo duōshao qián?'}],answer:'a',explanation:'怎么用 asks “how is it used,” following the equipment being discussed.'}
+  },
+  {
+    id:'basketball',icon:'篮',title:'Own the Basketball Court',chinese:'篮球场上',description:'Join a team, understand positions, pass, shoot, and talk about the score.',mission:'Communicate through a full basketball game',
+    vocabulary:[
+      {id:'basketball-court',hanzi:'篮球场',pinyin:'lánqiúchǎng',english:'basketball court',example:{hanzi:'我们在篮球场见。',pinyin:'Wǒmen zài lánqiúchǎng jiàn.',english:'Let us meet at the basketball court.'}},
+      {id:'pass-ball',hanzi:'传球',pinyin:'chuánqiú',english:'pass the ball',example:{hanzi:'快传球给我！',pinyin:'Kuài chuánqiú gěi wǒ!',english:'Pass me the ball quickly!'}},
+      {id:'shoot',hanzi:'投篮',pinyin:'tóulán',english:'shoot a basket',example:{hanzi:'他投篮得分了。',pinyin:'Tā tóulán défēn le.',english:'He scored with a shot.'}},
+    ],question:{prompt:'How do you tell a teammate to pass you the ball?',chinesePrompt:'快传球给我！',choices:[{id:'a',text:'快传球给我！',pinyin:'Kuài chuánqiú gěi wǒ!'},{id:'b',text:'快扫码付款！',pinyin:'Kuài sǎomǎ fùkuǎn!'},{id:'c',text:'快填写申请表！',pinyin:'Kuài tiánxiě shēnqǐngbiǎo!'}],answer:'a',explanation:'传球 means pass the ball, and 给我 means to me.'}
+  },
+  {
+    id:'badminton',icon:'羽',title:'Master the Badminton Rally',chinese:'羽毛球对练',description:'Book a court, borrow rackets, serve, rally, and keep score.',mission:'Complete a badminton rally and score the match',
+    vocabulary:[
+      {id:'badminton-court',hanzi:'羽毛球场',pinyin:'yǔmáoqiúchǎng',english:'badminton court',example:{hanzi:'我预订了羽毛球场。',pinyin:'Wǒ yùdìng le yǔmáoqiúchǎng.',english:'I booked a badminton court.'}},
+      {id:'racket',hanzi:'球拍',pinyin:'qiúpāi',english:'racket',example:{hanzi:'可以借一个球拍吗？',pinyin:'Kěyǐ jiè yí ge qiúpāi ma?',english:'May I borrow a racket?'}},
+      {id:'serve',hanzi:'发球',pinyin:'fāqiú',english:'serve',example:{hanzi:'这次轮到你发球。',pinyin:'Zhè cì lúndào nǐ fāqiú.',english:'It is your turn to serve.'}},
+    ],question:{prompt:'How do you ask to borrow a racket?',chinesePrompt:'可以借一个球拍吗？',choices:[{id:'a',text:'可以借一个球拍吗？',pinyin:'Kěyǐ jiè yí ge qiúpāi ma?'},{id:'b',text:'可以借一张房卡吗？',pinyin:'Kěyǐ jiè yì zhāng fángkǎ ma?'},{id:'c',text:'可以借一个红包吗？',pinyin:'Kěyǐ jiè yí ge hóngbāo ma?'}],answer:'a',explanation:'借 means borrow, and 球拍 is a racket.'}
+  },
 ];
 
 export const allVocabulary = adventureChapters.flatMap(chapter => chapter.vocabulary.map(word => ({ ...word, chapterId: chapter.id, chapter: chapter.title })));

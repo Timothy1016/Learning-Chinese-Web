@@ -1,0 +1,380 @@
+{
+  "arrival": [
+    {
+      "image": "/adventure-scenes/arrival-1.jpg",
+      "label": "Arrival in China · Scene 1",
+      "chinese": "抵达中国",
+      "prompt": "Follow the signs, identify the service area, and use your arrival phrases.",
+      "credit": "Baycrest · CC BY-SA 2.5",
+      "source": "https://commons.wikimedia.org/wiki/File:Pudong_International_Airport_Terminal_2.jpg"
+    },
+    {
+      "image": "/adventure-scenes/arrival-2.jpg",
+      "label": "Arrival in China · Scene 2",
+      "chinese": "抵达中国",
+      "prompt": "Follow the signs, identify the service area, and use your arrival phrases.",
+      "credit": "Gossipguy · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:HK_Airport_Terminal_1.jpg"
+    },
+    {
+      "image": "/adventure-scenes/arrival-3.jpg",
+      "label": "Arrival in China · Scene 3",
+      "chinese": "抵达中国",
+      "prompt": "Follow the signs, identify the service area, and use your arrival phrases.",
+      "credit": "颐园新居 · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Beijing_Capital_International_Airport_Terminal_3_Security-check_passage_20090818.jpg"
+    },
+    {
+      "image": "/adventure-scenes/arrival-4.jpg",
+      "label": "Arrival in China · Scene 4",
+      "chinese": "抵达中国",
+      "prompt": "Follow the signs, identify the service area, and use your arrival phrases.",
+      "credit": "颐园新居 · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Beijing_Capital_International_Airport_Terminal_3_Departure_boarding_20131119.jpg"
+    },
+    {
+      "image": "/adventure-scenes/arrival-5.jpg",
+      "label": "Arrival in China · Scene 5",
+      "chinese": "抵达中国",
+      "prompt": "Follow the signs, identify the service area, and use your arrival phrases.",
+      "credit": "Shwangtianyuan · CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Terminal_2,_Pudong_International_Airport_Waiting_Room.JPG"
+    }
+  ],
+  "hotel": [
+    {
+      "image": "/adventure-scenes/hotel-1.jpg",
+      "label": "Hotel Check-in · Scene 1",
+      "chinese": "酒店入住",
+      "prompt": "Notice the reception desk, room signs, and places where check-in language is used.",
+      "credit": "Wm. Notman Son · Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Reception_counter_in_the_Windsor_Hotel,_Montreal,_QC,_about_1890.jpg"
+    },
+    {
+      "image": "/adventure-scenes/hotel-2.jpg",
+      "label": "Hotel Check-in · Scene 2",
+      "chinese": "酒店入住",
+      "prompt": "Notice the reception desk, room signs, and places where check-in language is used.",
+      "credit": "Hotel le Plaza · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Reception_lobby.jpg"
+    },
+    {
+      "image": "/adventure-scenes/hotel-3.jpg",
+      "label": "Hotel Check-in · Scene 3",
+      "chinese": "酒店入住",
+      "prompt": "Notice the reception desk, room signs, and places where check-in language is used.",
+      "credit": "Ammodramus · Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Arrow_Hotel_interior_lobby_3.1.JPG"
+    },
+    {
+      "image": "/adventure-scenes/hotel-4.jpg",
+      "label": "Hotel Check-in · Scene 4",
+      "chinese": "酒店入住",
+      "prompt": "Notice the reception desk, room signs, and places where check-in language is used.",
+      "credit": "Ammodramus · Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Arrow_Hotel_interior_lobby_3.2.JPG"
+    },
+    {
+      "image": "/adventure-scenes/hotel-5.jpg",
+      "label": "Hotel Check-in · Scene 5",
+      "chinese": "酒店入住",
+      "prompt": "Notice the reception desk, room signs, and places where check-in language is used.",
+      "credit": "Jacklee. · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:MarinaBaySandsHotel-reception-20100730.jpg"
+    }
+  ],
+  "restaurant": [
+    {
+      "image": "/adventure-scenes/restaurant-1.jpg",
+      "label": "Restaurant · Scene 1",
+      "chinese": "餐厅",
+      "prompt": "Look for tables, menus, servers, and details that help you order naturally.",
+      "credit": "Chensiyuan · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Prima_revolving_rest.JPG"
+    },
+    {
+      "image": "/adventure-scenes/restaurant-2.jpg",
+      "label": "Restaurant · Scene 2",
+      "chinese": "餐厅",
+      "prompt": "Look for tables, menus, servers, and details that help you order naturally.",
+      "credit": "User:Vmenkov · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:E4263-Indianapolis-Shuang-Xi.jpg"
+    },
+    {
+      "image": "/adventure-scenes/restaurant-3.jpg",
+      "label": "Restaurant · Scene 3",
+      "chinese": "餐厅",
+      "prompt": "Look for tables, menus, servers, and details that help you order naturally.",
+      "credit": "Ildar Sagdejev (Specious) · CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:2008-08-18_Orient_Garden_interior_in_Durham.jpg"
+    },
+    {
+      "image": "/adventure-scenes/restaurant-4.jpg",
+      "label": "Restaurant · Scene 4",
+      "chinese": "餐厅",
+      "prompt": "Look for tables, menus, servers, and details that help you order naturally.",
+      "credit": "Cnta2xam · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:HK_Dinner_%E6%A3%9F%E8%A8%98%E9%A3%AF%E5%BA%97_Tung_Kee_Chairs_Table_Furniture_2.JPG"
+    },
+    {
+      "image": "/adventure-scenes/restaurant-5.jpg",
+      "label": "Restaurant · Scene 5",
+      "chinese": "餐厅",
+      "prompt": "Look for tables, menus, servers, and details that help you order naturally.",
+      "credit": "dbking · CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:YenchingPalace.jpg"
+    }
+  ],
+  "shopping": [
+    {
+      "image": "/adventure-scenes/shopping-1.jpg",
+      "label": "Shopping · Scene 1",
+      "chinese": "购物",
+      "prompt": "Find prices, sizes, counters, and payment signs used while shopping.",
+      "credit": "Sanwuisusp · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:XinHui_%E6%96%B0%E6%9C%83%E7%A2%A7%E6%A1%82%E5%9C%92_Country_Garden_%E5%A4%A7%E6%BD%A4%E7%99%BC_RT-Mart_1st_floor_supermarket_22.JPG"
+    },
+    {
+      "image": "/adventure-scenes/shopping-2.jpg",
+      "label": "Shopping · Scene 2",
+      "chinese": "购物",
+      "prompt": "Find prices, sizes, counters, and payment signs used while shopping.",
+      "credit": "Sanwuisusp · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:XinHui_%E6%96%B0%E6%9C%83%E7%A2%A7%E6%A1%82%E5%9C%92_Country_Garden_%E5%A4%A7%E6%BD%A4%E7%99%BC_RT-Mart_1st_floor_supermarket_19.JPG"
+    },
+    {
+      "image": "/adventure-scenes/shopping-3.jpg",
+      "label": "Shopping · Scene 3",
+      "chinese": "购物",
+      "prompt": "Find prices, sizes, counters, and payment signs used while shopping.",
+      "credit": "Sanwuisusp · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:XinHui_%E6%96%B0%E6%9C%83%E7%A2%A7%E6%A1%82%E5%9C%92_Country_Garden_%E5%A4%A7%E6%BD%A4%E7%99%BC_RT-Mart_1st_floor_supermarket_18.JPG"
+    },
+    {
+      "image": "/adventure-scenes/shopping-4.jpg",
+      "label": "Shopping · Scene 4",
+      "chinese": "购物",
+      "prompt": "Find prices, sizes, counters, and payment signs used while shopping.",
+      "credit": "Sanwuisusp · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:XinHui_%E6%96%B0%E6%9C%83%E7%A2%A7%E6%A1%82%E5%9C%92_Country_Garden_%E5%A4%A7%E6%BD%A4%E7%99%BC_RT-Mart_Fresh_Food_01.JPG"
+    },
+    {
+      "image": "/adventure-scenes/shopping-5.jpg",
+      "label": "Shopping · Scene 5",
+      "chinese": "购物",
+      "prompt": "Find prices, sizes, counters, and payment signs used while shopping.",
+      "credit": "Lungshingkwonghua · CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:SZ_%E6%B7%B1%E5%9C%B3_Shenzhen_%E7%A6%8F%E7%94%B0_Futian_%E7%A6%8F%E8%8F%AF%E8%B7%AF_Fuhua_Road_%E6%80%A1%E6%99%AF%E4%B8%AD%E5%BF%83%E5%9F%8E_Central_Walk_Shopping_Mall_Carrefour_Supermarket_goods_clothing_detergent_Oct_2017_IX1_Liby.jpg"
+    }
+  ],
+  "campus": [
+    {
+      "image": "/adventure-scenes/campus-1.jpg",
+      "label": "Campus Life · Scene 1",
+      "chinese": "校园生活",
+      "prompt": "Explore lecture halls, libraries, dormitories, and student spaces.",
+      "credit": "Neat · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:The_first_classroom_building_in_scnu.jpg"
+    },
+    {
+      "image": "/adventure-scenes/campus-2.jpg",
+      "label": "Campus Life · Scene 2",
+      "chinese": "校园生活",
+      "prompt": "Explore lecture halls, libraries, dormitories, and student spaces.",
+      "credit": "Caiguanhao · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Computer_Room_403_in_Lab_Bldg_of_Foshan_University_(Beiyuan).jpg"
+    },
+    {
+      "image": "/adventure-scenes/campus-3.jpg",
+      "label": "Campus Life · Scene 3",
+      "chinese": "校园生活",
+      "prompt": "Explore lecture halls, libraries, dormitories, and student spaces.",
+      "credit": "Dqwyy · CC0",
+      "source": "https://commons.wikimedia.org/wiki/File:%E5%A4%8F%E8%8A%B1%E7%9A%84%E8%BD%A8%E8%BF%B9%E5%9C%A3%E5%9C%B0%E5%B7%A1%E7%A4%BC%E5%B9%BF%E4%B8%9C%E5%B7%A5%E4%B8%9A%E5%A4%A7%E5%AD%A6%E9%BE%99%E6%B4%9E%E6%A0%A1%E5%8C%BA%E6%95%99%E5%AD%A6%E6%A5%BC103.jpg"
+    },
+    {
+      "image": "/adventure-scenes/campus-4.jpg",
+      "label": "Campus Life · Scene 4",
+      "chinese": "校园生活",
+      "prompt": "Explore lecture halls, libraries, dormitories, and student spaces.",
+      "credit": "Gary Todd · CC0",
+      "source": "https://commons.wikimedia.org/wiki/File:Sias_Campus-_Classroom_Building_11_-_2007.jpg"
+    },
+    {
+      "image": "/adventure-scenes/campus-5.jpg",
+      "label": "Campus Life · Scene 5",
+      "chinese": "校园生活",
+      "prompt": "Explore lecture halls, libraries, dormitories, and student spaces.",
+      "credit": "Félix An · CC BY 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Advanced_Data_Structures_Class_at_ZJU_Zijingang_West_Teaching_Area.jpg"
+    }
+  ],
+  "coffee": [
+    {
+      "image": "/adventure-scenes/coffee-1.jpg",
+      "label": "Coffee Shop · Scene 1",
+      "chinese": "咖啡店",
+      "prompt": "Find the counter, menu board, seating, and takeaway area.",
+      "credit": "Mk2010 · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Teresa_New_Life_Coffee_Shop_(Hong_Kong).jpg"
+    },
+    {
+      "image": "/adventure-scenes/coffee-2.jpg",
+      "label": "Coffee Shop · Scene 2",
+      "chinese": "咖啡店",
+      "prompt": "Find the counter, menu board, seating, and takeaway area.",
+      "credit": "Homonihilis · Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Cafe_markiz_interior2.JPG"
+    },
+    {
+      "image": "/adventure-scenes/coffee-3.jpg",
+      "label": "Coffee Shop · Scene 3",
+      "chinese": "咖啡店",
+      "prompt": "Find the counter, menu board, seating, and takeaway area.",
+      "credit": "Infrogmation of New Orleans · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:PJs_Coffee_Maple_Street_Interior_Rennovation_New_Orleans_2009.jpg"
+    },
+    {
+      "image": "/adventure-scenes/coffee-4.jpg",
+      "label": "Coffee Shop · Scene 4",
+      "chinese": "咖啡店",
+      "prompt": "Find the counter, menu board, seating, and takeaway area.",
+      "credit": "Lon Johnson, National Park Service · Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Jammer_Joe%27s_-_Interior_of_Lake_McDonald_Lodge_Coffee_Shot_-_NPS_photo_by_Lon_Johnson.jpg"
+    },
+    {
+      "image": "/adventure-scenes/coffee-5.jpg",
+      "label": "Coffee Shop · Scene 5",
+      "chinese": "咖啡店",
+      "prompt": "Find the counter, menu board, seating, and takeaway area.",
+      "credit": "Uri Tours · CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Coffee_shop_inside_the_Haemaji_Complex_(14927818504).jpg"
+    }
+  ],
+  "sightseeing": [
+    {
+      "image": "/adventure-scenes/sightseeing-1.jpg",
+      "label": "Sightseeing & Museums · Scene 1",
+      "chinese": "观光和博物馆",
+      "prompt": "Find tickets, galleries, visitor signs, and information counters.",
+      "credit": "Wingsumlam · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:HK_TST_%E9%A6%99%E6%B8%AF%E8%97%9D%E8%A1%93%E5%8D%9A%E7%89%A9%E9%A4%A8_Art_Museum_%E5%90%B3%E5%86%A0%E4%B8%AD_Wu_Guanzhong_artworks_statement.JPG"
+    },
+    {
+      "image": "/adventure-scenes/sightseeing-2.jpg",
+      "label": "Sightseeing & Museums · Scene 2",
+      "chinese": "观光和博物馆",
+      "prompt": "Find tickets, galleries, visitor signs, and information counters.",
+      "credit": "Wingsumlam · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:HK_TST_%E9%A6%99%E6%B8%AF%E8%97%9D%E8%A1%93%E5%8D%9A%E7%89%A9%E9%A4%A8_Art_Museum_%E5%90%B3%E5%86%A0%E4%B8%AD_Wu_Guanzhong_artworks_history_intro_07.JPG"
+    },
+    {
+      "image": "/adventure-scenes/sightseeing-3.jpg",
+      "label": "Sightseeing & Museums · Scene 3",
+      "chinese": "观光和博物馆",
+      "prompt": "Find tickets, galleries, visitor signs, and information counters.",
+      "credit": "Wingsumlam · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:HK_TST_%E9%A6%99%E6%B8%AF%E8%97%9D%E8%A1%93%E5%8D%9A%E7%89%A9%E9%A4%A8_Art_Museum_%E5%90%B3%E5%86%A0%E4%B8%AD_Wu_Guanzhong_artworks_08.JPG"
+    },
+    {
+      "image": "/adventure-scenes/sightseeing-4.jpg",
+      "label": "Sightseeing & Museums · Scene 4",
+      "chinese": "观光和博物馆",
+      "prompt": "Find tickets, galleries, visitor signs, and information counters.",
+      "credit": "Chanyuk Kunming · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:HK_Park_%E9%A6%99%E6%B8%AF%E8%8C%B6%E5%85%B7%E6%96%87%E7%89%A9%E9%A4%A8_Museum_of_Tea_ware_%E6%97%97%E6%9D%86%E5%B1%8B_Flagstaff_House_exhibition_halls_Tactile_map_sign_Dec-2013.JPG"
+    },
+    {
+      "image": "/adventure-scenes/sightseeing-5.jpg",
+      "label": "Sightseeing & Museums · Scene 5",
+      "chinese": "观光和博物馆",
+      "prompt": "Find tickets, galleries, visitor signs, and information counters.",
+      "credit": "Daniel Case · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Central_exhibition_hall_at_National_Museum_of_China_with_Mao_banner.jpg"
+    }
+  ],
+  "payments": [
+    {
+      "image": "/adventure-scenes/payments-1.jpg",
+      "label": "Banking & Mobile Payments · Scene 1",
+      "chinese": "银行和移动支付",
+      "prompt": "Recognize payment screens, QR codes, bank counters, and receipts.",
+      "credit": "HLundgaard · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Mobile_payment_02.JPG"
+    },
+    {
+      "image": "/adventure-scenes/payments-2.jpg",
+      "label": "Banking & Mobile Payments · Scene 2",
+      "chinese": "银行和移动支付",
+      "prompt": "Recognize payment screens, QR codes, bank counters, and receipts.",
+      "credit": "HLundgaard · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Mobile_payment_01.jpg"
+    },
+    {
+      "image": "/adventure-scenes/payments-3.jpg",
+      "label": "Banking & Mobile Payments · Scene 3",
+      "chinese": "银行和移动支付",
+      "prompt": "Recognize payment screens, QR codes, bank counters, and receipts.",
+      "credit": "HLundgaard · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Mobile_payment_03.JPG"
+    },
+    {
+      "image": "/adventure-scenes/payments-4.jpg",
+      "label": "Banking & Mobile Payments · Scene 4",
+      "chinese": "银行和移动支付",
+      "prompt": "Recognize payment screens, QR codes, bank counters, and receipts.",
+      "credit": "Raidarmax · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:An_M-Pesa_Payment_Till.JPG"
+    },
+    {
+      "image": "/adventure-scenes/payments-5.jpg",
+      "label": "Banking & Mobile Payments · Scene 5",
+      "chinese": "银行和移动支付",
+      "prompt": "Recognize payment screens, QR codes, bank counters, and receipts.",
+      "credit": "Richard Tanzer Fotografie / VeroPay · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Mobile_Payment.jpg"
+    }
+  ],
+  "rail": [
+    {
+      "image": "/adventure-scenes/rail-1.jpg",
+      "label": "High-speed Rail · Scene 1",
+      "chinese": "高铁出行",
+      "prompt": "Identify platforms, carriages, departure boards, and seat information.",
+      "credit": "User:Changlc · Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Train_and_police_at_Platform_1B,_THSR_Taichung_Station_20070105b.jpg"
+    },
+    {
+      "image": "/adventure-scenes/rail-2.jpg",
+      "label": "High-speed Rail · Scene 2",
+      "chinese": "高铁出行",
+      "prompt": "Identify platforms, carriages, departure boards, and seat information.",
+      "credit": "User:Bvehk · CC BY 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:China_Railways_CRH1-003A_at_Shenzhen_Railway_Station_(December_2006).jpg"
+    },
+    {
+      "image": "/adventure-scenes/rail-3.jpg",
+      "label": "High-speed Rail · Scene 3",
+      "chinese": "高铁出行",
+      "prompt": "Identify platforms, carriages, departure boards, and seat information.",
+      "credit": "Wang Chung · CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Wen_Jiabao_boarding_Beijing%E2%80%93Shanghai_High-Speed_Railway_train.jpg"
+    },
+    {
+      "image": "/adventure-scenes/rail-4.jpg",
+      "label": "High-speed Rail · Scene 4",
+      "chinese": "高铁出行",
+      "prompt": "Identify platforms, carriages, departure boards, and seat information.",
+      "credit": "calflier001 · CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:CHINA_RAILWAYS_HIGH_SPEED(CRH)_SIEMENS_ICE_TRAIN_SETS_AT_SHANGHAI_SOUTH_STATION_CHINA_OCT_2012_(8182028967).jpg"
+    },
+    {
+      "image": "/adventure-scenes/rail-5.jpg",
+      "label": "High-speed Rail · Scene 5",
+      "chinese": "高铁出行",
+      "prompt": "Identify platforms, carriages, departure boards, and seat information.",
+      "credit": "calflier001 · CC BY-SA 2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:CHINA_RAILWAYS_HIGH_SPEED(CRH)_SIEMENS_ICE_AND_HARMONY_TRAIN_SETS_AT_SHANGHAI_SOUTH_STATION_CHINA_OCT_2012_(8182019081).jpg"
+    }
+  ]
+}

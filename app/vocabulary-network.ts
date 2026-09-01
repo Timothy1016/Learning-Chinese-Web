@@ -108,14 +108,96 @@ const extendedWords: Record<string, VocabularyItem[]> = {
     { id:'network-social-address', hanzi:'地址', pinyin:'dìzhǐ', english:'address', example:{hanzi:'请把地址发给我。',pinyin:'Qǐng bǎ dìzhǐ fā gěi wǒ.',english:'Please send me the address.'}},
     { id:'network-social-message', hanzi:'消息', pinyin:'xiāoxi', english:'message / news', example:{hanzi:'我看到了你的消息。',pinyin:'Wǒ kàndào le nǐ de xiāoxi.',english:'I saw your message.'}},
   ],
+  sightseeing: [
+    {id:'network-sightseeing-reserve',hanzi:'预约',pinyin:'yùyuē',english:'to reserve',example:{hanzi:'参观以前需要预约。',pinyin:'Cānguān yǐqián xūyào yùyuē.',english:'A reservation is required before visiting.'}},
+    {id:'network-sightseeing-hours',hanzi:'开放时间',pinyin:'kāifàng shíjiān',english:'opening hours',example:{hanzi:'请问开放时间是什么时候？',pinyin:'Qǐngwèn kāifàng shíjiān shì shénme shíhou?',english:'What are the opening hours?'}},
+    {id:'network-sightseeing-exhibit',hanzi:'展览',pinyin:'zhǎnlǎn',english:'exhibition',example:{hanzi:'这个展览很有意思。',pinyin:'Zhège zhǎnlǎn hěn yǒuyìsi.',english:'This exhibition is very interesting.'}},
+    {id:'network-sightseeing-guide',hanzi:'导游',pinyin:'dǎoyóu',english:'tour guide',example:{hanzi:'导游在入口等我们。',pinyin:'Dǎoyóu zài rùkǒu děng wǒmen.',english:'The guide is waiting for us at the entrance.'}},
+    {id:'network-sightseeing-audio',hanzi:'语音导览',pinyin:'yǔyīn dǎolǎn',english:'audio guide',example:{hanzi:'我想租一个语音导览。',pinyin:'Wǒ xiǎng zū yí ge yǔyīn dǎolǎn.',english:'I would like to rent an audio guide.'}},
+    {id:'network-sightseeing-photo',hanzi:'禁止拍照',pinyin:'jìnzhǐ pāizhào',english:'no photography',example:{hanzi:'这个展厅禁止拍照。',pinyin:'Zhège zhǎntīng jìnzhǐ pāizhào.',english:'Photography is prohibited in this gallery.'}},
+    {id:'network-sightseeing-entrance',hanzi:'入口',pinyin:'rùkǒu',english:'entrance',example:{hanzi:'游客入口在东门。',pinyin:'Yóukè rùkǒu zài dōngmén.',english:'The visitor entrance is at the east gate.'}},
+    {id:'network-sightseeing-exit',hanzi:'出口',pinyin:'chūkǒu',english:'exit',example:{hanzi:'参观结束后从出口离开。',pinyin:'Cānguān jiéshù hòu cóng chūkǒu líkāi.',english:'Leave through the exit after the visit.'}},
+    {id:'network-sightseeing-souvenir',hanzi:'纪念品',pinyin:'jìniànpǐn',english:'souvenir',example:{hanzi:'我想买一个纪念品。',pinyin:'Wǒ xiǎng mǎi yí ge jìniànpǐn.',english:'I would like to buy a souvenir.'}},
+  ],
+  payments: [
+    {id:'network-payments-scan',hanzi:'扫码',pinyin:'sǎomǎ',english:'scan a code',example:{hanzi:'付款时请扫码。',pinyin:'Fùkuǎn shí qǐng sǎomǎ.',english:'Please scan the code when paying.'}},
+    {id:'network-payments-pay',hanzi:'付款',pinyin:'fùkuǎn',english:'to pay',example:{hanzi:'我已经付款了。',pinyin:'Wǒ yǐjīng fùkuǎn le.',english:'I have already paid.'}},
+    {id:'network-payments-success',hanzi:'支付成功',pinyin:'zhīfù chénggōng',english:'payment successful',example:{hanzi:'手机显示支付成功。',pinyin:'Shǒujī xiǎnshì zhīfù chénggōng.',english:'The phone shows that payment succeeded.'}},
+    {id:'network-payments-failed',hanzi:'支付失败',pinyin:'zhīfù shībài',english:'payment failed',example:{hanzi:'支付失败，请再试一次。',pinyin:'Zhīfù shībài, qǐng zài shì yí cì.',english:'Payment failed; please try again.'}},
+    {id:'network-payments-cash',hanzi:'现金',pinyin:'xiànjīn',english:'cash',example:{hanzi:'我可以用现金吗？',pinyin:'Wǒ kěyǐ yòng xiànjīn ma?',english:'Can I use cash?'}},
+    {id:'network-payments-change',hanzi:'找零',pinyin:'zhǎolíng',english:'give change',example:{hanzi:'请问可以找零吗？',pinyin:'Qǐngwèn kěyǐ zhǎolíng ma?',english:'Can you give change?'}},
+    {id:'network-payments-account',hanzi:'账户',pinyin:'zhànghù',english:'account',example:{hanzi:'我需要确认银行账户。',pinyin:'Wǒ xūyào quèrèn yínháng zhànghù.',english:'I need to confirm the bank account.'}},
+    {id:'network-payments-password',hanzi:'密码',pinyin:'mìmǎ',english:'password / PIN',example:{hanzi:'请输入支付密码。',pinyin:'Qǐng shūrù zhīfù mìmǎ.',english:'Please enter the payment PIN.'}},
+    {id:'network-payments-receipt',hanzi:'电子收据',pinyin:'diànzǐ shōujù',english:'digital receipt',example:{hanzi:'电子收据会发到手机上。',pinyin:'Diànzǐ shōujù huì fā dào shǒujī shàng.',english:'The digital receipt will be sent to the phone.'}},
+  ],
 };
+
+function supplementalWordsForChapter(chapterId:string):VocabularyItem[]{
+  const related=adventureChapters.filter(chapter=>chapter.id!==chapterId).flatMap(chapter=>chapter.vocabulary);
+  return related.slice(0,9).map((word,index)=>({...word,id:`network-${chapterId}-context-${index+1}`}));
+}
 
 export const vocabularyNetworkCategories: VocabularyNetworkCategory[] = adventureChapters.map(chapter=>({
   id:chapter.id,
   icon:chapter.icon,
   title:chapter.title,
   chinese:chapter.chinese,
-  words:[...chapter.vocabulary,...(extendedWords[chapter.id]??[])],
+  words:[...chapter.vocabulary,...(extendedWords[chapter.id]??supplementalWordsForChapter(chapter.id))],
 }));
 
 export const allNetworkVocabulary = vocabularyNetworkCategories.flatMap(category=>category.words);
+
+export type AdventureVocabularyStage = {
+  id:string;
+  stage:number;
+  title:string;
+  focus:string;
+  sourceTitle:string;
+  words:VocabularyItem[];
+};
+
+const adventureStageLinks:Record<string,string[]>={
+  arrival:['arrival','transport','payments','hotel','social'],
+  hotel:['hotel','arrival','restaurant','health','payments'],
+  restaurant:['restaurant','coffee','shopping','health','payments'],
+  transport:['transport','arrival','sightseeing','payments','social'],
+  shopping:['shopping','payments','restaurant','social','sightseeing'],
+  campus:['campus','social','coffee','transport','health'],
+  health:['health','campus','transport','payments','social'],
+  coffee:['coffee','restaurant','shopping','social','payments'],
+  social:['social','coffee','restaurant','campus','transport'],
+  sightseeing:['sightseeing','transport','arrival','shopping','social'],
+  payments:['payments','shopping','arrival','hotel','transport'],
+  apartment:['apartment','hotel','shopping','payments','social'],
+  delivery:['delivery','shopping','transport','payments','social'],
+  workplace:['workplace','campus','social','coffee','technology'],
+  rail:['rail','transport','arrival','sightseeing','payments'],
+  emergency:['emergency','health','transport','arrival','public-services'],
+  'public-services':['public-services','payments','arrival','campus','emergency'],
+  fitness:['fitness','health','social','shopping','campus'],
+  festivals:['festivals','social','restaurant','shopping','sightseeing'],
+  technology:['technology','workplace','payments','campus','shopping'],
+  gym:['gym','fitness','health','campus','social'],
+  basketball:['basketball','fitness','social','campus','health'],
+  badminton:['badminton','fitness','social','campus','health'],
+};
+
+const adventureStageMeta=[
+  {title:'Scene essentials',focus:'Recognize the people, places, signs, and objects around you.'},
+  {title:'Actions and movement',focus:'Understand what to do next and describe a simple action.'},
+  {title:'Requests and choices',focus:'Ask naturally, compare options, and respond with confidence.'},
+  {title:'Problems and solutions',focus:'Handle common surprises without switching to English.'},
+  {title:'Real-life challenge',focus:'Connect the chapter with a second situation in daily life.'},
+];
+
+export function adventureVocabularyStages(chapterId:string):AdventureVocabularyStage[]{
+  const links=adventureStageLinks[chapterId]??[chapterId,...vocabularyNetworkCategories.filter(category=>category.id!==chapterId).slice(0,4).map(category=>category.id)];
+  const used=new Set<string>();
+  return links.slice(0,5).map((categoryId,index)=>{
+    const source=vocabularyNetworkCategories.find(category=>category.id===categoryId)??vocabularyNetworkCategories[0];
+    const candidates=[...source.words,...allNetworkVocabulary];
+    const words:VocabularyItem[]=[];
+    for(const word of candidates){if(used.has(word.hanzi))continue;used.add(word.hanzi);words.push(word);if(words.length===10)break}
+    return{id:`${chapterId}-stage-${index+1}`,stage:index+1,title:adventureStageMeta[index].title,focus:adventureStageMeta[index].focus,sourceTitle:source.title,words};
+  });
+}

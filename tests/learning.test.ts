@@ -18,7 +18,7 @@ import { completeCourseStoryCatalog } from '../app/course-story-catalog.ts';
 import { completeCourseExerciseBank, courseExerciseCoverage, courseExerciseLessons } from '../app/course-exercise-bank.ts';
 import { specializedTracks } from '../app/specialized-tracks.ts';
 import { chapterLearningPacks } from '../app/chapter-learning.ts';
-import { allNetworkVocabulary, vocabularyNetworkCategories } from '../app/vocabulary-network.ts';
+import { adventureVocabularyStages, allNetworkVocabulary, vocabularyNetworkCategories } from '../app/vocabulary-network.ts';
 import { hskCourseUnits, hskGradedStories } from '../app/hsk-course-content.ts';
 import { coreGameIds, flashcardBattleQuestions, hanziPuzzleQuestions, meaningHunterQuestions, pinyinChallengeQuestions, radicalFamilies, sentenceSpeedrunQuestions, toneMasterQuestions } from '../app/game-content.ts';
 import { createLocalBackup, parseLocalBackup } from '../lib/backup.ts';
@@ -278,7 +278,7 @@ test('specialized Chinese paths cover ten technical and professional fields',()=
 });
 
 test('adventure chapters and vocabulary IDs stay unique', () => {
-  assert.equal(adventureChapters.length, 9);
+  assert.equal(adventureChapters.length, 23);
   assert.equal(new Set(adventureChapters.map(chapter => chapter.id)).size, adventureChapters.length);
   const words = adventureChapters.flatMap(chapter => chapter.vocabulary);
   assert.equal(new Set(words.map(word => word.id)).size, words.length);
@@ -287,9 +287,20 @@ test('adventure chapters and vocabulary IDs stay unique', () => {
 test('Vocabulary Network has switchable, substantial topic collections', () => {
   assert.deepEqual(vocabularyNetworkCategories.map(category=>category.id),adventureChapters.map(chapter=>chapter.id));
   assert.ok(vocabularyNetworkCategories.every(category=>category.words.length>=12));
-  assert.equal(allNetworkVocabulary.length,108);
+  assert.equal(allNetworkVocabulary.length,adventureChapters.length*12);
   assert.equal(new Set(allNetworkVocabulary.map(word=>word.id)).size,allNetworkVocabulary.length);
   for(const word of allNetworkVocabulary){assert.ok(word.hanzi);assert.ok(word.pinyin);assert.ok(word.english);assert.ok(word.example.hanzi);}
+});
+
+test('every Adventure chapter has five substantial vocabulary stages',()=>{
+  for(const chapter of adventureChapters){
+    const stages=adventureVocabularyStages(chapter.id);
+    assert.equal(stages.length,5);
+    assert.deepEqual(stages.map(stage=>stage.stage),[1,2,3,4,5]);
+    assert.ok(stages.every(stage=>stage.words.length>=10&&stage.words.length<=20));
+    const words=stages.flatMap(stage=>stage.words);
+    assert.equal(new Set(words.map(word=>word.hanzi)).size,words.length);
+  }
 });
 
 test('every Adventure chapter has reusable grammar, listening, and production content', () => {

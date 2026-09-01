@@ -21,7 +21,7 @@ export type ChapterLearningPack = {
   };
 };
 
-export const chapterLearningPacks = {
+const coreChapterLearningPacks = {
   arrival: {
     grammar: { title:'Identify something clearly',pattern:'这 + 是 + Possessor + Noun',explanation:'这是 introduces the object in front of you. Add 我的 before a noun to say it belongs to you.',example:'这是我的护照。',question:{prompt:'Which sentence clearly identifies your passport?',choices:['这是我的护照。','护照这是我。','我的这是护照吗。'],answer:'这是我的护照。',explanation:'这是 begins the identification, followed by 我的护照, “my passport.”'}},
     listening: {prompt:'The officer asks for your passport. Choose the natural response.',audio:'请出示您的护照。',choices:['好的，这是我的护照。','我的房间在三楼。','我要一杯热茶。'],answer:'好的，这是我的护照。',explanation:'好的 acknowledges the request, then 这是我的护照 presents the document clearly.'},
@@ -67,4 +67,26 @@ export const chapterLearningPacks = {
     listening: {prompt:'A new friend asks about your weekend. Choose a warm response.',audio:'你周末有空吗？',choices:['有空，我们一起吃饭吧。','我要去买房卡。','我的护照在酒店。'],answer:'有空，我们一起吃饭吧。',explanation:'有空 answers the availability question, then the second clause suggests a shared plan.'},
     production: {prompt:'Build: “Let’s eat together.”',translation:'Let’s eat together.',pieces:['吃饭','一起','吧','我们'],target:['我们','一起','吃饭','吧']},
   },
+  sightseeing: {
+    grammar: {title:'Ask opening time',pattern:'Place + 几点 + 开门？',explanation:'Use 几点 to ask the time and 开门 for when a public place opens.',example:'博物馆几点开门？',question:{prompt:'Which sentence asks when the museum opens?',choices:['博物馆几点开门？','博物馆开门几个人？','几点博物馆门票？'],answer:'博物馆几点开门？',explanation:'Name the place first, then 几点开门 to ask its opening time.'}},
+    listening: {prompt:'A museum employee explains ticket collection. What should you do?',audio:'请先出示预约码，再领取门票。',choices:['Show the reservation code first.','Go directly to the metro.','Order a drink first.'],answer:'Show the reservation code first.',explanation:'先出示预约码 means “first show the reservation code.”'},
+    production: {prompt:'Build: “What time does the museum open?”',translation:'What time does the museum open?',pieces:['开门','博物馆','几点'],target:['博物馆','几点','开门']},
+  },
+  payments: {
+    grammar: {title:'Ask whether a payment method works',pattern:'这里 + 可以 + 用 + Method + 吗？',explanation:'可以用 asks whether a method is accepted or usable at this place.',example:'这里可以用移动支付吗？',question:{prompt:'Which sentence asks whether mobile payment is accepted?',choices:['这里可以用移动支付吗？','移动这里支付可以有。','这里支付用什么人？'],answer:'这里可以用移动支付吗？',explanation:'这里 establishes the place, 可以用 asks permission or availability, and 吗 forms the question.'}},
+    listening: {prompt:'The cashier explains why payment failed. What happened?',audio:'付款没有成功，请再试一次。',choices:['The payment failed; try again.','The bank is already closed.','The ticket is sold out.'],answer:'The payment failed; try again.',explanation:'没有成功 means “was not successful,” and 再试一次 means “try once again.”'},
+    production: {prompt:'Build: “Can I use mobile payment here?”',translation:'Can I use mobile payment here?',pieces:['移动支付','这里','吗','可以用'],target:['这里','可以用','移动支付','吗']},
+  },
 } satisfies Record<string, ChapterLearningPack>;
+
+function generatedPack(chapter:(typeof adventureChapters)[number]):ChapterLearningPack{
+  const [first,second,third]=chapter.vocabulary;
+  return {
+    grammar:{title:`Use ${first.hanzi} in context`,pattern:'请 + Action / Subject + Time + Action',explanation:`This chapter practices useful word order and polite real-life requests around ${chapter.chinese}.`,example:first.example.hanzi,question:{prompt:chapter.question.prompt,choices:chapter.question.choices.map(choice=>choice.text),answer:chapter.question.choices.find(choice=>choice.id===chapter.question.answer)?.text??chapter.question.chinesePrompt,explanation:chapter.question.explanation}},
+    listening:{prompt:`Listen to a short ${chapter.title} situation and choose the matching meaning.`,audio:second.example.hanzi,choices:[second.example.english,first.example.english,third.example.english],answer:second.example.english,explanation:`The key expression ${second.hanzi} means “${second.english}.”`},
+    production:{prompt:`Build: “${third.example.english}”`,translation:third.example.english,pieces:third.example.hanzi.replace(/[。？！]/g,'').split(/(?<=[，,])|(?=请|我|你|他|她|要|在|是|先|需要|可以)/).filter(Boolean).reverse(),target:third.example.hanzi.replace(/[。？！]/g,'').split(/(?<=[，,])|(?=请|我|你|他|她|要|在|是|先|需要|可以)/).filter(Boolean)},
+  };
+}
+
+export const chapterLearningPacks:Record<string,ChapterLearningPack>=Object.fromEntries(adventureChapters.map(chapter=>[chapter.id,coreChapterLearningPacks[chapter.id as keyof typeof coreChapterLearningPacks]??generatedPack(chapter)]));
+import { adventureChapters } from './content.ts';

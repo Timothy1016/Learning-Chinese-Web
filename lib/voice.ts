@@ -39,8 +39,10 @@ export function voicesForAccent<T extends VoiceCandidate>(voices: T[], accent: V
 
 function qualityScore(voice: VoiceCandidate) {
   let score = 0;
-  if (/natural|neural|premium|enhanced|online/i.test(voice.name)) score += 18;
-  if (voice.localService) score += 4;
+  if (/natural|neural|premium|enhanced|online|multilingual/i.test(voice.name)) score += 30;
+  if (/xiaoxiao|xiaoyi|xiaohan|xiaomeng|xiaomo|xiaorui|yunxi|yunjian|yunyang|ting[ -]?ting|mei[ -]?jia|sin[ -]?ji/i.test(voice.name)) score += 16;
+  if (/compact|novelty|whisper|bad news|bells|boing|bubbles|cellos|organ|trinoids|zarvox/i.test(voice.name)) score -= 30;
+  if (voice.localService) score += 6;
   if (voice.default) score += 2;
   return score;
 }
