@@ -840,3 +840,36 @@ button:hover:not(:disabled){transform:translateY(-1px)}button:active:not(:disabl
   .font-size-dock{right:12px!important;bottom:calc(78px + env(safe-area-inset-bottom))!important}.font-size-dock.open{width:calc(100vw - 24px)!important}.font-dock-panel{max-height:calc(100dvh - 170px);padding:14px;border-radius:20px}.font-dock-toggle b{display:inline}
 }
 @media(prefers-reduced-motion:reduce){button,.toast-enhanced,.focus-mode-layer{transition:none!important;animation:none!important}}
+
+/* 2026 typography reset: one clean, lightweight modern system across every surface. */
+:root{
+  --font-ui:ui-sans-serif,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable","Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  --font-display:var(--font-ui);
+  --font-hanzi:"Noto Sans SC","PingFang SC","Microsoft YaHei",var(--font-ui);
+  --serif:var(--font-ui);
+}
+html body :where(*){
+  font-family:var(--font-ui)!important;
+  font-synthesis:none;
+}
+html body :where(h1,h2,h3,h4,h5,h6){
+  font-family:var(--font-display)!important;
+  font-weight:500!important;
+  letter-spacing:-.025em!important;
+  text-wrap:balance;
+}
+html body :where(strong,b){font-weight:550!important}
+html body :where(button,[role="button"],input,select,textarea,label){font-weight:500!important}
+html body :where(.brand,.mobile-brand,.mobile-brand-name){font-weight:550!important;letter-spacing:-.02em!important}
+html body :where(.brand-mark,.hanzi,.game-symbol,.review-icon,.course-unit-card h2 span,.adventure-word-stage span,.quick-recall-word strong){
+  font-family:var(--font-hanzi)!important;
+  font-weight:450!important;
+  letter-spacing:0!important;
+}
+html body :where(.eyebrow,.section-kicker,.unit-kicker,.game-card .eyebrow,.course-unit-card>header>p,.story-level,.network-summary small,.chapter-label,.pill){
+  font-family:var(--font-ui)!important;
+  font-weight:500!important;
+  letter-spacing:.1em!important;
+}
+html body :where(.primary,.secondary,.nav-item,.toast-action,.font-dock-toggle,.account-guide-button,.game-navigation-dock button){font-weight:520!important}
+html body :where(.focus-clock span,.arena-result>span,.network-summary strong){font-weight:500!important}
