@@ -13,7 +13,7 @@ import { createMistake, dueMistakes, mergeMistakes, mistakeMasteryLabel, reviewM
 import { resolvePreferredVoice, voiceStyleOf, voicesForAccent } from '../lib/voice.ts';
 import { adventureChapters } from '../app/content.ts';
 import { hskStyleBanks, pathPacks, storyLibrary } from '../app/extended-content.ts';
-import { completeTextbookStoryLibrary } from '../app/textbook-library.ts';
+import { completeTextbookStoryLibrary, textbookWordCollections } from '../app/textbook-library.ts';
 import { completeCourseStoryCatalog } from '../app/course-story-catalog.ts';
 import { completeCourseExerciseBank, courseExerciseCoverage, courseExerciseLessons } from '../app/course-exercise-bank.ts';
 import { specializedTracks } from '../app/specialized-tracks.ts';
@@ -32,6 +32,15 @@ import { analyzeMistakePatterns, masteryDetail, placementDecision, speakingFeedb
 
 const now = new Date('2026-08-24T00:00:00Z');
 const card: ReviewCard = { wordId: 'menu', dueAt: now.toISOString(), intervalDays: 0, ease: 2.5, repetitions: 0, mastery: 10 };
+
+test('HSK 6 quick recall includes the supplied Standard Course vocabulary', () => {
+  const hsk6 = textbookWordCollections.find((collection) => collection.level === 6);
+  assert.ok(hsk6);
+  assert.ok(hsk6.words.length >= 40);
+  for (const hanzi of ['启示', '滔滔不绝', '鸦雀无声', '约束']) {
+    assert.ok(hsk6.words.some((word) => word.hanzi === hanzi));
+  }
+});
 
 test('active recall accepts meaningful synonyms but rejects unrelated guesses', () => {
   assert.equal(recallMatches('love', 'to love; to be fond of; to like'), true);

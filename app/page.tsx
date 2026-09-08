@@ -2463,7 +2463,6 @@ export default function Home() {
         )}
         {active === "Review" && (
           <Review
-            profile={profile}
             learning={learning}
             rate={rateReview}
             rateMistake={rateMistake}
@@ -5387,20 +5386,15 @@ function JourneyCarousel({
 function DashboardQuickReview({
   learning,
   current,
-  profile,
   setActive,
   speak,
 }: {
   learning: LearningState;
   current: Chapter;
-  profile: Profile | null;
   setActive: (value: string) => void;
   speak: (text: string) => void;
 }) {
-  const unlockedHsk = Array.from(
-    { length: profile?.hsk ?? 1 },
-    (_, item) => item + 1,
-  );
+  const unlockedHsk = [1, 2, 3, 4, 5, 6];
   const unlockedAdventure = adventureChapters.slice(
     0,
     Math.min(adventureChapters.length, learning.completed.length + 1),
@@ -5556,7 +5550,7 @@ function DashboardQuickReview({
             </header>
             <div>
               <p>
-                <b>Unlocked HSK</b>
+                <b>Available HSK</b>
                 {unlockedHsk.map((level) => (
                   <button
                     className={hskLevels.includes(level) ? "active" : ""}
@@ -6075,7 +6069,6 @@ function Dashboard({
         <DashboardQuickReview
           learning={learning}
           current={current}
-          profile={profile}
           setActive={setActive}
           speak={speak}
         />
@@ -14751,7 +14744,6 @@ function Stories({
 }
 
 function Review({
-  profile,
   learning,
   rate,
   rateMistake,
@@ -14759,7 +14751,6 @@ function Review({
   openChapter,
   addPersonalWord,
 }: {
-  profile: Profile | null;
   learning: LearningState;
   rate: (wordId: string, rating: ReviewRating) => void;
   rateMistake: (mistakeId: string, correct: boolean) => void;
@@ -14774,7 +14765,7 @@ function Review({
   const [data, setData] = useState<HskDictionaryData | null>(null);
   const [loadError, setLoadError] = useState("");
   const [reviewLevel, setReviewLevel] = useState<number | "all">("all");
-  const unlockedHsk = useMemo(() => Array.from({ length: profile?.hsk ?? 1 }, (_, index) => index + 1), [profile?.hsk]);
+  const unlockedHsk = useMemo(() => [1, 2, 3, 4, 5, 6], []);
   const unlockedAdventure = useMemo(() => adventureChapters.slice(0, Math.min(adventureChapters.length, learning.completed.length + 1)), [learning.completed.length]);
   const [customOpen, setCustomOpen] = useState(false);
   const [selectedHsk, setSelectedHsk] = useState<number[]>(unlockedHsk);
@@ -14933,7 +14924,7 @@ function Review({
               <button onClick={() => setCustomOpen((value) => !value)}>{customOpen ? "Close choices" : "Customize sources"}</button>
             </header>
             {customOpen && <div className="review-source-options">
-              <section><b>Unlocked HSK levels</b><div>{unlockedHsk.map((level) => <button className={selectedHsk.includes(level) ? "active" : ""} onClick={() => toggleReviewHsk(level)} key={level}>HSK {level}</button>)}</div></section>
+              <section><b>Available HSK levels</b><div>{unlockedHsk.map((level) => <button className={selectedHsk.includes(level) ? "active" : ""} onClick={() => toggleReviewHsk(level)} key={level}>HSK {level}</button>)}</div></section>
               <section><b>Adventure chapters</b><div>{unlockedAdventure.map((chapter) => <button className={selectedAdventure.includes(chapter.id) ? "active" : ""} onClick={() => toggleReviewAdventure(chapter.id)} key={chapter.id}>{chapter.icon} {chapter.title}</button>)}</div></section>
               <button className="primary" onClick={() => buildCustomQueue()}>Start custom recall →</button>
               <small>At least one source must stay selected.</small>
