@@ -177,6 +177,16 @@ import {
   weeklyLearningReport,
 } from "../lib/learning-insights";
 import type HanziWriter from "hanzi-writer";
+import { ProgressSnapshotCharts, SyllableToneFeedback } from "./product-insights";
+
+const GlobalSearch = dynamic(
+  () => import("./product-polish").then((module) => module.GlobalSearch),
+  { ssr: false },
+);
+const Hsk6DeepDive = dynamic(
+  () => import("./product-polish").then((module) => module.Hsk6DeepDive),
+  { ssr: false, loading: () => <div className="advanced-module-loading">Preparing the HSK 6 book companion…</div> },
+);
 
 const HskMockExam = dynamic(
   () => import("./advanced-learning").then((module) => module.HskMockExam),
@@ -759,6 +769,8 @@ export default function Home() {
   const [learning, setLearning] = useState<LearningState>(defaultState);
   const [hydrated, setHydrated] = useState(false);
   const [onboarding, setOnboarding] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [uiLanguage, setUiLanguage] = useState<"en" | "id">("en");
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [bossId, setBossId] = useState<string | null>(null);
   const [streakOpen, setStreakOpen] = useState(false);
@@ -819,6 +831,7 @@ export default function Home() {
     window.queueMicrotask(loadVoices);
     window.speechSynthesis?.addEventListener("voiceschanged", loadVoices);
     window.queueMicrotask(() => {
+      setUiLanguage(window.localStorage.getItem("long-ui-language") === "id" ? "id" : "en");
       const parsedProfile = savedProfile.value;
       if (parsedProfile)
         setProfile({
@@ -893,6 +906,17 @@ export default function Home() {
       window.speechSynthesis?.removeEventListener("voiceschanged", loadVoices);
     // Cloud hydration intentionally runs once after the device-local snapshot is read.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const openSearch = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", openSearch);
+    return () => window.removeEventListener("keydown", openSearch);
   }, []);
 
   useEffect(() => {
@@ -2219,6 +2243,9 @@ export default function Home() {
     profile?.name?.[0] ??
     "你";
   const badgeGlyph = badgeGlyphs[learning.inventory.equippedBadge] ?? "冠";
+  const navTranslation: Record<string, string> = uiLanguage === "id"
+    ? { Today: "Hari ini", Adventure: "Petualangan", Learn: "Belajar", Games: "Permainan", Stories: "Cerita", Review: "Ulasan", Progress: "Kemajuan" }
+    : {};
   return (
     <main
       id="main-content"
@@ -2265,7 +2292,7 @@ export default function Home() {
               onClick={() => setActive(label)}
             >
               <span aria-hidden="true">{icon}</span>
-              {label}
+              {navTranslation[label] ?? label}
             </button>
           ))}
         </nav>
@@ -2345,6 +2372,20 @@ export default function Home() {
           >
             ?
           </button>
+          <button className="global-search-trigger" onClick={() => setSearchOpen(true)} aria-label="Search all learning content" title="Global search (Ctrl/⌘ K)">
+            <span>⌕</span><b>Search</b>
+          </button>
+          <button
+            className="language-toggle"
+            onClick={() => {
+              const next = uiLanguage === "en" ? "id" : "en";
+              setUiLanguage(next);
+              window.localStorage.setItem("long-ui-language", next);
+            }}
+            aria-label="Switch interface language"
+          >
+            {uiLanguage === "en" ? "ID" : "EN"}
+          </button>
           <button
             className="audio-settings"
             onClick={() => setVoiceOpen(true)}
@@ -2379,6 +2420,7 @@ export default function Home() {
             openGemShop={() => setGemsOpen(true)}
             buyReward={buyReward}
             speak={speak}
+            language={uiLanguage}
           />
         )}
         {active === "Adventure" && (
@@ -2493,7 +2535,7 @@ export default function Home() {
             onClick={() => setActive(label)}
           >
             <span>{icon}</span>
-            {label}
+            {navTranslation[label] ?? label}
           </button>
         ))}
       </nav>
@@ -2651,6 +2693,16 @@ export default function Home() {
             setDailySessionOpen(true);
           }}
           close={closeFocusMode}
+        />
+      )}
+      {searchOpen && (
+        <GlobalSearch
+          close={() => setSearchOpen(false)}
+          open={({ destination, chapterId }) => {
+            setSearchOpen(false);
+            if (chapterId) openChapter(chapterId);
+            else setActive(destination);
+          }}
         />
       )}
       <BackToTop
@@ -5790,6 +5842,7 @@ function Dashboard({
   openGemShop,
   buyReward,
   speak,
+  language,
 }: {
   profile: Profile | null;
   learning: LearningState;
@@ -5804,6 +5857,7 @@ function Dashboard({
   openGemShop: () => void;
   buyReward: (kind: string, cost: number) => void;
   speak: (text: string) => void;
+  language: "en" | "id";
 }) {
   const progress = learning.chapterProgress[current.id] ?? 0;
   const today = localDateKey();
@@ -5895,6 +5949,32 @@ function Dashboard({
           </div>
         </button>
       </section>
+      <section className="today-essentials" aria-label="Today essentials">
+        <button onClick={() => openChapter(current.id)}>
+          <span>续</span>
+          <small>{language === "id" ? "LANJUT BELAJAR" : "CONTINUE LEARNING"}</small>
+          <strong>{current.title}</strong>
+          <em>{progress}% {language === "id" ? "selesai" : "complete"} →</em>
+        </button>
+        <button onClick={() => setActive("Review")}>
+          <span>复</span>
+          <small>{language === "id" ? "ULASAN JATUH TEMPO" : "REVIEWS DUE"}</small>
+          <strong>{learning.reviews + dueMistakes(learning.mistakes).length} {language === "id" ? "item" : "items"}</strong>
+          <em>{language === "id" ? "Perkuat ingatan" : "Strengthen memory"} →</em>
+        </button>
+        <button onClick={openDailySession}>
+          <span>今</span>
+          <small>{language === "id" ? "TARGET HARIAN" : "DAILY GOAL"}</small>
+          <strong>{todayMinutes} / {profile?.dailyMinutes ?? 10} {language === "id" ? "menit" : "minutes"}</strong>
+          <em>{language === "id" ? "Mulai 5 aktivitas" : "Start 5-activity journey"} →</em>
+        </button>
+      </section>
+      <details className="today-more">
+        <summary>
+          <span>{language === "id" ? "Alat belajar lainnya" : "More learning tools"}</span>
+          <small>{language === "id" ? "Jalur pintar, peta penguasaan, Explore China, quest, dan hadiah" : "Smart path, mastery map, Explore China, quests, and rewards"}</small>
+        </summary>
+        <div className="today-more-content">
       {gap > 0 && gap < 3 && (
         <section className="comeback-banner">
           <span>回</span>
@@ -6341,6 +6421,8 @@ function Dashboard({
           </div>
         </div>
       </section>
+        </div>
+      </details>
     </div>
   );
 }
@@ -8002,14 +8084,23 @@ function LearnCenter({
       )}{" "}
       {tab === "resources" && <WorkbookResources award={award} />}
       {tab === "hsk" && (
-        <ComprehensiveHskCenter
-          key={profile?.hsk ?? 3}
-          level={profile?.hsk ?? 3}
-          diagnosticQuestions={hskQuestions}
-          speak={speak}
-          award={award}
-          openPlacement={() => setPlacementOpen(true)}
-        />
+        <>
+          <ComprehensiveHskCenter
+            key={profile?.hsk ?? 3}
+            level={profile?.hsk ?? 3}
+            diagnosticQuestions={hskQuestions}
+            speak={speak}
+            award={award}
+            openPlacement={() => setPlacementOpen(true)}
+          />
+          {(profile?.hsk ?? 3) === 6 && (
+            <Hsk6DeepDive
+              speak={speak}
+              openExam={() => setTab("exam")}
+              record={(correct) => award("HSK 6 workbook practice", 12, "Grammar", correct)}
+            />
+          )}
+        </>
       )}
       {tab === "exam" && (
         <HskMockExam
@@ -11481,6 +11572,7 @@ function SpeakingCoach({
               </span>
             ))}
           </div>
+          <SyllableToneFeedback target={target} matched={characters} />
           <div>
             <i style={{ width: `${confidence}%` }} />
           </div>
@@ -16332,6 +16424,19 @@ function Progress({
     {},
   );
   const level = getLevelProgress(learning.xp);
+  const chartAnchor = reportAnchor || new Date(`${learning.lastActiveDate || "2026-01-01"}T12:00:00`).getTime();
+  const weeklyMinutes = Array.from({ length: 7 }, (_, offset) => {
+    const date = new Date(chartAnchor - (6 - offset) * 86_400_000);
+    const key = localDateKey(date);
+    return learning.events.filter((event) => localDateKey(new Date(event.createdAt)) === key).length * 4;
+  });
+  const listeningAccuracy = evidenceMap.Listening?.accuracy ?? 0;
+  const speakingAccuracy = evidenceMap.Speaking?.accuracy ?? 0;
+  const readiness = Math.min(100, Math.round(
+    (Object.values(evidenceMap).reduce((sum, item) => sum + item.score, 0) /
+      Math.max(1, Object.values(evidenceMap).length)) * 0.75 +
+    Math.min(25, completed * 1.5),
+  ));
   return (
     <div className="page-wrap subpage progress-page">
       <div className="subpage-title">
@@ -16368,6 +16473,14 @@ function Progress({
           <span>{learning.gameScores.length} saved results</span>
         </article>
       </div>
+      <ProgressSnapshotCharts
+        mastered={fullWeeklyReport.mastered}
+        fading={fullWeeklyReport.needsReview}
+        listening={listeningAccuracy}
+        speaking={speakingAccuracy}
+        readiness={readiness}
+        weekly={weeklyMinutes}
+      />
       <div className="progress-layout">
         <section className="card skill-card">
           <div className="section-head">
@@ -17064,6 +17177,14 @@ function Onboarding({
   const [daily, setDaily] = useState(current?.dailyMinutes ?? 10);
   const [hsk, setHsk] = useState(current?.hsk ?? 3);
   const [path, setPath] = useState<Profile["path"]>(current?.path ?? "General");
+  const [placementIndex, setPlacementIndex] = useState(0);
+  const [placementScore, setPlacementScore] = useState(0);
+  const [placementAnswered, setPlacementAnswered] = useState(false);
+  const placementQuestions = [
+    { prompt: "我每天 ___ 中文。", choices: ["学习", "漂亮", "桌子"], answer: "学习" },
+    { prompt: "尽管时间很短，___ 他还是完成了任务。", choices: ["但是", "所以", "只要"], answer: "但是" },
+    { prompt: "与其盲目猜测，___ 先核实证据。", choices: ["不如", "难免", "何况"], answer: "不如" },
+  ];
   const goalOptions = [
     "Travel",
     "Study in China",
@@ -17108,13 +17229,13 @@ function Onboarding({
           )}
         </header>
         <div className="onboarding-progress">
-          {[0, 1, 2, 3].map((i) => (
+          {[0, 1, 2, 3, 4].map((i) => (
             <i className={i <= step ? "active" : ""} key={i} />
           ))}
         </div>
         {step === 0 && (
           <div className="onboarding-body">
-            <p className="eyebrow">STEP 1 OF 4</p>
+            <p className="eyebrow">STEP 1 OF 5</p>
             <h2>Why are you learning Chinese?</h2>
             <p>
               Choose every goal that matters. Your daily experience will adapt.
@@ -17143,7 +17264,7 @@ function Onboarding({
         )}
         {step === 1 && (
           <div className="onboarding-body">
-            <p className="eyebrow">STEP 2 OF 4</p>
+            <p className="eyebrow">STEP 2 OF 5</p>
             <h2>Choose a healthy daily rhythm</h2>
             <p>This shapes mission length, not your Chinese proficiency.</p>
             <div className="option-grid daily">
@@ -17167,16 +17288,39 @@ function Onboarding({
         )}
         {step === 2 && (
           <div className="onboarding-body">
-            <p className="eyebrow">STEP 3 OF 4</p>
-            <h2>Choose your starting track</h2>
-            <p>HSK difficulty stays separate from your player level and XP.</p>
+            <p className="eyebrow">STEP 3 OF 5 · SHORT PLACEMENT</p>
+            <h2>Let’s find a comfortable starting point</h2>
+            <p>Three quick questions—not a high-stakes test.</p>
+            <div className="onboarding-placement">
+              <small>QUESTION {placementIndex + 1} OF {placementQuestions.length}</small>
+              <strong>{placementQuestions[placementIndex].prompt}</strong>
+              <div>{placementQuestions[placementIndex].choices.map((choice) => (
+                <button disabled={placementAnswered} onClick={() => {
+                  const nextScore = placementScore + (choice === placementQuestions[placementIndex].answer ? 1 : 0);
+                  setPlacementScore(nextScore);
+                  setPlacementAnswered(true);
+                  window.setTimeout(() => {
+                    if (placementIndex < placementQuestions.length - 1) {
+                      setPlacementIndex(placementIndex + 1);
+                      setPlacementAnswered(false);
+                    } else {
+                      setHsk(nextScore === 3 ? 6 : nextScore === 2 ? 4 : nextScore === 1 ? 2 : 1);
+                      setStep(3);
+                    }
+                  }, 350);
+                }} key={choice}>{choice}</button>
+              ))}</div>
+            </div>
+          </div>
+        )}
+        {step === 3 && (
+          <div className="onboarding-body">
+            <p className="eyebrow">STEP 4 OF 5 · YOUR RESULT</p>
+            <h2>Recommended start: HSK {hsk}</h2>
+            <p>You can adjust this now. Your player level and XP remain separate.</p>
             <div className="hsk-grid">
               {[1, 2, 3, 4, 5, 6].map((level) => (
-                <button
-                  className={hsk === level ? "selected" : ""}
-                  onClick={() => setHsk(level)}
-                  key={level}
-                >
+                <button className={hsk === level ? "selected" : ""} onClick={() => setHsk(level)} key={level}>
                   <span>{["🌱", "🌿", "🌳", "🚀", "🔥", "🏆"][level - 1]}</span>
                   HSK {level}
                 </button>
@@ -17184,9 +17328,9 @@ function Onboarding({
             </div>
           </div>
         )}
-        {step === 3 && (
+        {step === 4 && (
           <div className="onboarding-body">
-            <p className="eyebrow">STEP 4 OF 4</p>
+            <p className="eyebrow">STEP 5 OF 5</p>
             <h2>Chinese for the life you want</h2>
             <p>
               General Chinese stays central; this adds relevant content later.
@@ -17232,10 +17376,10 @@ function Onboarding({
           >
             ← Back
           </button>
-          {step < 3 ? (
+          {step < 4 ? (
             <button
               className="primary"
-              disabled={step === 0 && !goals.length}
+              disabled={(step === 0 && !goals.length) || step === 2}
               onClick={() => setStep(step + 1)}
             >
               Continue →
