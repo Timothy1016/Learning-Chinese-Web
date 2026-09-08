@@ -1,7 +1,9 @@
 import licensedAdventureScenes from './adventure-scenes.json' with { type: 'json' };
+import { expandedChinaPlaces } from './china-places-expanded';
 
 export type ChinaWord = { hanzi:string; pinyin:string; english:string };
-export type ChinaPlace = { id:string; name:string; pinyin:string; english:string; city:string; image:string; fact:string; credit:string; source:string; words:ChinaWord[] };
+export type ChinaPlaceDetails = { district:string; province:string; period:string; history:string; significance:string };
+export type ChinaPlace = { id:string; name:string; pinyin:string; english:string; city:string; image:string; fact:string; credit:string; source:string; words:ChinaWord[]; details?:ChinaPlaceDetails };
 export type ChapterScene = { image:string; label:string; chinese:string; prompt:string; credit:string; source?:string };
 
 const commons=(file:string)=>`https://commons.wikimedia.org/wiki/File:${file}`;
@@ -21,6 +23,7 @@ export const chinaPlaces:ChinaPlace[]=[
   {id:'zhangjiajie',name:'张家界',pinyin:'Zhāngjiājiè',english:'National Forest Park',city:'湖南 · Hunan',image:'/landmarks/zhangjiajie.jpg',fact:'Travel among misty sandstone pillars, glass lifts, and mountain trails.',credit:'Wikimedia Commons',source:commons('Zhangjiajie_National_Forest_Park.jpg'),words:[{hanzi:'索道',pinyin:'suǒdào',english:'cableway'},{hanzi:'步道',pinyin:'bùdào',english:'walking trail'},{hanzi:'风景区',pinyin:'fēngjǐngqū',english:'scenic area'},{hanzi:'地图',pinyin:'dìtú',english:'map'}]},
   {id:'harbin',name:'冰雪大世界',pinyin:'Bīngxuě Dà Shìjiè',english:'Ice and Snow World',city:'哈尔滨 · Harbin',image:'/landmarks/harbin-ice.jpg',fact:'See monumental illuminated ice architecture during Harbin’s winter festival.',credit:'Wikimedia Commons',source:commons('Harbin_Ice_Festival.jpg'),words:[{hanzi:'冰雕',pinyin:'bīngdiāo',english:'ice sculpture'},{hanzi:'保暖',pinyin:'bǎonuǎn',english:'keep warm'},{hanzi:'手套',pinyin:'shǒutào',english:'gloves'},{hanzi:'零下',pinyin:'língxià',english:'below zero'}]},
   {id:'shenzhen',name:'深圳湾',pinyin:'Shēnzhèn Wān',english:'Shenzhen Bay',city:'深圳 · Shenzhen',image:'/landmarks/shenzhen-bay.jpg',fact:'Cycle through waterfront parks with views of a fast-changing technology city.',credit:'Windmemories · CC BY-SA 4.0',source:commons('20201112_The_skyline_at_Shenzhen_Bay.jpg'),words:[{hanzi:'海湾',pinyin:'hǎiwān',english:'bay'},{hanzi:'自行车道',pinyin:'zìxíngchēdào',english:'bike lane'},{hanzi:'科技园',pinyin:'kējìyuán',english:'technology park'},{hanzi:'天际线',pinyin:'tiānjìxiàn',english:'skyline'}]},
+  ...expandedChinaPlaces,
 ];
 
 const A='/scenes/airport-terminal.jpg',B='/scenes/airport-arrivals.jpg',M='/scenes/metro-platform.jpg',T='/scenes/high-speed-train.jpg',D='/scenes/train-display.jpg';

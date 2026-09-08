@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { awardXpOnce, calculateSkillEvidence, calculateSkillScores, getLevelProgress, recommendHsk, scheduleReview, streakGapStatus, updateStreak, updateStreakWithGrace, type LearningEvent, type ReviewCard } from '../lib/learning.ts';
+import { awardXpOnce, calculateSkillEvidence, calculateSkillScores, createReviewCards, getLevelProgress, recommendHsk, scheduleReview, streakGapStatus, updateStreak, updateStreakWithGrace, type LearningEvent, type ReviewCard } from '../lib/learning.ts';
 import { hskCoverage, searchHskWords, selectHskWords, type HskDictionaryData } from '../lib/hsk-dictionary.ts';
 import { buildDailySession, createDailySessionEvents, dailySessionQuestionCount, dailySessionReviewWordIds } from '../lib/daily-session.ts';
 import { chapterAccuracy, chapterStageProgress, createChapterLessonEvents, type ChapterLessonResult } from '../lib/chapter-lesson.ts';
@@ -27,6 +27,8 @@ import { tonePairQuestions, tonePairs } from '../app/pronunciation-content.ts';
 import { buildLibraryBank, filterLibraryBank, libraryBankCounts } from '../lib/library-bank.ts';
 import { advanceRecallQueue, recallMatches } from '../lib/review-queue.ts';
 import { newestSnapshot, validCloudSnapshot } from '../lib/cloud-sync.ts';
+import { dailyJourneyStageIndex, masteryStatus, masterySummary, smartLearningRecommendation } from '../lib/learning-path.ts';
+import { analyzeMistakePatterns, masteryDetail, placementDecision, speakingFeedback, weeklyLearningReport } from '../lib/learning-insights.ts';
 
 const now = new Date('2026-08-24T00:00:00Z');
 const card: ReviewCard = { wordId: 'menu', dueAt: now.toISOString(), intervalDays: 0, ease: 2.5, repetitions: 0, mastery: 10 };
@@ -98,6 +100,50 @@ test('easy schedules four days for a new card', () => {
   const next = scheduleReview(card, 'easy', now);
   assert.equal(next.intervalDays, 4);
   assert.equal(next.mastery, 25);
+});
+
+test('daily journey distributes a session across five visible activities', () => {
+  assert.deepEqual(Array.from({ length: 10 }, (_, index) => dailyJourneyStageIndex(index, 10)), [0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
+  assert.equal(dailyJourneyStageIndex(99, 7), 4);
+});
+
+test('mastery map separates new, learning, familiar, mastered, and due words', () => {
+  const cards: Record<string, ReviewCard> = {
+    new: { ...card, wordId: 'new', repetitions: 0 },
+    learning: { ...card, wordId: 'learning', repetitions: 1, mastery: 25, dueAt: '2026-08-26T00:00:00.000Z' },
+    familiar: { ...card, wordId: 'familiar', repetitions: 2, mastery: 55, dueAt: '2026-08-26T00:00:00.000Z' },
+    mastered: { ...card, wordId: 'mastered', repetitions: 5, mastery: 88, dueAt: '2026-08-30T00:00:00.000Z' },
+    due: { ...card, wordId: 'due', repetitions: 3, mastery: 70, dueAt: '2026-08-23T00:00:00.000Z' },
+  };
+  assert.equal(masteryStatus(undefined, now), 'New');
+  assert.deepEqual(masterySummary(Object.keys(cards), cards, now), { New: 1, Learning: 1, Familiar: 1, Mastered: 1, 'Needs review': 1 });
+});
+
+test('smart learning path prioritizes mistakes, due recall, and weakest evidence', () => {
+  assert.equal(smartLearningRecommendation({ dueReviews: 100, dueMistakes: 2, weakestSkill: 'Listening', currentChapterTitle: 'Restaurant', chapterProgress: 64 }).id, 'mistakes');
+  assert.equal(smartLearningRecommendation({ dueReviews: 12, dueMistakes: 0, weakestSkill: 'Listening', currentChapterTitle: 'Restaurant', chapterProgress: 64 }).id, 'reviews');
+  assert.equal(smartLearningRecommendation({ dueReviews: 2, dueMistakes: 0, weakestSkill: 'Listening', currentChapterTitle: 'Restaurant', chapterProgress: 64 }).destination, 'Games');
+});
+
+test('learning insights surface repeated mistakes and weekly mastery', () => {
+  const now=new Date('2026-08-24T12:00:00Z');
+  const mistake=createMistake({chapterId:'restaurant',prompt:'Choose table',answer:'菜单',correction:'桌子',skill:'Vocabulary',source:'game'},now);
+  const repeated={...mistake,errorCount:3};
+  assert.equal(analyzeMistakePatterns([repeated])[0].repeated,2);
+  const card=scheduleReview(createReviewCards(['桌子'],now)['桌子'],'easy',now);
+  const report=weeklyLearningReport({events:[{id:'1',type:'review',skill:'Vocabulary',correct:true,xp:4,createdAt:now.toISOString()}],cards:{桌子:card},mistakes:[repeated],now});
+  assert.equal(report.activities,1);
+  assert.equal(report.topPattern?.skill,'Vocabulary');
+  assert.equal(masteryDetail(card,now).nextReview,'Aug 28');
+});
+
+test('speaking and placement guidance stays bounded and adaptive', () => {
+  const speech=speakingFeedback(80,70,4,5);
+  assert.equal(speech.completeness,80);
+  assert.ok(speech.pronunciation<=100);
+  const placement=placementDecision([{level:2,correct:true},{level:3,correct:true},{level:4,correct:true},{level:5,correct:true}],3);
+  assert.equal(placement.stop,true);
+  assert.equal(placement.nextLevel,6);
 });
 
 test('XP cannot be farmed twice from one activity on one day', () => {

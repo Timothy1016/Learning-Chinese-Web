@@ -1,97 +1,760 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import Image from 'next/image';
-import dynamic from 'next/dynamic';
-import { adventureChapters, allVocabulary, Chapter, specializationContent } from './content';
-import { curatedResources, hskStyleBanks, pathPacks, storyLibrary, workbookPrompts, type PathId } from './extended-content';
-import { awardXpOnce, calculateSkillEvidence, calculateSkillScores, createReviewCards, dueReviewIds, getLevelProgress, localDateKey, recommendHsk, scheduleReview, streakGapStatus, updateStreakWithGrace, type LearningEvent, type ReviewCard, type ReviewRating } from '../lib/learning';
-import { hskCoverage, searchHskWords, selectHskWords, type HskDictionaryData, type HskDictionaryMode, type HskDictionaryWord } from '../lib/hsk-dictionary';
-import { buildDailySession, createDailySessionEvents, dailySessionQuestionCount, dailySessionReviewWordIds, type DailySessionAnswer, type DailySessionPlan } from '../lib/daily-session';
-import { chapterLearningPacks } from './chapter-learning';
-import { hskCourseUnits, hskGradedStories } from './hsk-course-content';
-import { flashcardBattleQuestions, hanziPuzzleQuestions, meaningHunterQuestions, pinyinChallengeQuestions, radicalFamilies, sentenceSpeedrunQuestions, toneMasterQuestions, type GameQuestion } from './game-content';
-import { adventureVocabularyStages, allNetworkVocabulary, vocabularyNetworkCategories } from './vocabulary-network';
-import { chapterAccuracy, chapterStageProgress, createChapterLessonEvents, type ChapterLessonResult } from '../lib/chapter-lesson';
-import { buildFlashcardRound, flashcardRatingPreview, flashcardStatus, isFlashcardDue, updateFlashcardStat, type FlashcardRating, type FlashcardStat, type FlashcardStatus } from '../lib/flashcards';
-import { imageDictionaryMatches } from '../lib/image-lookup';
-import { dampedPullDistance, pullRefreshLabel, shouldTriggerPullRefresh } from '../lib/pull-refresh';
-import { buildQuestBoard, playerTitle } from '../lib/quests';
-import { createMistake, dueMistakes, mergeMistakes, mistakeMasteryLabel, mistakeMasteryStars, reviewMistake, type Mistake } from '../lib/mistakes';
-import { resolvePreferredVoice, voiceKey, voiceStyleOf, voicesForAccent, type VoiceStyle } from '../lib/voice';
-import { readerCoverage, segmentChineseText } from '../lib/reader';
-import { tonePairQuestions, tonePairs } from './pronunciation-content';
-import { buildLibraryBank, filterLibraryBank, libraryBankCounts, type LibraryBankWord } from '../lib/library-bank';
-import { createLocalBackup, parseLocalBackup } from '../lib/backup';
-import { checkInMilestoneProgress, consecutiveCheckInDays, gameGemMultiplier, recordDailyCheckIn } from '../lib/check-in';
-import { completeTextbookStoryLibrary, textbookWordCollections } from './textbook-library';
-import { specializedTracks } from './specialized-tracks';
-import { completeCourseExerciseBank, courseExerciseLessons, courseExerciseCoverage, type CourseExerciseKind } from './course-exercise-bank';
-import { isRecord, readLocalJson, writeLocalJson } from '../lib/storage';
-import { advanceRecallQueue, recallMatches } from '../lib/review-queue';
-import { CLOUD_SCHEMA_VERSION, cloudSyncConfigured, connectEmail, connectGoogle, initializeCloudSync, newestSnapshot, saveCloudSnapshot, signOutCloud, validCloudSnapshot, type CloudAccount, type CloudSnapshot } from '../lib/cloud-sync';
-import { chinaPlaces, chapterScenes } from './china-experiences';
-import { availableBackgroundRotation, toggleBackgroundRotation } from '../lib/background-rotation';
-import { avatarGlyphs, badgeGlyphs, expandedShopCatalog, isThemeCosmetic, type ShopCategory } from './shop-catalog';
-import { neuralTtsEnabled, requestNeuralSpeech } from '../lib/neural-voice';
-import type HanziWriter from 'hanzi-writer';
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+import {
+  adventureChapters,
+  allVocabulary,
+  Chapter,
+  specializationContent,
+} from "./content";
+import {
+  curatedResources,
+  hskStyleBanks,
+  pathPacks,
+  storyLibrary,
+  workbookPrompts,
+  type PathId,
+} from "./extended-content";
+import {
+  awardXpOnce,
+  calculateSkillEvidence,
+  calculateSkillScores,
+  createReviewCards,
+  dueReviewIds,
+  getLevelProgress,
+  localDateKey,
+  recommendHsk,
+  scheduleReview,
+  streakGapStatus,
+  updateStreakWithGrace,
+  type LearningEvent,
+  type ReviewCard,
+  type ReviewRating,
+} from "../lib/learning";
+import {
+  hskCoverage,
+  searchHskWords,
+  selectHskWords,
+  type HskDictionaryData,
+  type HskDictionaryMode,
+  type HskDictionaryWord,
+} from "../lib/hsk-dictionary";
+import {
+  buildDailySession,
+  createDailySessionEvents,
+  dailySessionQuestionCount,
+  dailySessionReviewWordIds,
+  type DailySessionAnswer,
+  type DailySessionPlan,
+} from "../lib/daily-session";
+import { chapterLearningPacks } from "./chapter-learning";
+import { hskCourseUnits, hskGradedStories } from "./hsk-course-content";
+import {
+  flashcardBattleQuestions,
+  hanziPuzzleQuestions,
+  meaningHunterQuestions,
+  pinyinChallengeQuestions,
+  radicalFamilies,
+  sentenceSpeedrunQuestions,
+  toneMasterQuestions,
+  type GameQuestion,
+} from "./game-content";
+import {
+  adventureVocabularyStages,
+  allNetworkVocabulary,
+  vocabularyNetworkCategories,
+} from "./vocabulary-network";
+import {
+  chapterAccuracy,
+  chapterStageProgress,
+  createChapterLessonEvents,
+  type ChapterLessonResult,
+} from "../lib/chapter-lesson";
+import {
+  buildFlashcardRound,
+  flashcardRatingPreview,
+  flashcardStatus,
+  isFlashcardDue,
+  updateFlashcardStat,
+  type FlashcardRating,
+  type FlashcardStat,
+  type FlashcardStatus,
+} from "../lib/flashcards";
+import { imageDictionaryMatches } from "../lib/image-lookup";
+import {
+  dampedPullDistance,
+  pullRefreshLabel,
+  shouldTriggerPullRefresh,
+} from "../lib/pull-refresh";
+import { buildQuestBoard, playerTitle } from "../lib/quests";
+import {
+  createMistake,
+  dueMistakes,
+  mergeMistakes,
+  mistakeMasteryLabel,
+  mistakeMasteryStars,
+  reviewMistake,
+  type Mistake,
+} from "../lib/mistakes";
+import {
+  resolvePreferredVoice,
+  voiceKey,
+  voiceStyleOf,
+  voicesForAccent,
+  type VoiceStyle,
+} from "../lib/voice";
+import { readerCoverage, segmentChineseText } from "../lib/reader";
+import { tonePairQuestions, tonePairs } from "./pronunciation-content";
+import {
+  buildLibraryBank,
+  filterLibraryBank,
+  libraryBankCounts,
+  type LibraryBankWord,
+} from "../lib/library-bank";
+import { createLocalBackup, parseLocalBackup } from "../lib/backup";
+import {
+  checkInMilestoneProgress,
+  consecutiveCheckInDays,
+  gameGemMultiplier,
+  recordDailyCheckIn,
+} from "../lib/check-in";
+import {
+  completeTextbookStoryLibrary,
+  textbookWordCollections,
+} from "./textbook-library";
+import { specializedTracks } from "./specialized-tracks";
+import {
+  completeCourseExerciseBank,
+  courseExerciseLessons,
+  courseExerciseCoverage,
+  type CourseExerciseKind,
+} from "./course-exercise-bank";
+import { isRecord, readLocalJson, writeLocalJson } from "../lib/storage";
+import { advanceRecallQueue, recallMatches } from "../lib/review-queue";
+import {
+  CLOUD_SCHEMA_VERSION,
+  cloudSyncConfigured,
+  connectEmail,
+  connectGoogle,
+  initializeCloudSync,
+  newestSnapshot,
+  saveCloudSnapshot,
+  signOutAllCloud,
+  signOutCloud,
+  signOutOtherCloudDevices,
+  validCloudSnapshot,
+  type CloudAccount,
+  type CloudSnapshot,
+} from "../lib/cloud-sync";
+import { chinaPlaces, chapterScenes } from "./china-experiences";
+import {
+  availableBackgroundRotation,
+  toggleBackgroundRotation,
+} from "../lib/background-rotation";
+import {
+  avatarGlyphs,
+  badgeGlyphs,
+  expandedShopCatalog,
+  isThemeCosmetic,
+  type ShopCategory,
+} from "./shop-catalog";
+import { neuralTtsEnabled, requestNeuralSpeech } from "../lib/neural-voice";
+import {
+  dailyJourneyStageIndex,
+  dailyJourneyStages,
+  masteryStatus,
+  masterySummary,
+  smartLearningRecommendation,
+  type MasteryStatus,
+} from "../lib/learning-path";
+import {
+  analyzeMistakePatterns,
+  masteryDetail,
+  placementDecision,
+  speakingFeedback,
+  weeklyLearningReport,
+} from "../lib/learning-insights";
+import type HanziWriter from "hanzi-writer";
 
-const HskMockExam=dynamic(()=>import('./advanced-learning').then(module=>module.HskMockExam),{ssr:false,loading:()=> <div className="advanced-module-loading">Preparing mock exam…</div>});
-const AdaptiveStudyPlanner=dynamic(()=>import('./advanced-learning').then(module=>module.AdaptiveStudyPlanner),{ssr:false,loading:()=> <div className="advanced-module-loading">Preparing adaptive plan…</div>});
-const OfflineLibrary=dynamic(()=>import('./advanced-learning').then(module=>module.OfflineLibrary),{ssr:false,loading:()=> <div className="advanced-module-loading">Opening offline library…</div>});
+const HskMockExam = dynamic(
+  () => import("./advanced-learning").then((module) => module.HskMockExam),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="advanced-module-loading">Preparing mock exam…</div>
+    ),
+  },
+);
+const AdaptiveStudyPlanner = dynamic(
+  () =>
+    import("./advanced-learning").then((module) => module.AdaptiveStudyPlanner),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="advanced-module-loading">Preparing adaptive plan…</div>
+    ),
+  },
+);
+const OfflineLibrary = dynamic(
+  () => import("./advanced-learning").then((module) => module.OfflineLibrary),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="advanced-module-loading">Opening offline library…</div>
+    ),
+  },
+);
 
-const navigator = typeof window==='undefined'?({onLine:false} as Navigator):window.navigator;
+const navigator =
+  typeof window === "undefined"
+    ? ({ onLine: false } as Navigator)
+    : window.navigator;
 
-type Profile = { name: string; goals: string[]; dailyMinutes: number; hsk: number; path: keyof typeof specializationContent; career?: string };
-type PersonalWord = { id:string; hanzi:string; pinyin:string; english:string; createdAt:string };
-type GameScore = { id:string; game:string; score:number; total:number; createdAt:string };
-type GameMistake = { prompt:string;answer:string;correction:string;explanation:string };
-type AdventureDifficulty = 'easy'|'normal'|'hard';
-type RewardInventory = { freezeTokens:number; adventureTickets:number; unlockedStories:string[]; cosmetics:string[]; voicePacks:string[]; equippedTheme:string; equippedTitle:string; equippedAvatar:string; equippedFrame:string; equippedWallpaper:string; equippedBadge:string; equippedHskBackground:string; hskBackgroundAuto:boolean; hskBackgroundPlaylist:string[]; fontScale:'small'|'medium'|'large'; colorMode:'light'|'dark'; doubleXpCredits:number; doubleXpDate:string; mistakeBoosters:number };
-type LearningState = { xp: number; diamonds: number; reviews: number; streak: number; activityDates: string[]; protectedDates: string[]; checkInDates:string[]; checkInMilestones:number[]; chapterProgress: Record<string, number>; chapterSteps:Record<string,number>; chapterDifficulties:Record<string,AdventureDifficulty>; seenAdventureStages:string[]; completed: string[]; bossWins: string[]; difficultyWins:string[]; favorites: string[]; personalWords:PersonalWord[]; flashcardStats:Record<string,FlashcardStat>; gameScores:GameScore[]; mistakes: Mistake[]; sessions: number; wordsPracticed: number; reviewCards: Record<string, ReviewCard>; events: LearningEvent[]; xpKeys: string[]; questClaims:string[]; lastActiveDate: string; minutesStudied: number; inventory:RewardInventory };
-type VoicePrefs = { accent: 'zh-CN'|'zh-TW'|'zh-HK'; style: VoiceStyle; speed: number; voiceName: string; voiceURI: string };
-type SyncStatus = 'unavailable'|'guest'|'connecting'|'syncing'|'synced'|'error';
-type ToastAction = { label:string; destination:string } | null;
-type LongCloudSnapshot = CloudSnapshot<Profile|null,LearningState,VoicePrefs>;
+type Profile = {
+  name: string;
+  goals: string[];
+  dailyMinutes: number;
+  hsk: number;
+  path: keyof typeof specializationContent;
+  career?: string;
+};
+type PersonalWord = {
+  id: string;
+  hanzi: string;
+  pinyin: string;
+  english: string;
+  createdAt: string;
+};
+type GameScore = {
+  id: string;
+  game: string;
+  score: number;
+  total: number;
+  createdAt: string;
+};
+type GameMistake = {
+  prompt: string;
+  answer: string;
+  correction: string;
+  explanation: string;
+};
+type AdventureDifficulty = "easy" | "normal" | "hard";
+type RewardInventory = {
+  freezeTokens: number;
+  adventureTickets: number;
+  unlockedStories: string[];
+  cosmetics: string[];
+  voicePacks: string[];
+  equippedTheme: string;
+  equippedTitle: string;
+  equippedAvatar: string;
+  equippedFrame: string;
+  equippedWallpaper: string;
+  equippedBadge: string;
+  equippedHskBackground: string;
+  hskBackgroundAuto: boolean;
+  hskBackgroundPlaylist: string[];
+  fontScale: "small" | "medium" | "large";
+  colorMode: "light" | "dark";
+  doubleXpCredits: number;
+  doubleXpDate: string;
+  mistakeBoosters: number;
+};
+type LearningState = {
+  xp: number;
+  diamonds: number;
+  reviews: number;
+  streak: number;
+  activityDates: string[];
+  protectedDates: string[];
+  checkInDates: string[];
+  checkInMilestones: number[];
+  chapterProgress: Record<string, number>;
+  chapterSteps: Record<string, number>;
+  chapterDifficulties: Record<string, AdventureDifficulty>;
+  seenAdventureStages: string[];
+  completed: string[];
+  bossWins: string[];
+  difficultyWins: string[];
+  favorites: string[];
+  personalWords: PersonalWord[];
+  flashcardStats: Record<string, FlashcardStat>;
+  gameScores: GameScore[];
+  mistakes: Mistake[];
+  sessions: number;
+  wordsPracticed: number;
+  reviewCards: Record<string, ReviewCard>;
+  events: LearningEvent[];
+  xpKeys: string[];
+  questClaims: string[];
+  lastActiveDate: string;
+  minutesStudied: number;
+  inventory: RewardInventory;
+};
+type VoicePrefs = {
+  accent: "zh-CN" | "zh-TW" | "zh-HK";
+  style: VoiceStyle;
+  speed: number;
+  voiceName: string;
+  voiceURI: string;
+};
+type SyncStatus =
+  | "unavailable"
+  | "guest"
+  | "connecting"
+  | "syncing"
+  | "synced"
+  | "error";
+type ToastAction = { label: string; destination: string } | null;
+type LongCloudSnapshot = CloudSnapshot<
+  Profile | null,
+  LearningState,
+  VoicePrefs
+>;
 
-function isStoredProfile(value:unknown):value is Profile{return isRecord(value)&&typeof value.name==='string'&&Array.isArray(value.goals)&&typeof value.dailyMinutes==='number'&&typeof value.hsk==='number'&&typeof value.path==='string'}
-function isStoredVoice(value:unknown):value is VoicePrefs{return isRecord(value)&&typeof value.accent==='string'&&typeof value.style==='string'&&typeof value.speed==='number'}
+function isStoredProfile(value: unknown): value is Profile {
+  return (
+    isRecord(value) &&
+    typeof value.name === "string" &&
+    Array.isArray(value.goals) &&
+    typeof value.dailyMinutes === "number" &&
+    typeof value.hsk === "number" &&
+    typeof value.path === "string"
+  );
+}
+function isStoredVoice(value: unknown): value is VoicePrefs {
+  return (
+    isRecord(value) &&
+    typeof value.accent === "string" &&
+    typeof value.style === "string" &&
+    typeof value.speed === "number"
+  );
+}
 
-const nav = [['⌂', 'Today'], ['◇', 'Adventure'], ['▤', 'Learn'], ['♧', 'Games'], ['▱', 'Stories'], ['◫', 'Review'], ['▥', 'Progress']];
-const navDescriptions:Record<string,string>={Today:'Daily goal, quests, check-in, and your next lesson',Adventure:'Real-life chapters, missions, and boss challenges',Learn:'Dictionary, image and handwriting lookup, HSK courses, and pronunciation',Games:'Game Center: tones, pinyin, Hanzi, sentences, flashcards, and career challenges',Stories:'Textbook-aligned graded readers and new-word collections',Review:'Spaced repetition, saved words, and your mistake book',Progress:'Skill evidence, HSK readiness, history, and learning patterns'};
-const quickTourSteps=[
-  {target:'Today',icon:'今',eyebrow:'START HERE',title:'Mulai dari Today',copy:'Tekan Today untuk melihat target harian, melanjutkan sesi terakhir, dan mengerjakan rekomendasi belajar otomatis.'},
-  {target:'Learn',icon:'学',eyebrow:'HSK FILES & TOOLS',title:'Cari semua materi HSK di Learn',copy:'Tekan Learn, lalu buka HSK Course. Pilih HSK 1–6 untuk melihat kosakata, flashcard, dan materi yang disusun dari buku HSK.'},
-  {target:'Adventure',icon:'游',eyebrow:'REAL-LIFE PRACTICE',title:'Belajar lewat Adventure',copy:'Setiap chapter berisi beberapa stage, kata baru, foto situasi di China, latihan, dan boss challenge.'},
-  {target:'Stories',icon:'故',eyebrow:'READ IN CONTEXT',title:'Buka Stories untuk membaca',copy:'Cerita disortir berdasarkan HSK dan bidang seperti Computer Science, Business, Medicine, serta jurusan lainnya.'},
-  {target:'Review',icon:'复',eyebrow:'REMEMBER LONGER',title:'Ulangi kata di Review',copy:'Kata yang jatuh tempo dan jawaban salah akan muncul lagi dengan spaced repetition sampai benar-benar diingat.'},
-  {target:'Gems',icon:'◆',eyebrow:'REWARDS & SHOP',title:'Gunakan gems dengan jelas',copy:'Tekan jumlah gems di bagian atas untuk membuka booster, story pack, voice pack, avatar, tema, frame, dan wallpaper.'},
+const nav = [
+  ["⌂", "Today"],
+  ["◇", "Adventure"],
+  ["▤", "Learn"],
+  ["♧", "Games"],
+  ["▱", "Stories"],
+  ["◫", "Review"],
+  ["▥", "Progress"],
+];
+const navDescriptions: Record<string, string> = {
+  Today: "Daily goal, quests, check-in, and your next lesson",
+  Adventure: "Real-life chapters, missions, and boss challenges",
+  Learn:
+    "Dictionary, image and handwriting lookup, HSK courses, and pronunciation",
+  Games:
+    "Game Center: tones, pinyin, Hanzi, sentences, flashcards, and career challenges",
+  Stories: "Textbook-aligned graded readers and new-word collections",
+  Review: "Spaced repetition, saved words, and your mistake book",
+  Progress: "Skill evidence, HSK readiness, history, and learning patterns",
+};
+const quickTourSteps = [
+  {
+    target: "Today",
+    icon: "今",
+    eyebrow: "START HERE",
+    title: "Mulai dari Today",
+    copy: "Tekan Today untuk melihat target harian, melanjutkan sesi terakhir, dan mengerjakan rekomendasi belajar otomatis.",
+  },
+  {
+    target: "Learn",
+    icon: "学",
+    eyebrow: "HSK FILES & TOOLS",
+    title: "Cari semua materi HSK di Learn",
+    copy: "Tekan Learn, lalu buka HSK Course. Pilih HSK 1–6 untuk melihat kosakata, flashcard, dan materi yang disusun dari buku HSK.",
+  },
+  {
+    target: "Adventure",
+    icon: "游",
+    eyebrow: "REAL-LIFE PRACTICE",
+    title: "Belajar lewat Adventure",
+    copy: "Setiap chapter berisi beberapa stage, kata baru, foto situasi di China, latihan, dan boss challenge.",
+  },
+  {
+    target: "Stories",
+    icon: "故",
+    eyebrow: "READ IN CONTEXT",
+    title: "Buka Stories untuk membaca",
+    copy: "Cerita disortir berdasarkan HSK dan bidang seperti Computer Science, Business, Medicine, serta jurusan lainnya.",
+  },
+  {
+    target: "Review",
+    icon: "复",
+    eyebrow: "REMEMBER LONGER",
+    title: "Ulangi kata di Review",
+    copy: "Kata yang jatuh tempo dan jawaban salah akan muncul lagi dengan spaced repetition sampai benar-benar diingat.",
+  },
+  {
+    target: "Gems",
+    icon: "◆",
+    eyebrow: "REWARDS & SHOP",
+    title: "Gunakan gems dengan jelas",
+    copy: "Tekan jumlah gems di bagian atas untuk membuka booster, story pack, voice pack, avatar, tema, frame, dan wallpaper.",
+  },
 ] as const;
 const mobileNav = nav;
-const textbookReviewWords=textbookWordCollections.flatMap(collection=>collection.words.map((word,index)=>({id:`textbook-hsk${collection.level}-${index}`,hanzi:word.hanzi,pinyin:word.pinyin,english:word.english,chapter:`HSK ${collection.level}`,hsk:collection.level,example:{hanzi:word.lesson,pinyin:'',english:`HSK ${collection.level} course topic`}})));
-const reviewVocabulary=[...allVocabulary.map(word=>({...word,hsk:0})),...textbookReviewWords];
-const initialCards = createReviewCards(reviewVocabulary.map(word => word.id));
-const defaultInventory:RewardInventory={freezeTokens:0,adventureTickets:0,unlockedStories:[],cosmetics:[],voicePacks:[],equippedTheme:'jade',equippedTitle:'中文学习者',equippedAvatar:'learner',equippedFrame:'none',equippedWallpaper:'paper',equippedBadge:'none',equippedHskBackground:'hsk-bg-jade',hskBackgroundAuto:true,hskBackgroundPlaylist:['hsk-bg-jade'],fontScale:'medium',colorMode:'light',doubleXpCredits:0,doubleXpDate:'',mistakeBoosters:0};
-const defaultState: LearningState = { xp: 2840, diamonds: 120, reviews: Object.keys(initialCards).length, streak: 8, activityDates: [], protectedDates: [], checkInDates:[], checkInMilestones:[], chapterProgress: { arrival: 100, hotel: 100, restaurant: 64, transport: 0, shopping: 0 }, chapterSteps:{}, chapterDifficulties:{}, seenAdventureStages:[], completed: ['arrival', 'hotel'], bossWins: [], difficultyWins:[], favorites: [], personalWords:[], flashcardStats:{}, gameScores:[], mistakes: [], sessions: 9, wordsPracticed: 42, reviewCards: initialCards, events: [], xpKeys: [], questClaims:[], lastActiveDate: '', minutesStudied: 54, inventory:defaultInventory };
-const defaultVoice: VoicePrefs = { accent: 'zh-CN', style: 'female', speed: .76, voiceName: '', voiceURI: '' };
-let activeUtterance: SpeechSynthesisUtterance | null = null;
-let activeNeuralAudio:HTMLAudioElement|null=null;
-let activeGemWallet:{balance:number;spend:(cost:number,label:string)=>boolean}={balance:0,spend:()=>false};
-
-function datesBetween(startDate: string, endDate = localDateKey()): string[] { if (!startDate) return []; const dates:string[]=[]; const cursor=new Date(`${startDate}T12:00:00`); const end=new Date(`${endDate}T12:00:00`); cursor.setDate(cursor.getDate()+1); while(cursor<end){dates.push(localDateKey(cursor));cursor.setDate(cursor.getDate()+1)} return dates; }
-function addUnique(values:string[], additions:string[]):string[]{return [...new Set([...values,...additions])]}
-function seededShuffle<T>(items:T[],key:string):T[]{let seed=Array.from(key).reduce((value,char)=>((value*31)+char.charCodeAt(0))>>>0,2166136261);const copy=[...items];for(let index=copy.length-1;index>0;index--){seed=(seed*1664525+1013904223)>>>0;const target=seed%(index+1);[copy[index],copy[target]]=[copy[target],copy[index]]}return copy}
-function balancedShuffle<T>(items:T[],answer:T,key:string,questionIndex=0):T[]{const copy=seededShuffle(items,key);if(copy.length<2)return copy;const current=copy.indexOf(answer);const target=questionIndex%copy.length;if(current>=0&&current!==target)[copy[current],copy[target]]=[copy[target],copy[current]];return copy}
-const adventureDifficultyConfig:Record<AdventureDifficulty,{label:string;chinese:string;questions:number;pass:number;firstXp:number;replayXp:number;gems:number;failPenalty:number;description:string}>={
-  easy:{label:'Easy',chinese:'轻松',questions:15,pass:.6,firstXp:70,replayXp:18,gems:12,failPenalty:5,description:'Core words, pinyin support, and three choices'},
-  normal:{label:'Normal',chinese:'标准',questions:25,pass:.65,firstXp:120,replayXp:30,gems:25,failPenalty:15,description:'Mixed vocabulary, listening, and sentence context'},
-  hard:{label:'Hard',chinese:'挑战',questions:35,pass:.75,firstXp:210,replayXp:55,gems:45,failPenalty:25,description:'Dense context, close distractors, and no pinyin hints'},
+const textbookReviewWords = textbookWordCollections.flatMap((collection) =>
+  collection.words.map((word, index) => ({
+    id: `textbook-hsk${collection.level}-${index}`,
+    hanzi: word.hanzi,
+    pinyin: word.pinyin,
+    english: word.english,
+    chapter: `HSK ${collection.level}`,
+    hsk: collection.level,
+    example: {
+      hanzi: word.lesson,
+      pinyin: "",
+      english: `HSK ${collection.level} course topic`,
+    },
+  })),
+);
+const reviewVocabulary = [
+  ...allVocabulary.map((word) => ({ ...word, hsk: 0 })),
+  ...textbookReviewWords,
+];
+const initialCards = createReviewCards(reviewVocabulary.map((word) => word.id));
+const defaultInventory: RewardInventory = {
+  freezeTokens: 0,
+  adventureTickets: 0,
+  unlockedStories: [],
+  cosmetics: [],
+  voicePacks: [],
+  equippedTheme: "jade",
+  equippedTitle: "中文学习者",
+  equippedAvatar: "learner",
+  equippedFrame: "none",
+  equippedWallpaper: "paper",
+  equippedBadge: "none",
+  equippedHskBackground: "hsk-bg-jade",
+  hskBackgroundAuto: true,
+  hskBackgroundPlaylist: ["hsk-bg-jade"],
+  fontScale: "medium",
+  colorMode: "light",
+  doubleXpCredits: 0,
+  doubleXpDate: "",
+  mistakeBoosters: 0,
 };
-function legacyCheckInDates(streak:number,now=new Date()):string[]{return Array.from({length:Math.max(0,streak-1)},(_,index)=>{const date=new Date(now);date.setDate(date.getDate()-index-1);return localDateKey(date)})}
-function normalizeLearningState(parsed:Partial<LearningState>):LearningState{return { ...defaultState, ...parsed, inventory:{...defaultInventory,...(parsed.inventory??{})}, reviewCards: {...defaultState.reviewCards,...(parsed.reviewCards??{})}, events: parsed.events ?? [], xpKeys: parsed.xpKeys ?? [], questClaims:parsed.questClaims??[], favorites: parsed.favorites ?? [], bossWins: parsed.bossWins ?? [], difficultyWins:parsed.difficultyWins??[], activityDates: parsed.activityDates ?? [], protectedDates: parsed.protectedDates ?? [],checkInDates:parsed.checkInDates??[],checkInMilestones:parsed.checkInMilestones??[],chapterSteps:parsed.chapterSteps??{},chapterDifficulties:parsed.chapterDifficulties??{},seenAdventureStages:parsed.seenAdventureStages??[],personalWords:parsed.personalWords??[],flashcardStats:parsed.flashcardStats??{},gameScores:parsed.gameScores??[],mistakes:parsed.mistakes??[] }}
+const defaultState: LearningState = {
+  xp: 2840,
+  diamonds: 120,
+  reviews: Object.keys(initialCards).length,
+  streak: 8,
+  activityDates: [],
+  protectedDates: [],
+  checkInDates: [],
+  checkInMilestones: [],
+  chapterProgress: {
+    arrival: 100,
+    hotel: 100,
+    restaurant: 64,
+    transport: 0,
+    shopping: 0,
+  },
+  chapterSteps: {},
+  chapterDifficulties: {},
+  seenAdventureStages: [],
+  completed: ["arrival", "hotel"],
+  bossWins: [],
+  difficultyWins: [],
+  favorites: [],
+  personalWords: [],
+  flashcardStats: {},
+  gameScores: [],
+  mistakes: [],
+  sessions: 9,
+  wordsPracticed: 42,
+  reviewCards: initialCards,
+  events: [],
+  xpKeys: [],
+  questClaims: [],
+  lastActiveDate: "",
+  minutesStudied: 54,
+  inventory: defaultInventory,
+};
+const defaultVoice: VoicePrefs = {
+  accent: "zh-CN",
+  style: "female",
+  speed: 0.76,
+  voiceName: "",
+  voiceURI: "",
+};
+let activeUtterance: SpeechSynthesisUtterance | null = null;
+let activeNeuralAudio: HTMLAudioElement | null = null;
+const neuralSpeechCache = new Map<string, Blob>();
+
+const chinaPlaceDetails: Record<
+  string,
+  {
+    district: string;
+    province: string;
+    period: string;
+    history: string;
+    significance: string;
+  }
+> = {
+  fuzimiao: {
+    district: "Qinhuai District",
+    province: "Nanjing, Jiangsu",
+    period: "First built in 1034; restored many times",
+    history:
+      "This riverside Confucian temple and examination-quarter grew into one of Nanjing’s best-known historic neighborhoods. Much of today’s lively precinct reflects later rebuilding and modern restoration.",
+    significance:
+      "A useful place to connect imperial education, Qinhuai culture, lantern festivals, and everyday street life.",
+  },
+  bund: {
+    district: "Huangpu District",
+    province: "Shanghai Municipality",
+    period:
+      "Landmark waterfront developed mainly in the late 1800s–early 1900s",
+    history:
+      "The Bund became Shanghai’s commercial waterfront as banks, trading houses, and consulates built along the Huangpu River. Its historic façades now face the modern Pudong skyline.",
+    significance:
+      "The contrast across the river makes Shanghai’s shift from treaty-port commerce to a global city especially visible.",
+  },
+  mutianyu: {
+    district: "Huairou District",
+    province: "Beijing Municipality",
+    period: "Origins in the Northern Qi; rebuilt during the Ming dynasty",
+    history:
+      "Mutianyu guarded a northern approach to the capital. The section seen today is strongly associated with Ming rebuilding, watchtowers, and later conservation.",
+    significance:
+      "Its mountain setting clearly shows how walls, towers, and terrain worked together as a defensive system.",
+  },
+  "west-lake": {
+    district: "Xihu District",
+    province: "Hangzhou, Zhejiang",
+    period: "A cultural landscape shaped over many centuries",
+    history:
+      "Causeways, temples, gardens, bridges, and poems gradually turned the lake into an influential model of Chinese landscape design. The cultural landscape entered the UNESCO World Heritage list in 2011.",
+    significance:
+      "West Lake links natural scenery with literature, garden design, religion, and Hangzhou’s urban identity.",
+  },
+  terracotta: {
+    district: "Lintong District",
+    province: "Xi’an, Shaanxi",
+    period: "Created in the 3rd century BCE; discovered in 1974",
+    history:
+      "Thousands of life-sized figures were made for the mausoleum complex of Qin Shi Huang, China’s first emperor. Excavation and conservation continue across several pits.",
+    significance:
+      "The army reveals Qin military organization, craft production, beliefs about the afterlife, and early imperial power.",
+  },
+  panda: {
+    district: "Chenghua District",
+    province: "Chengdu, Sichuan",
+    period: "Research base founded in 1987",
+    history:
+      "The Chengdu base began with rescued giant pandas and developed into a major conservation, breeding, research, and public-education center.",
+    significance:
+      "Visitors can learn how habitat protection, veterinary care, and breeding research support giant-panda conservation.",
+  },
+  lijiang: {
+    district: "Guilin–Yangshuo corridor",
+    province: "Guangxi Zhuang Autonomous Region",
+    period: "Karst landscape formed over millions of years",
+    history:
+      "Water has dissolved and shaped the limestone into steep towers, caves, and river valleys. The scenery has appeared in Chinese painting and travel culture for centuries.",
+    significance:
+      "The route is a living lesson in karst geology as well as the relationship between riverside communities and tourism.",
+  },
+  hongya: {
+    district: "Yuzhong District",
+    province: "Chongqing Municipality",
+    period: "Present complex opened in 2006",
+    history:
+      "The modern cliffside complex uses the visual language of Bayu diaojiaolou stilt houses while functioning as a layered commercial and tourism district above the Jialing River.",
+    significance:
+      "It helps explain Chongqing’s dramatic vertical urban form, night economy, and regional architectural references.",
+  },
+  pingjiang: {
+    district: "Gusu District",
+    province: "Suzhou, Jiangsu",
+    period: "Street-and-canal pattern traceable to the Song dynasty",
+    history:
+      "Pingjiang Road preserves a historic relationship between lanes, canals, bridges, residences, and small businesses in Suzhou’s old city.",
+    significance:
+      "It shows how water shaped movement, commerce, and domestic life in a Jiangnan city.",
+  },
+  canton: {
+    district: "Haizhu District",
+    province: "Guangzhou, Guangdong",
+    period: "Built 2005–2009; opened in 2010",
+    history:
+      "Designed as a broadcasting and observation tower for Guangzhou’s rapidly changing skyline, the tower’s twisting structure became a city symbol around the 2010 Asian Games.",
+    significance:
+      "Its form demonstrates contemporary structural design and Guangzhou’s Pearl River redevelopment.",
+  },
+  "temple-heaven": {
+    district: "Dongcheng District",
+    province: "Beijing Municipality",
+    period: "Built 1406–1420; expanded in the 1500s",
+    history:
+      "Ming and Qing emperors used this ceremonial complex for rites connected to heaven and good harvests. Its layout expresses relationships between cosmology, ritual, and imperial authority.",
+    significance:
+      "The complex is one of the clearest places to read symbolism through color, geometry, procession, and architecture.",
+  },
+  zhangjiajie: {
+    district: "Wulingyuan District",
+    province: "Zhangjiajie, Hunan",
+    period: "Forest park established in 1982; UNESCO site since 1992",
+    history:
+      "Erosion shaped thousands of quartz-sandstone pillars, ravines, and natural bridges. Conservation and tourism infrastructure developed around this distinctive landscape.",
+    significance:
+      "It combines spectacular geology with questions about conservation, access, and mass tourism.",
+  },
+  harbin: {
+    district: "Songbei District",
+    province: "Harbin, Heilongjiang",
+    period: "Seasonal festival attraction established in 1999",
+    history:
+      "Artists and builders recreate the park each winter with blocks cut from frozen river water, producing illuminated architecture that changes every season.",
+    significance:
+      "The attraction connects Harbin’s severe winter climate with engineering, sculpture, festival culture, and tourism.",
+  },
+  shenzhen: {
+    district: "Nanshan District",
+    province: "Shenzhen, Guangdong",
+    period: "Modern waterfront development; Shenzhen Bay Park opened in 2011",
+    history:
+      "The bay’s edge has been reshaped by rapid urbanization, ecological restoration, transit links, and public waterfront development during Shenzhen’s growth.",
+    significance:
+      "It offers a view of contemporary Chinese urban planning, technology districts, coastal ecology, and cross-border geography.",
+  },
+};
+let activeGemWallet: {
+  balance: number;
+  spend: (cost: number, label: string) => boolean;
+} = { balance: 0, spend: () => false };
+
+function datesBetween(startDate: string, endDate = localDateKey()): string[] {
+  if (!startDate) return [];
+  const dates: string[] = [];
+  const cursor = new Date(`${startDate}T12:00:00`);
+  const end = new Date(`${endDate}T12:00:00`);
+  cursor.setDate(cursor.getDate() + 1);
+  while (cursor < end) {
+    dates.push(localDateKey(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+function addUnique(values: string[], additions: string[]): string[] {
+  return [...new Set([...values, ...additions])];
+}
+function seededShuffle<T>(items: T[], key: string): T[] {
+  let seed = Array.from(key).reduce(
+    (value, char) => (value * 31 + char.charCodeAt(0)) >>> 0,
+    2166136261,
+  );
+  const copy = [...items];
+  for (let index = copy.length - 1; index > 0; index--) {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    const target = seed % (index + 1);
+    [copy[index], copy[target]] = [copy[target], copy[index]];
+  }
+  return copy;
+}
+function balancedShuffle<T>(
+  items: T[],
+  answer: T,
+  key: string,
+  questionIndex = 0,
+): T[] {
+  const copy = seededShuffle(items, key);
+  if (copy.length < 2) return copy;
+  const current = copy.indexOf(answer);
+  const target = questionIndex % copy.length;
+  if (current >= 0 && current !== target)
+    [copy[current], copy[target]] = [copy[target], copy[current]];
+  return copy;
+}
+const adventureDifficultyConfig: Record<
+  AdventureDifficulty,
+  {
+    label: string;
+    chinese: string;
+    questions: number;
+    pass: number;
+    firstXp: number;
+    replayXp: number;
+    gems: number;
+    failPenalty: number;
+    description: string;
+  }
+> = {
+  easy: {
+    label: "Easy",
+    chinese: "轻松",
+    questions: 15,
+    pass: 0.6,
+    firstXp: 70,
+    replayXp: 18,
+    gems: 12,
+    failPenalty: 5,
+    description: "Core words, pinyin support, and three choices",
+  },
+  normal: {
+    label: "Normal",
+    chinese: "标准",
+    questions: 25,
+    pass: 0.65,
+    firstXp: 120,
+    replayXp: 30,
+    gems: 25,
+    failPenalty: 15,
+    description: "Mixed vocabulary, listening, and sentence context",
+  },
+  hard: {
+    label: "Hard",
+    chinese: "挑战",
+    questions: 35,
+    pass: 0.75,
+    firstXp: 210,
+    replayXp: 55,
+    gems: 45,
+    failPenalty: 25,
+    description: "Dense context, close distractors, and no pinyin hints",
+  },
+};
+function legacyCheckInDates(streak: number, now = new Date()): string[] {
+  return Array.from({ length: Math.max(0, streak - 1) }, (_, index) => {
+    const date = new Date(now);
+    date.setDate(date.getDate() - index - 1);
+    return localDateKey(date);
+  });
+}
+function normalizeLearningState(parsed: Partial<LearningState>): LearningState {
+  return {
+    ...defaultState,
+    ...parsed,
+    inventory: { ...defaultInventory, ...(parsed.inventory ?? {}) },
+    reviewCards: { ...defaultState.reviewCards, ...(parsed.reviewCards ?? {}) },
+    events: parsed.events ?? [],
+    xpKeys: parsed.xpKeys ?? [],
+    questClaims: parsed.questClaims ?? [],
+    favorites: parsed.favorites ?? [],
+    bossWins: parsed.bossWins ?? [],
+    difficultyWins: parsed.difficultyWins ?? [],
+    activityDates: parsed.activityDates ?? [],
+    protectedDates: parsed.protectedDates ?? [],
+    checkInDates: parsed.checkInDates ?? [],
+    checkInMilestones: parsed.checkInMilestones ?? [],
+    chapterSteps: parsed.chapterSteps ?? {},
+    chapterDifficulties: parsed.chapterDifficulties ?? {},
+    seenAdventureStages: parsed.seenAdventureStages ?? [],
+    personalWords: parsed.personalWords ?? [],
+    flashcardStats: parsed.flashcardStats ?? {},
+    gameScores: parsed.gameScores ?? [],
+    mistakes: parsed.mistakes ?? [],
+  };
+}
 
 export default function Home() {
-  const [active, setActive] = useState('Today');
+  const [active, setActive] = useState("Today");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [learning, setLearning] = useState<LearningState>(defaultState);
   const [hydrated, setHydrated] = useState(false);
@@ -101,802 +764,16740 @@ export default function Home() {
   const [streakOpen, setStreakOpen] = useState(false);
   const [xpOpen, setXpOpen] = useState(false);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
-  const [comebackOpen,setComebackOpen]=useState(false);
-  const [dailySessionOpen,setDailySessionOpen]=useState(false);
-  const [toast, setToast] = useState('');
-  const [toastSeconds,setToastSeconds]=useState(10);
-  const [toastAction,setToastAction]=useState<ToastAction>(null);
+  const [comebackOpen, setComebackOpen] = useState(false);
+  const [dailySessionOpen, setDailySessionOpen] = useState(false);
+  const [routePracticeOpen, setRoutePracticeOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const [toastSeconds, setToastSeconds] = useState(10);
+  const [toastAction, setToastAction] = useState<ToastAction>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
-  const [settingsOpen,setSettingsOpen]=useState(false);
-  const [gemsOpen,setGemsOpen]=useState(false);
-  const [tourOpen,setTourOpen]=useState(false);
-  const [tourStep,setTourStep]=useState(0);
-  const [focusModeOpen,setFocusModeOpen]=useState(false);
-  const [focusTimerVisible,setFocusTimerVisible]=useState(true);
-  const [focusMuteNotifications,setFocusMuteNotifications]=useState(false);
-  const [focusElapsed,setFocusElapsed]=useState(0);
-  const [navPreview,setNavPreview]=useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [gemsOpen, setGemsOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const [focusModeOpen, setFocusModeOpen] = useState(false);
+  const [focusTimerVisible, setFocusTimerVisible] = useState(true);
+  const [focusMuteNotifications, setFocusMuteNotifications] = useState(false);
+  const [focusElapsed, setFocusElapsed] = useState(0);
+  const [navPreview, setNavPreview] = useState("");
   const [voicePrefs, setVoicePrefs] = useState<VoicePrefs>(defaultVoice);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [pullDistance,setPullDistance]=useState(0);
-  const [refreshing,setRefreshing]=useState(false);
-  const [syncStatus,setSyncStatus]=useState<SyncStatus>(cloudSyncConfigured()?'connecting':'unavailable');
-  const [cloudAccount,setCloudAccount]=useState<CloudAccount|null>(null);
-  const [syncError,setSyncError]=useState('');
-  const pullStart=useRef<number|null>(null);
-  const navHoldTimer=useRef<number|null>(null);
-  const cloudUserId=useRef<string|null>(null);
-  const cloudSaveTimer=useRef<number|null>(null);
-  const focusStartedAt=useRef<number|null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
+    cloudSyncConfigured() ? "connecting" : "unavailable",
+  );
+  const [cloudAccount, setCloudAccount] = useState<CloudAccount | null>(null);
+  const [syncError, setSyncError] = useState("");
+  const pullStart = useRef<number | null>(null);
+  const navHoldTimer = useRef<number | null>(null);
+  const cloudUserId = useRef<string | null>(null);
+  const cloudSaveTimer = useRef<number | null>(null);
+  const focusStartedAt = useRef<number | null>(null);
 
   useEffect(() => {
-    const savedProfile = readLocalJson<Profile|null>(window.localStorage,'long-profile',null,isStoredProfile);
-    const savedState = readLocalJson<Partial<LearningState>>(window.localStorage,'long-learning-v2',defaultState,(value):value is Partial<LearningState>=>isRecord(value));
-    const savedVoice = readLocalJson<VoicePrefs>(window.localStorage,'long-voice',defaultVoice,isStoredVoice);
-    const loadVoices = () => setVoices(window.speechSynthesis?.getVoices() ?? []);
-    window.queueMicrotask(loadVoices); window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
+    const savedProfile = readLocalJson<Profile | null>(
+      window.localStorage,
+      "long-profile",
+      null,
+      isStoredProfile,
+    );
+    const savedState = readLocalJson<Partial<LearningState>>(
+      window.localStorage,
+      "long-learning-v2",
+      defaultState,
+      (value): value is Partial<LearningState> => isRecord(value),
+    );
+    const savedVoice = readLocalJson<VoicePrefs>(
+      window.localStorage,
+      "long-voice",
+      defaultVoice,
+      isStoredVoice,
+    );
+    const loadVoices = () =>
+      setVoices(window.speechSynthesis?.getVoices() ?? []);
+    window.queueMicrotask(loadVoices);
+    window.speechSynthesis?.addEventListener("voiceschanged", loadVoices);
     window.queueMicrotask(() => {
-      const parsedProfile=savedProfile.value;if(parsedProfile)setProfile({...parsedProfile,career:parsedProfile.career??pathPacks[(parsedProfile.path??'General') as PathId].careers[0]});
-      const parsed=savedState.value;const merged=normalizeLearningState(parsed); const seed=merged.checkInDates.length?merged.checkInDates:merged.activityDates.length?merged.activityDates:legacyCheckInDates(merged.streak);const checkIn=recordDailyCheckIn(seed,merged.checkInMilestones);merged.checkInDates=checkIn.dates;merged.checkInMilestones=checkIn.claimedMilestones;merged.diamonds+=checkIn.rewardDiamonds;merged.reviews = dueReviewIds(merged.reviewCards).length;const gap=streakGapStatus(merged.lastActiveDate);if(merged.streak>0&&gap.needsRescue&&merged.inventory.freezeTokens>0){merged.inventory.freezeTokens--;merged.protectedDates=addUnique(merged.protectedDates,datesBetween(merged.lastActiveDate));merged.lastActiveDate=localDateKey();setToast('Streak Freeze used automatically · your streak is safe')}setLearning(merged);writeLocalJson(window.localStorage,'long-learning-v2',merged);if(checkIn.added)setToast(checkIn.unlockedMilestone?`Day ${checkIn.day} reward unlocked · +${checkIn.rewardDiamonds} ◆ · game wins now ${checkIn.multiplier}×`:`Daily check-in · day ${checkIn.day} · +${checkIn.rewardDiamonds} ◆`);if(savedProfile.recovered||savedState.recovered||savedVoice.recovered)setToast('Damaged local data was safely reset. Import a backup if you need to restore it.');if(merged.streak>0&&gap.needsRescue&&merged.inventory.freezeTokens===0)setRecoveryOpen(true);
-      const resolvedVoice={ ...defaultVoice, ...savedVoice.value };setVoicePrefs(resolvedVoice);
-      setOnboarding(!parsedProfile);setHydrated(true);if(parsedProfile&&!window.localStorage.getItem('long-quick-tour-v1'))window.setTimeout(()=>setTourOpen(true),450);
-      void hydrateCloud(parsedProfile,merged,resolvedVoice);
+      const parsedProfile = savedProfile.value;
+      if (parsedProfile)
+        setProfile({
+          ...parsedProfile,
+          career:
+            parsedProfile.career ??
+            pathPacks[(parsedProfile.path ?? "General") as PathId].careers[0],
+        });
+      const parsed = savedState.value;
+      const merged = normalizeLearningState(parsed);
+      const seed = merged.checkInDates.length
+        ? merged.checkInDates
+        : merged.activityDates.length
+          ? merged.activityDates
+          : legacyCheckInDates(merged.streak);
+      const checkIn = recordDailyCheckIn(seed, merged.checkInMilestones);
+      merged.checkInDates = checkIn.dates;
+      merged.checkInMilestones = checkIn.claimedMilestones;
+      merged.diamonds += checkIn.rewardDiamonds;
+      merged.reviews = dueReviewIds(merged.reviewCards).length;
+      const gap = streakGapStatus(merged.lastActiveDate);
+      if (
+        merged.streak > 0 &&
+        gap.needsRescue &&
+        merged.inventory.freezeTokens > 0
+      ) {
+        merged.inventory.freezeTokens--;
+        merged.protectedDates = addUnique(
+          merged.protectedDates,
+          datesBetween(merged.lastActiveDate),
+        );
+        merged.lastActiveDate = localDateKey();
+        setToast("Streak Freeze used automatically · your streak is safe");
+      }
+      setLearning(merged);
+      writeLocalJson(window.localStorage, "long-learning-v2", merged);
+      if (checkIn.added)
+        setToast(
+          checkIn.unlockedMilestone
+            ? `Day ${checkIn.day} reward unlocked · +${checkIn.rewardDiamonds} ◆ · game wins now ${checkIn.multiplier}×`
+            : `Daily check-in · day ${checkIn.day} · +${checkIn.rewardDiamonds} ◆`,
+        );
+      if (
+        savedProfile.recovered ||
+        savedState.recovered ||
+        savedVoice.recovered
+      )
+        setToast(
+          "Damaged local data was safely reset. Import a backup if you need to restore it.",
+        );
+      if (
+        merged.streak > 0 &&
+        gap.needsRescue &&
+        merged.inventory.freezeTokens === 0
+      )
+        setRecoveryOpen(true);
+      const resolvedVoice = { ...defaultVoice, ...savedVoice.value };
+      setVoicePrefs(resolvedVoice);
+      setOnboarding(!parsedProfile);
+      setHydrated(true);
+      if (parsedProfile && !window.localStorage.getItem("long-quick-tour-v1"))
+        window.setTimeout(() => setTourOpen(true), 450);
+      void hydrateCloud(parsedProfile, merged, resolvedVoice);
     });
-    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => undefined), { once: true });
-    return () => window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices);
-  // Cloud hydration intentionally runs once after the device-local snapshot is read.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if ("serviceWorker" in navigator)
+      window.addEventListener(
+        "load",
+        () => navigator.serviceWorker.register("/sw.js").catch(() => undefined),
+        { once: true },
+      );
+    return () =>
+      window.speechSynthesis?.removeEventListener("voiceschanged", loadVoices);
+    // Cloud hydration intentionally runs once after the device-local snapshot is read.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(()=>{if(!toast)return;const ticker=window.setInterval(()=>setToastSeconds(value=>Math.max(0,value-1)),1000);const timer=window.setTimeout(()=>{setToast('');setToastAction(null)},10000);return()=>{window.clearInterval(ticker);window.clearTimeout(timer)}},[toast]);
-  useEffect(()=>{if(!focusModeOpen)return;const ticker=window.setInterval(()=>setFocusElapsed(Math.floor((Date.now()-(focusStartedAt.current??Date.now()))/1000)),1000);return()=>window.clearInterval(ticker)},[focusModeOpen]);
-
-  const currentChapter = adventureChapters.find(chapter => !learning.completed.includes(chapter.id)) ?? adventureChapters.at(-1)!;
-  const specialization = specializationContent[profile?.path ?? 'General'];
+  useEffect(() => {
+    if (!toast) return;
+    const ticker = window.setInterval(
+      () => setToastSeconds((value) => Math.max(0, value - 1)),
+      1000,
+    );
+    const timer = window.setTimeout(() => {
+      setToast("");
+      setToastAction(null);
+    }, 10000);
+    return () => {
+      window.clearInterval(ticker);
+      window.clearTimeout(timer);
+    };
+  }, [toast]);
+  useEffect(() => {
+    if (!focusModeOpen) return;
+    const ticker = window.setInterval(
+      () =>
+        setFocusElapsed(
+          Math.floor(
+            (Date.now() - (focusStartedAt.current ?? Date.now())) / 1000,
+          ),
+        ),
+      1000,
+    );
+    return () => window.clearInterval(ticker);
+  }, [focusModeOpen]);
+  useEffect(() => {
+    const connection = (
+      window.navigator as Navigator & {
+        connection?: { saveData?: boolean; effectiveType?: string };
+      }
+    ).connection;
+    const lite = Boolean(
+      connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType ?? ""),
+    );
+    document.documentElement.dataset.performance = lite ? "lite" : "full";
+    return () => {
+      delete document.documentElement.dataset.performance;
+    };
+  }, []);
+  const currentChapter =
+    adventureChapters.find(
+      (chapter) => !learning.completed.includes(chapter.id),
+    ) ?? adventureChapters.at(-1)!;
+  const specialization = specializationContent[profile?.path ?? "General"];
   const levelProgress = getLevelProgress(learning.xp);
 
-  function makeSnapshot(nextProfile:Profile|null,nextLearning:LearningState,nextVoice:VoicePrefs,savedAt=new Date().toISOString()):LongCloudSnapshot{return {schemaVersion:CLOUD_SCHEMA_VERSION,savedAt,profile:nextProfile,learning:nextLearning,voice:nextVoice}}
-  function queueCloudSync(nextProfile:Profile|null,nextLearning:LearningState,nextVoice:VoicePrefs){const savedAt=new Date().toISOString();writeLocalJson(window.localStorage,'long-cloud-updated-at',savedAt);const userId=cloudUserId.current;if(!userId)return;if(cloudSaveTimer.current)window.clearTimeout(cloudSaveTimer.current);setSyncStatus('syncing');cloudSaveTimer.current=window.setTimeout(async()=>{try{await saveCloudSnapshot(userId,makeSnapshot(nextProfile,nextLearning,nextVoice,savedAt));setSyncStatus('synced');setSyncError('')}catch(reason){setSyncStatus('error');setSyncError(reason instanceof Error?reason.message:'Cloud sync failed. Local progress is still safe.')}},700)}
-  async function hydrateCloud(localProfile:Profile|null,localLearning:LearningState,localVoice:VoicePrefs){if(!cloudSyncConfigured()){setSyncStatus('unavailable');return}setSyncStatus('connecting');try{const result=await initializeCloudSync<LongCloudSnapshot>();if(!result){setSyncStatus('unavailable');return}if(!result.account){cloudUserId.current=null;setCloudAccount(null);setSyncStatus('guest');return}cloudUserId.current=result.account.id;setCloudAccount(result.account);const previousAccount=window.localStorage.getItem('long-cloud-account-id');const localSavedAt=window.localStorage.getItem('long-cloud-updated-at')??(localProfile?new Date().toISOString():new Date(0).toISOString());const localSnapshot=makeSnapshot(localProfile,localLearning,localVoice,localSavedAt);if(result.remote&&validCloudSnapshot(result.remote)&&newestSnapshot(localSnapshot,result.remote)==='remote'&&(result.remote.profile===null||isStoredProfile(result.remote.profile))&&isRecord(result.remote.learning)&&isStoredVoice(result.remote.voice)){const remoteLearning=normalizeLearningState(result.remote.learning as Partial<LearningState>);setProfile(result.remote.profile);setLearning(remoteLearning);setVoicePrefs({...defaultVoice,...result.remote.voice});writeLocalJson(window.localStorage,'long-profile',result.remote.profile);writeLocalJson(window.localStorage,'long-learning-v2',remoteLearning);writeLocalJson(window.localStorage,'long-voice',result.remote.voice);writeLocalJson(window.localStorage,'long-cloud-updated-at',result.remote.savedAt);setOnboarding(!result.remote.profile)}else if(!previousAccount||previousAccount===result.account.id){await saveCloudSnapshot(result.account.id,localSnapshot)}else{setProfile(null);setLearning(defaultState);setVoicePrefs(defaultVoice);window.localStorage.removeItem('long-profile');writeLocalJson(window.localStorage,'long-learning-v2',defaultState);writeLocalJson(window.localStorage,'long-voice',defaultVoice);setOnboarding(true)}writeLocalJson(window.localStorage,'long-cloud-account-id',result.account.id);setSyncStatus('synced');setSyncError('')}catch(reason){setSyncStatus('error');setSyncError(reason instanceof Error?reason.message:'Cloud sync could not start. Local progress is still safe.')}}
-  function persistLearning(next: LearningState) { setLearning(next); if(!writeLocalJson(window.localStorage,'long-learning-v2',next))notify('Progress changed, but this browser could not save it. Export a backup before closing.');queueCloudSync(profile,next,voicePrefs); }
-  function saveProfile(next: Profile) { setProfile(next); const stored=writeLocalJson(window.localStorage,'long-profile',next);queueCloudSync(next,learning,voicePrefs);setOnboarding(false);if(!window.localStorage.getItem('long-quick-tour-v1'))window.setTimeout(()=>{setTourStep(0);setTourOpen(true)},350);notify(stored?'Your learning world is ready':'Profile changed, but this browser could not save it.'); }
-  function notify(message: string, action:ToastAction=null) { if(focusMuteNotifications)return;setToastSeconds(10);setToastAction(action);setToast(message); }
-  function openFocusMode(){if(focusStartedAt.current===null)focusStartedAt.current=Date.now();setFocusModeOpen(true)}
-  function closeFocusMode(){setFocusModeOpen(false)}
-  function resetFocusMode(){focusStartedAt.current=Date.now();setFocusElapsed(0)}
-  function spendGems(cost:number,label:string){if(learning.diamonds<cost){notify(`You need ${cost-learning.diamonds} more gems for ${label}.`);return false}persistLearning({...learning,diamonds:learning.diamonds-cost});notify(`${label} · −${cost} ◆`);return true}
-  function saveVoice(next: VoicePrefs) { setVoicePrefs(next); if(!writeLocalJson(window.localStorage,'long-voice',next))notify('Voice changed, but this browser could not save it.');queueCloudSync(profile,learning,next); }
-  async function handleConnectEmail(email:string){setSyncStatus('connecting');setSyncError('');try{const mode=await connectEmail(email);setSyncStatus('synced');notify(mode==='verification'?'Check your email to finish protecting this account':'Magic link sent · open it on this device')}catch(reason){setSyncStatus('error');setSyncError(reason instanceof Error?reason.message:'Email connection failed.')}}
-  async function handleConnectGoogle(){setSyncStatus('connecting');setSyncError('');try{await connectGoogle()}catch(reason){setSyncStatus('error');setSyncError(reason instanceof Error?reason.message:'Google sign-in could not start.');throw reason}}
-  async function handleSignOut(){setSyncStatus('connecting');setSyncError('');try{await signOutCloud();cloudUserId.current=null;setCloudAccount(null);['long-profile','long-learning-v2','long-voice','long-cloud-updated-at','long-cloud-account-id'].forEach(key=>window.localStorage.removeItem(key));setProfile(null);setLearning(defaultState);setVoicePrefs(defaultVoice);setSettingsOpen(false);setOnboarding(true);setSyncStatus('guest');notify('Signed out · this device is ready for another learner')}catch(reason){setSyncStatus('error');setSyncError(reason instanceof Error?reason.message:'Sign out failed.')}}
-  function speak(text: string, override?: VoicePrefs|number) {
-    const prefs = typeof override==='object' ? override : voicePrefs;const storyteller=learning.inventory.voicePacks.includes('storyteller');const speed=typeof override==='number'?override:storyteller?Math.min(.72,prefs.speed):prefs.speed;const prepared=text.replace(/\s+/g,' ').replace(/([，；。！？])/g,'$1 ').trim();
-    function browserVoice(){if(!('speechSynthesis' in window))return notify('Audio is not available in this browser.');const available=window.speechSynthesis.getVoices();const resolved=resolvePreferredVoice(available,prefs);if(activeUtterance)activeUtterance.onend=null;window.speechSynthesis.cancel();const audio=new SpeechSynthesisUtterance(prepared);activeUtterance=audio;audio.lang=resolved.voice?.lang||prefs.accent;audio.voice=resolved.voice;audio.rate=speed;audio.pitch=1;audio.volume=1;audio.onend=()=>{activeUtterance=null};audio.onerror=event=>{activeUtterance=null;if(event.error!=='interrupted'&&event.error!=='canceled')notify('Voice could not play. Refresh installed voices or choose another voice.')};window.speechSynthesis.resume();window.setTimeout(()=>window.speechSynthesis.speak(audio),40)}
-    if(!neuralTtsEnabled())return browserVoice();
-    if(activeNeuralAudio){activeNeuralAudio.pause();activeNeuralAudio=null}window.speechSynthesis?.cancel();
-    void requestNeuralSpeech(prepared,{accent:prefs.accent,style:prefs.style,speed}).then(blob=>{const url=URL.createObjectURL(blob);const audio=new Audio(url);activeNeuralAudio=audio;audio.onended=()=>{URL.revokeObjectURL(url);activeNeuralAudio=null};audio.onerror=()=>{URL.revokeObjectURL(url);activeNeuralAudio=null;browserVoice()};return audio.play()}).catch(()=>browserVoice());
+  function makeSnapshot(
+    nextProfile: Profile | null,
+    nextLearning: LearningState,
+    nextVoice: VoicePrefs,
+    savedAt = new Date().toISOString(),
+  ): LongCloudSnapshot {
+    return {
+      schemaVersion: CLOUD_SCHEMA_VERSION,
+      savedAt,
+      profile: nextProfile,
+      learning: nextLearning,
+      voice: nextVoice,
+    };
   }
-  function openChapter(id: string) { setLessonId(id); }
-  function setChapterDifficulty(id:string,difficulty:AdventureDifficulty){persistLearning({...learning,chapterDifficulties:{...learning.chapterDifficulties,[id]:difficulty}})}
-  function markAdventureStageSeen(stageId:string){if(learning.seenAdventureStages.includes(stageId))return;persistLearning({...learning,seenAdventureStages:[...learning.seenAdventureStages,stageId]})}
-  function openBossChallenge(id:string){const elite=learning.bossWins.includes(id);if(elite){if(learning.inventory.adventureTickets<1)return notify('Elite replay needs one Adventure ticket. Get one in the Gem Shop.');persistLearning({...learning,inventory:{...learning.inventory,adventureTickets:learning.inventory.adventureTickets-1}});notify('Adventure ticket used · elite rewards activated')}setBossId(id)}
-  function toggleFavorite(id: string) { const favorites = learning.favorites.includes(id) ? learning.favorites.filter(item => item !== id) : [...learning.favorites, id]; persistLearning({ ...learning, favorites }); }
-  function addPersonalWord(word:Omit<PersonalWord,'id'|'createdAt'>){if(learning.personalWords.some(item=>item.hanzi===word.hanzi)){notify(`${word.hanzi} is already in your personal vocabulary`);return}const entry:PersonalWord={...word,id:`personal-${Date.now()}`,createdAt:new Date().toISOString()};persistLearning({...learning,personalWords:[entry,...learning.personalWords]});notify(`${word.hanzi} saved to your personal vocabulary`)}
-  function removePersonalWord(id:string){persistLearning({...learning,personalWords:learning.personalWords.filter(word=>word.id!==id)})}
-  function saveChapterProgress(chapterId:string,progress:number,nextStep:number){const current=learning.chapterProgress[chapterId]??0;persistLearning({...learning,chapterProgress:{...learning.chapterProgress,[chapterId]:Math.max(current,progress)},chapterSteps:{...learning.chapterSteps,[chapterId]:nextStep}})}
-  function finishLesson(chapter: Chapter, results:ChapterLessonResult[],difficulty:AdventureDifficulty) {
-    const now=new Date();const config=adventureDifficultyConfig[difficulty];const firstCompletion=!learning.completed.includes(chapter.id);const accuracy=chapterAccuracy(results);const base=difficulty==='hard'?55:difficulty==='normal'?35:25;const points=accuracy>=75?base:Math.max(15,base-10);const gems=difficulty==='hard'?8:difficulty==='normal'?5:3;const award=awardXpOnce(learning.xpKeys,`lesson:${chapter.id}:${difficulty}`,points,now);const streak=updateStreakWithGrace(learning.lastActiveDate,learning.streak,now);const today=localDateKey(now);const events=createChapterLessonEvents(chapter.id,results,now,award.xp);const mistakes=results.filter(result=>!result.correct).map(result=>createMistake({chapterId:chapter.id,prompt:result.prompt,answer:result.answer,correction:result.correction,explanation:result.explanation,skill:result.skill,source:'lesson',sourceKey:`${chapter.id}:${difficulty}:${result.stage}`},now));
-    const next={...learning,xp:learning.xp+award.xp,diamonds:learning.diamonds+(award.xp?gems:0),reviews:dueReviewIds(learning.reviewCards,now).length,streak:streak.streak,activityDates:addUnique(learning.activityDates,[today]),protectedDates:addUnique(learning.protectedDates,datesBetween(learning.lastActiveDate,today)),lastActiveDate:streak.lastActiveDate,xpKeys:learning.xpKeys.includes(award.key)?learning.xpKeys:[...learning.xpKeys,award.key],events:[...learning.events,...events],mistakes:mergeMistakes(learning.mistakes,mistakes),sessions:learning.sessions+1,minutesStudied:learning.minutesStudied+(difficulty==='hard'?13:difficulty==='normal'?9:7),wordsPracticed:learning.wordsPracticed+(difficulty==='hard'?5:3),chapterProgress:{...learning.chapterProgress,[chapter.id]:100},chapterSteps:{...learning.chapterSteps,[chapter.id]:5},completed:firstCompletion?[...learning.completed,chapter.id]:learning.completed};
-    persistLearning(next);setLessonId(null);notify(streak.protectedByGrace?`Grace days protected · ${chapter.title} complete`:award.xp?`${firstCompletion?'New stage unlocked · ':''}${config.label} ${chapter.title} complete · ${accuracy}% accuracy · +${award.xp} XP · +${gems} ◆`:`${config.label} ${chapter.title} practiced · results saved`,firstCompletion?{label:'View next stage',destination:'Adventure'}:null);
+  function queueCloudSync(
+    nextProfile: Profile | null,
+    nextLearning: LearningState,
+    nextVoice: VoicePrefs,
+  ) {
+    const savedAt = new Date().toISOString();
+    writeLocalJson(window.localStorage, "long-cloud-updated-at", savedAt);
+    const userId = cloudUserId.current;
+    if (!userId) return;
+    if (cloudSaveTimer.current) window.clearTimeout(cloudSaveTimer.current);
+    setSyncStatus("syncing");
+    cloudSaveTimer.current = window.setTimeout(async () => {
+      try {
+        await saveCloudSnapshot(
+          userId,
+          makeSnapshot(nextProfile, nextLearning, nextVoice, savedAt),
+        );
+        setSyncStatus("synced");
+        setSyncError("");
+      } catch (reason) {
+        setSyncStatus("error");
+        setSyncError(
+          reason instanceof Error
+            ? reason.message
+            : "Cloud sync failed. Local progress is still safe.",
+        );
+      }
+    }, 700);
+  }
+  async function hydrateCloud(
+    localProfile: Profile | null,
+    localLearning: LearningState,
+    localVoice: VoicePrefs,
+  ) {
+    if (!cloudSyncConfigured()) {
+      setSyncStatus("unavailable");
+      return;
+    }
+    setSyncStatus("connecting");
+    try {
+      const result = await initializeCloudSync<LongCloudSnapshot>();
+      if (!result) {
+        setSyncStatus("unavailable");
+        return;
+      }
+      if (!result.account) {
+        cloudUserId.current = null;
+        setCloudAccount(null);
+        setSyncStatus("guest");
+        return;
+      }
+      cloudUserId.current = result.account.id;
+      setCloudAccount(result.account);
+      const previousAccount = window.localStorage.getItem(
+        "long-cloud-account-id",
+      );
+      const localSavedAt =
+        window.localStorage.getItem("long-cloud-updated-at") ??
+        (localProfile ? new Date().toISOString() : new Date(0).toISOString());
+      const localSnapshot = makeSnapshot(
+        localProfile,
+        localLearning,
+        localVoice,
+        localSavedAt,
+      );
+      if (
+        result.remote &&
+        validCloudSnapshot(result.remote) &&
+        newestSnapshot(localSnapshot, result.remote) === "remote" &&
+        (result.remote.profile === null ||
+          isStoredProfile(result.remote.profile)) &&
+        isRecord(result.remote.learning) &&
+        isStoredVoice(result.remote.voice)
+      ) {
+        const remoteLearning = normalizeLearningState(
+          result.remote.learning as Partial<LearningState>,
+        );
+        setProfile(result.remote.profile);
+        setLearning(remoteLearning);
+        setVoicePrefs({ ...defaultVoice, ...result.remote.voice });
+        writeLocalJson(
+          window.localStorage,
+          "long-profile",
+          result.remote.profile,
+        );
+        writeLocalJson(window.localStorage, "long-learning-v2", remoteLearning);
+        writeLocalJson(window.localStorage, "long-voice", result.remote.voice);
+        writeLocalJson(
+          window.localStorage,
+          "long-cloud-updated-at",
+          result.remote.savedAt,
+        );
+        setOnboarding(!result.remote.profile);
+      } else if (!previousAccount || previousAccount === result.account.id) {
+        await saveCloudSnapshot(result.account.id, localSnapshot);
+      } else {
+        setProfile(null);
+        setLearning(defaultState);
+        setVoicePrefs(defaultVoice);
+        window.localStorage.removeItem("long-profile");
+        writeLocalJson(window.localStorage, "long-learning-v2", defaultState);
+        writeLocalJson(window.localStorage, "long-voice", defaultVoice);
+        setOnboarding(true);
+      }
+      writeLocalJson(
+        window.localStorage,
+        "long-cloud-account-id",
+        result.account.id,
+      );
+      setSyncStatus("synced");
+      setSyncError("");
+    } catch (reason) {
+      setSyncStatus("error");
+      setSyncError(
+        reason instanceof Error
+          ? reason.message
+          : "Cloud sync could not start. Local progress is still safe.",
+      );
+    }
+  }
+  function persistLearning(next: LearningState) {
+    setLearning(next);
+    if (!writeLocalJson(window.localStorage, "long-learning-v2", next))
+      notify(
+        "Progress changed, but this browser could not save it. Export a backup before closing.",
+      );
+    queueCloudSync(profile, next, voicePrefs);
+  }
+  function saveProfile(next: Profile) {
+    setProfile(next);
+    const stored = writeLocalJson(window.localStorage, "long-profile", next);
+    queueCloudSync(next, learning, voicePrefs);
+    setOnboarding(false);
+    if (!window.localStorage.getItem("long-quick-tour-v1"))
+      window.setTimeout(() => {
+        setTourStep(0);
+        setTourOpen(true);
+      }, 350);
+    notify(
+      stored
+        ? "Your learning world is ready"
+        : "Profile changed, but this browser could not save it.",
+    );
+  }
+  function notify(message: string, action: ToastAction = null) {
+    if (focusMuteNotifications) return;
+    setToastSeconds(10);
+    setToastAction(action);
+    setToast(message);
+  }
+  function openFocusMode() {
+    if (focusStartedAt.current === null) focusStartedAt.current = Date.now();
+    setFocusModeOpen(true);
+  }
+  function closeFocusMode() {
+    setFocusModeOpen(false);
+  }
+  function resetFocusMode() {
+    focusStartedAt.current = Date.now();
+    setFocusElapsed(0);
+  }
+  function spendGems(cost: number, label: string) {
+    if (learning.diamonds < cost) {
+      notify(`You need ${cost - learning.diamonds} more gems for ${label}.`);
+      return false;
+    }
+    persistLearning({ ...learning, diamonds: learning.diamonds - cost });
+    notify(`${label} · −${cost} ◆`);
+    return true;
+  }
+  function saveVoice(next: VoicePrefs) {
+    setVoicePrefs(next);
+    if (!writeLocalJson(window.localStorage, "long-voice", next))
+      notify("Voice changed, but this browser could not save it.");
+    queueCloudSync(profile, learning, next);
+  }
+  async function handleConnectEmail(email: string) {
+    setSyncStatus("connecting");
+    setSyncError("");
+    try {
+      const mode = await connectEmail(email);
+      setSyncStatus("synced");
+      notify(
+        mode === "verification"
+          ? "Check your email to finish protecting this account"
+          : "Magic link sent · open it on this device",
+      );
+    } catch (reason) {
+      setSyncStatus("error");
+      setSyncError(
+        reason instanceof Error ? reason.message : "Email connection failed.",
+      );
+    }
+  }
+  async function handleConnectGoogle() {
+    setSyncStatus("connecting");
+    setSyncError("");
+    try {
+      await connectGoogle();
+    } catch (reason) {
+      setSyncStatus("error");
+      setSyncError(
+        reason instanceof Error
+          ? reason.message
+          : "Google sign-in could not start.",
+      );
+      throw reason;
+    }
+  }
+  async function handleSignOut() {
+    setSyncStatus("connecting");
+    setSyncError("");
+    try {
+      await signOutCloud();
+      cloudUserId.current = null;
+      setCloudAccount(null);
+      [
+        "long-profile",
+        "long-learning-v2",
+        "long-voice",
+        "long-cloud-updated-at",
+        "long-cloud-account-id",
+      ].forEach((key) => window.localStorage.removeItem(key));
+      setProfile(null);
+      setLearning(defaultState);
+      setVoicePrefs(defaultVoice);
+      setSettingsOpen(false);
+      setOnboarding(true);
+      setSyncStatus("guest");
+      notify("Signed out · this device is ready for another learner");
+    } catch (reason) {
+      setSyncStatus("error");
+      setSyncError(
+        reason instanceof Error ? reason.message : "Sign out failed.",
+      );
+    }
+  }
+  async function handleSignOutEverywhere() {
+    setSyncStatus("connecting");
+    setSyncError("");
+    try {
+      await signOutAllCloud();
+      cloudUserId.current = null;
+      setCloudAccount(null);
+      [
+        "long-profile",
+        "long-learning-v2",
+        "long-voice",
+        "long-cloud-updated-at",
+        "long-cloud-account-id",
+      ].forEach((key) => window.localStorage.removeItem(key));
+      setProfile(null);
+      setLearning(defaultState);
+      setVoicePrefs(defaultVoice);
+      setSettingsOpen(false);
+      setOnboarding(true);
+      setSyncStatus("guest");
+      notify("Signed out on every device · this browser is ready for another learner");
+    } catch (reason) {
+      setSyncStatus("error");
+      setSyncError(
+        reason instanceof Error ? reason.message : "Global sign out failed.",
+      );
+    }
+  }
+  async function handleProtectOtherDevices() {
+    setSyncStatus("syncing");
+    setSyncError("");
+    try {
+      await signOutOtherCloudDevices();
+      setSyncStatus("synced");
+      notify("Other device sessions were removed · this device stays signed in");
+    } catch (reason) {
+      setSyncStatus("error");
+      setSyncError(
+        reason instanceof Error
+          ? reason.message
+          : "Other devices could not be signed out.",
+      );
+    }
+  }
+  function speak(text: string, override?: VoicePrefs | number) {
+    const prefs = typeof override === "object" ? override : voicePrefs;
+    const storyteller = learning.inventory.voicePacks.includes("storyteller");
+    const speed =
+      typeof override === "number"
+        ? override
+        : storyteller
+          ? Math.min(0.72, prefs.speed)
+          : prefs.speed;
+    const prepared = text
+      .replace(/\s+/g, " ")
+      .replace(/([，；。！？])/g, "$1 ")
+      .trim();
+    function browserVoice() {
+      if (!("speechSynthesis" in window))
+        return notify("Audio is not available in this browser.");
+      const available = window.speechSynthesis.getVoices();
+      const resolved = resolvePreferredVoice(available, prefs);
+      if (activeUtterance) activeUtterance.onend = null;
+      window.speechSynthesis.cancel();
+      const audio = new SpeechSynthesisUtterance(prepared);
+      activeUtterance = audio;
+      audio.lang = resolved.voice?.lang || prefs.accent;
+      audio.voice = resolved.voice;
+      audio.rate = speed;
+      audio.pitch = 1;
+      audio.volume = 1;
+      audio.onend = () => {
+        activeUtterance = null;
+      };
+      audio.onerror = (event) => {
+        activeUtterance = null;
+        if (event.error !== "interrupted" && event.error !== "canceled")
+          notify(
+            "Voice could not play. Refresh installed voices or choose another voice.",
+          );
+      };
+      window.speechSynthesis.resume();
+      window.speechSynthesis.speak(audio);
+    }
+    if (!neuralTtsEnabled()) return browserVoice();
+    const cacheKey = `${prefs.accent}:${prefs.style}:${speed}:${prepared}`;
+    const cached = neuralSpeechCache.get(cacheKey);
+    if (cached) {
+      if (activeNeuralAudio) activeNeuralAudio.pause();
+      window.speechSynthesis?.cancel();
+      const url = URL.createObjectURL(cached);
+      const audio = new Audio(url);
+      activeNeuralAudio = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        activeNeuralAudio = null;
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        activeNeuralAudio = null;
+        browserVoice();
+      };
+      void audio.play().catch(() => browserVoice());
+      return;
+    }
+    browserVoice();
+    void requestNeuralSpeech(prepared, {
+      accent: prefs.accent,
+      style: prefs.style,
+      speed,
+    })
+      .then((blob) => {
+        neuralSpeechCache.set(cacheKey, blob);
+      })
+      .catch(() => undefined);
+  }
+  function openChapter(id: string) {
+    setLessonId(id);
+  }
+  function setChapterDifficulty(id: string, difficulty: AdventureDifficulty) {
+    persistLearning({
+      ...learning,
+      chapterDifficulties: {
+        ...learning.chapterDifficulties,
+        [id]: difficulty,
+      },
+    });
+  }
+  function markAdventureStageSeen(stageId: string) {
+    if (learning.seenAdventureStages.includes(stageId)) return;
+    persistLearning({
+      ...learning,
+      seenAdventureStages: [...learning.seenAdventureStages, stageId],
+    });
+  }
+  function openBossChallenge(id: string) {
+    const elite = learning.bossWins.includes(id);
+    if (elite) {
+      if (learning.inventory.adventureTickets < 1)
+        return notify(
+          "Elite replay needs one Adventure ticket. Get one in the Gem Shop.",
+        );
+      persistLearning({
+        ...learning,
+        inventory: {
+          ...learning.inventory,
+          adventureTickets: learning.inventory.adventureTickets - 1,
+        },
+      });
+      notify("Adventure ticket used · elite rewards activated");
+    }
+    setBossId(id);
+  }
+  function toggleFavorite(id: string) {
+    const favorites = learning.favorites.includes(id)
+      ? learning.favorites.filter((item) => item !== id)
+      : [...learning.favorites, id];
+    persistLearning({ ...learning, favorites });
+  }
+  function addPersonalWord(word: Omit<PersonalWord, "id" | "createdAt">) {
+    if (learning.personalWords.some((item) => item.hanzi === word.hanzi)) {
+      notify(`${word.hanzi} is already in your personal vocabulary`);
+      return;
+    }
+    const entry: PersonalWord = {
+      ...word,
+      id: `personal-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    persistLearning({
+      ...learning,
+      personalWords: [entry, ...learning.personalWords],
+    });
+    notify(`${word.hanzi} saved to your personal vocabulary`);
+  }
+  function removePersonalWord(id: string) {
+    persistLearning({
+      ...learning,
+      personalWords: learning.personalWords.filter((word) => word.id !== id),
+    });
+  }
+  function saveChapterProgress(
+    chapterId: string,
+    progress: number,
+    nextStep: number,
+  ) {
+    const current = learning.chapterProgress[chapterId] ?? 0;
+    persistLearning({
+      ...learning,
+      chapterProgress: {
+        ...learning.chapterProgress,
+        [chapterId]: Math.max(current, progress),
+      },
+      chapterSteps: { ...learning.chapterSteps, [chapterId]: nextStep },
+    });
+  }
+  function finishLesson(
+    chapter: Chapter,
+    results: ChapterLessonResult[],
+    difficulty: AdventureDifficulty,
+  ) {
+    const now = new Date();
+    const config = adventureDifficultyConfig[difficulty];
+    const firstCompletion = !learning.completed.includes(chapter.id);
+    const accuracy = chapterAccuracy(results);
+    const base = difficulty === "hard" ? 55 : difficulty === "normal" ? 35 : 25;
+    const points = accuracy >= 75 ? base : Math.max(15, base - 10);
+    const gems = difficulty === "hard" ? 8 : difficulty === "normal" ? 5 : 3;
+    const award = awardXpOnce(
+      learning.xpKeys,
+      `lesson:${chapter.id}:${difficulty}`,
+      points,
+      now,
+    );
+    const streak = updateStreakWithGrace(
+      learning.lastActiveDate,
+      learning.streak,
+      now,
+    );
+    const today = localDateKey(now);
+    const events = createChapterLessonEvents(
+      chapter.id,
+      results,
+      now,
+      award.xp,
+    );
+    const mistakes = results
+      .filter((result) => !result.correct)
+      .map((result) =>
+        createMistake(
+          {
+            chapterId: chapter.id,
+            prompt: result.prompt,
+            answer: result.answer,
+            correction: result.correction,
+            explanation: result.explanation,
+            skill: result.skill,
+            source: "lesson",
+            sourceKey: `${chapter.id}:${difficulty}:${result.stage}`,
+          },
+          now,
+        ),
+      );
+    const next = {
+      ...learning,
+      xp: learning.xp + award.xp,
+      diamonds: learning.diamonds + (award.xp ? gems : 0),
+      reviews: dueReviewIds(learning.reviewCards, now).length,
+      streak: streak.streak,
+      activityDates: addUnique(learning.activityDates, [today]),
+      protectedDates: addUnique(
+        learning.protectedDates,
+        datesBetween(learning.lastActiveDate, today),
+      ),
+      lastActiveDate: streak.lastActiveDate,
+      xpKeys: learning.xpKeys.includes(award.key)
+        ? learning.xpKeys
+        : [...learning.xpKeys, award.key],
+      events: [...learning.events, ...events],
+      mistakes: mergeMistakes(learning.mistakes, mistakes),
+      sessions: learning.sessions + 1,
+      minutesStudied:
+        learning.minutesStudied +
+        (difficulty === "hard" ? 13 : difficulty === "normal" ? 9 : 7),
+      wordsPracticed: learning.wordsPracticed + (difficulty === "hard" ? 5 : 3),
+      chapterProgress: { ...learning.chapterProgress, [chapter.id]: 100 },
+      chapterSteps: { ...learning.chapterSteps, [chapter.id]: 5 },
+      completed: firstCompletion
+        ? [...learning.completed, chapter.id]
+        : learning.completed,
+    };
+    persistLearning(next);
+    setLessonId(null);
+    notify(
+      streak.protectedByGrace
+        ? `Grace days protected · ${chapter.title} complete`
+        : award.xp
+          ? `${firstCompletion ? "New stage unlocked · " : ""}${config.label} ${chapter.title} complete · ${accuracy}% accuracy · +${award.xp} XP · +${gems} ◆`
+          : `${config.label} ${chapter.title} practiced · results saved`,
+      firstCompletion
+        ? { label: "View next stage", destination: "Adventure" }
+        : null,
+    );
   }
   function rateReview(wordId: string, rating: ReviewRating) {
-    const card = learning.reviewCards[wordId] ?? createReviewCards([wordId])[wordId]; const cards = { ...learning.reviewCards, [wordId]: scheduleReview(card, rating) }; const award = awardXpOnce(learning.xpKeys, `review:${wordId}`, 4); const streak = updateStreakWithGrace(learning.lastActiveDate, learning.streak); const today=localDateKey();
-    const event: LearningEvent = { id: `${award.key}:${Date.now()}`, type: 'review', skill: 'Vocabulary', correct: rating !== 'again', xp: award.xp, createdAt: new Date().toISOString() };
-    persistLearning({ ...learning, reviewCards: cards, reviews: dueReviewIds(cards).length, xp: learning.xp + award.xp, diamonds:learning.diamonds+(award.xp?1:0), streak: streak.streak, activityDates:addUnique(learning.activityDates,[today]), protectedDates:addUnique(learning.protectedDates,datesBetween(learning.lastActiveDate,today)), lastActiveDate: streak.lastActiveDate, xpKeys: learning.xpKeys.includes(award.key) ? learning.xpKeys : [...learning.xpKeys, award.key], events: [...learning.events, event] }); notify(streak.protectedByGrace ? 'Grace days protected · streak continues' : `Next review: ${rating === 'again' ? '10 minutes' : `${cards[wordId].intervalDays} day${cards[wordId].intervalDays === 1 ? '' : 's'}`}${award.xp ? ' · +4 XP · +1 ◆' : ''}`);
+    const card =
+      learning.reviewCards[wordId] ?? createReviewCards([wordId])[wordId];
+    const cards = {
+      ...learning.reviewCards,
+      [wordId]: scheduleReview(card, rating),
+    };
+    const award = awardXpOnce(learning.xpKeys, `review:${wordId}`, 4);
+    const streak = updateStreakWithGrace(
+      learning.lastActiveDate,
+      learning.streak,
+    );
+    const today = localDateKey();
+    const event: LearningEvent = {
+      id: `${award.key}:${Date.now()}`,
+      type: "review",
+      skill: "Vocabulary",
+      correct: rating !== "again",
+      xp: award.xp,
+      createdAt: new Date().toISOString(),
+    };
+    persistLearning({
+      ...learning,
+      reviewCards: cards,
+      reviews: dueReviewIds(cards).length,
+      xp: learning.xp + award.xp,
+      diamonds: learning.diamonds + (award.xp ? 1 : 0),
+      streak: streak.streak,
+      activityDates: addUnique(learning.activityDates, [today]),
+      protectedDates: addUnique(
+        learning.protectedDates,
+        datesBetween(learning.lastActiveDate, today),
+      ),
+      lastActiveDate: streak.lastActiveDate,
+      xpKeys: learning.xpKeys.includes(award.key)
+        ? learning.xpKeys
+        : [...learning.xpKeys, award.key],
+      events: [...learning.events, event],
+    });
+    notify(
+      streak.protectedByGrace
+        ? "Grace days protected · streak continues"
+        : `Next review: ${rating === "again" ? "10 minutes" : `${cards[wordId].intervalDays} day${cards[wordId].intervalDays === 1 ? "" : "s"}`}${award.xp ? " · +4 XP · +1 ◆" : ""}`,
+    );
   }
-  function rateMistake(mistakeId:string,correct:boolean){const current=learning.mistakes.find(mistake=>mistake.id===mistakeId);if(!current)return;const now=new Date();const updated=reviewMistake(current,correct,now);const award=awardXpOnce(learning.xpKeys,`mistake-review:${mistakeId}`,correct?6:1,now);const streak=updateStreakWithGrace(learning.lastActiveDate,learning.streak,now);const today=localDateKey(now);const boosted=learning.inventory.mistakeBoosters>0;const event:LearningEvent={id:`${award.key}:${Date.now()}`,type:'review',skill:current.skill??'Grammar',correct,xp:award.xp,createdAt:now.toISOString()};persistLearning({...learning,inventory:boosted?{...learning.inventory,mistakeBoosters:learning.inventory.mistakeBoosters-1}:learning.inventory,mistakes:learning.mistakes.map(mistake=>mistake.id===mistakeId?updated:mistake),xp:learning.xp+award.xp,diamonds:learning.diamonds+(award.xp?1:0),streak:streak.streak,activityDates:addUnique(learning.activityDates,[today]),protectedDates:addUnique(learning.protectedDates,datesBetween(learning.lastActiveDate,today)),lastActiveDate:streak.lastActiveDate,xpKeys:learning.xpKeys.includes(award.key)?learning.xpKeys:[...learning.xpKeys,award.key],events:[...learning.events,event]});notify(correct?`${boosted?'Recovery Booster used · ':''}Mistake reviewed · next check in ${updated.reviewIntervalDays} day${updated.reviewIntervalDays===1?'':'s'}${award.xp?' · +6 XP · +1 ◆':''}`:'Added back in 10 minutes · explanation kept')}
-  function rateHskFlashcard(wordId:string,rating:FlashcardRating){const now=new Date();const correct=rating!=='again';const points=rating==='again'?1:rating==='hard'?2:4;const award=awardXpOnce(learning.xpKeys,`flashcard:${wordId}`,points,now);const streak=updateStreakWithGrace(learning.lastActiveDate,learning.streak,now);const today=localDateKey(now);const event:LearningEvent={id:`${award.key}:${Date.now()}`,type:'review',skill:'Vocabulary',correct,xp:award.xp,createdAt:now.toISOString()};persistLearning({...learning,xp:learning.xp+award.xp,diamonds:learning.diamonds+(award.xp?1:0),streak:streak.streak,activityDates:addUnique(learning.activityDates,[today]),protectedDates:addUnique(learning.protectedDates,datesBetween(learning.lastActiveDate,today)),lastActiveDate:streak.lastActiveDate,xpKeys:learning.xpKeys.includes(award.key)?learning.xpKeys:[...learning.xpKeys,award.key],events:[...learning.events,event],flashcardStats:{...learning.flashcardStats,[wordId]:updateFlashcardStat(learning.flashcardStats[wordId],rating,now)},wordsPracticed:learning.wordsPracticed+1})}
-  function awardActivity(label: string, points = 20, skill: LearningEvent['skill'] = 'Vocabulary', correct = true,gameResult?:{score:number;total:number;mistakes?:GameMistake[]}) {
-    const now=new Date();const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '-'); const award = awardXpOnce(learning.xpKeys, `activity:${id}`, points,now); const streak = updateStreakWithGrace(learning.lastActiveDate, learning.streak,now); const today=localDateKey(now); const type: LearningEvent['type'] = label.toLowerCase().includes('story') ? 'story' : label.toLowerCase().includes('speaking') ? 'speaking' : 'game';
-    const boosted=award.xp>0&&learning.inventory.doubleXpCredits>0;const earnedXp=award.xp*(boosted?2:1);const inventory=boosted?{...learning.inventory,doubleXpCredits:learning.inventory.doubleXpCredits-1}:learning.inventory;const event: LearningEvent = { id: `${award.key}:${Date.now()}`, type, skill, correct, xp: earnedXp, createdAt: new Date().toISOString() };
-    const gameScores=gameResult?[{id:`${id}-${Date.now()}`,game:label,score:gameResult.score,total:gameResult.total,createdAt:new Date().toISOString()},...learning.gameScores]:learning.gameScores;
-    const incoming=gameResult?.mistakes?.map(mistake=>createMistake({chapterId:currentChapter.id,prompt:mistake.prompt,answer:mistake.answer,correction:mistake.correction,explanation:mistake.explanation,skill,source:'game',sourceKey:`${id}:${mistake.prompt}`},now))??[];
-    const multiplier=type==='game'&&correct?gameGemMultiplier(consecutiveCheckInDays(learning.checkInDates)):1;const gemAward=award.xp?Math.round(2*multiplier):0;
-    persistLearning({ ...learning, inventory,xp: learning.xp + earnedXp, diamonds:learning.diamonds+gemAward, streak: streak.streak, activityDates:addUnique(learning.activityDates,[today]), protectedDates:addUnique(learning.protectedDates,datesBetween(learning.lastActiveDate,today)), lastActiveDate: streak.lastActiveDate, xpKeys: learning.xpKeys.includes(award.key) ? learning.xpKeys : [...learning.xpKeys, award.key], events: [...learning.events, event],gameScores,mistakes:mergeMistakes(learning.mistakes,incoming), sessions: learning.sessions + 1, minutesStudied: learning.minutesStudied + 4 }); notify(streak.protectedByGrace ? `Grace days protected · ${label} complete` : award.xp ? `${label} complete · +${earnedXp} XP${boosted?' (2× BOOST)':''} · +${gemAward} ◆${multiplier>1?` (${multiplier}× check-in bonus)`:''}${incoming.length?` · ${incoming.length} review${incoming.length===1?'':'s'} added`:''}` : `${label} recorded · daily XP already earned${incoming.length?` · ${incoming.length} reviews added`:''}`);
+  function rateMistake(mistakeId: string, correct: boolean) {
+    const current = learning.mistakes.find(
+      (mistake) => mistake.id === mistakeId,
+    );
+    if (!current) return;
+    const now = new Date();
+    const updated = reviewMistake(current, correct, now);
+    const award = awardXpOnce(
+      learning.xpKeys,
+      `mistake-review:${mistakeId}`,
+      correct ? 6 : 1,
+      now,
+    );
+    const streak = updateStreakWithGrace(
+      learning.lastActiveDate,
+      learning.streak,
+      now,
+    );
+    const today = localDateKey(now);
+    const boosted = learning.inventory.mistakeBoosters > 0;
+    const event: LearningEvent = {
+      id: `${award.key}:${Date.now()}`,
+      type: "review",
+      skill: current.skill ?? "Grammar",
+      correct,
+      xp: award.xp,
+      createdAt: now.toISOString(),
+    };
+    persistLearning({
+      ...learning,
+      inventory: boosted
+        ? {
+            ...learning.inventory,
+            mistakeBoosters: learning.inventory.mistakeBoosters - 1,
+          }
+        : learning.inventory,
+      mistakes: learning.mistakes.map((mistake) =>
+        mistake.id === mistakeId ? updated : mistake,
+      ),
+      xp: learning.xp + award.xp,
+      diamonds: learning.diamonds + (award.xp ? 1 : 0),
+      streak: streak.streak,
+      activityDates: addUnique(learning.activityDates, [today]),
+      protectedDates: addUnique(
+        learning.protectedDates,
+        datesBetween(learning.lastActiveDate, today),
+      ),
+      lastActiveDate: streak.lastActiveDate,
+      xpKeys: learning.xpKeys.includes(award.key)
+        ? learning.xpKeys
+        : [...learning.xpKeys, award.key],
+      events: [...learning.events, event],
+    });
+    notify(
+      correct
+        ? `${boosted ? "Recovery Booster used · " : ""}Mistake reviewed · next check in ${updated.reviewIntervalDays} day${updated.reviewIntervalDays === 1 ? "" : "s"}${award.xp ? " · +6 XP · +1 ◆" : ""}`
+        : "Added back in 10 minutes · explanation kept",
+    );
   }
-  function claimQuest(id:string,xp:number,diamonds:number){if(learning.questClaims.includes(id))return;const before=getLevelProgress(learning.xp).level;const after=getLevelProgress(learning.xp+xp).level;persistLearning({...learning,xp:learning.xp+xp,diamonds:learning.diamonds+diamonds,questClaims:[...learning.questClaims,id]});notify(after>before?`Level up! You reached Level ${after} · +${diamonds} ◆`:`New achievement · quest reward +${xp} XP · +${diamonds} ◆`,{label:after>before?'View progress':'View achievements',destination:'Progress'})}
-  function buyReward(kind:string,cost:number){const inventory={...learning.inventory};if(kind.startsWith('cosmetic:')){const id=kind.slice(9);if(inventory.cosmetics.includes(id)){if(id.startsWith('avatar-'))inventory.equippedAvatar=id;if(id.startsWith('frame-'))inventory.equippedFrame=id;if(id.startsWith('wallpaper-'))inventory.equippedWallpaper=id;if(id.startsWith('badge-'))inventory.equippedBadge=id;if(id.startsWith('hsk-bg-'))inventory.equippedHskBackground=id;if(isThemeCosmetic(id))inventory.equippedTheme=id;persistLearning({...learning,inventory});return notify('Cosmetic equipped · no gems spent')}}if(learning.diamonds<cost)return notify(`You need ${cost-learning.diamonds} more gems.`);let message='Reward unlocked';if(kind==='freeze'){if(inventory.freezeTokens>=2)return notify('Inventory already holds the maximum of 2 freeze tokens.');inventory.freezeTokens++;message='Streak freeze added to inventory'}else if(kind==='ticket'){inventory.adventureTickets++;message='Elite Adventure ticket added'}else if(kind==='xp'){if(inventory.doubleXpDate===localDateKey())return notify('Double XP can only be bought once each day.');inventory.doubleXpCredits++;inventory.doubleXpDate=localDateKey();message='Double XP is ready for your next scored session'}else if(kind==='mistake'){inventory.mistakeBoosters++;message='Mistake Recovery session is ready'}else if(kind.startsWith('voice:')){const id=kind.slice(6);if(inventory.voicePacks.includes(id))return notify('This voice pack is already unlocked.');inventory.voicePacks=[...inventory.voicePacks,id];message='Voice pack unlocked'}else if(kind.startsWith('cosmetic:')){const id=kind.slice(9);inventory.cosmetics=[...inventory.cosmetics,id];if(id.startsWith('avatar-'))inventory.equippedAvatar=id;if(id.startsWith('frame-'))inventory.equippedFrame=id;if(id.startsWith('wallpaper-'))inventory.equippedWallpaper=id;if(id.startsWith('badge-'))inventory.equippedBadge=id;if(id.startsWith('hsk-bg-'))inventory.equippedHskBackground=id;if(isThemeCosmetic(id))inventory.equippedTheme=id;message='Cosmetic unlocked and equipped'}else if(kind.startsWith('story:')){const id=kind.slice(6);if(inventory.unlockedStories.includes(id))return notify('This bonus story is already unlocked.');inventory.unlockedStories=[...inventory.unlockedStories,id];message='Bonus story unlocked'}persistLearning({...learning,diamonds:learning.diamonds-cost,inventory});notify(`${message} · −${cost} ◆`)}
-  function finishBoss(chapter: Chapter, score: number,total:number,difficulty:AdventureDifficulty) {
-    const config=adventureDifficultyConfig[difficulty];const passed=score/total>=config.pass;const winKey=`${chapter.id}:${difficulty}`;const firstDifficultyWin=!learning.difficultyWins.includes(winKey);const firstChapterWin=!learning.bossWins.includes(chapter.id);const today=localDateKey();const rewardKey=firstDifficultyWin?`boss:${chapter.id}:${difficulty}`:`boss-replay:${chapter.id}:${difficulty}:${today}`;const reward=passed?awardXpOnce(learning.xpKeys,rewardKey,firstDifficultyWin?config.firstXp:config.replayXp):{xp:-config.failPenalty,key:`boss-fail:${chapter.id}:${difficulty}:${Date.now()}`};const earnedXp=passed?reward.xp:-Math.min(config.failPenalty,learning.xp);const streak=updateStreakWithGrace(learning.lastActiveDate,learning.streak);const event:LearningEvent={id:`${reward.key}:${Date.now()}`,type:'game',skill:'Grammar',correct:passed,xp:earnedXp,createdAt:new Date().toISOString()};const multiplier=gameGemMultiplier(consecutiveCheckInDays(learning.checkInDates));const gemAward=passed&&reward.xp?Math.round((firstDifficultyWin?config.gems:Math.max(3,Math.round(config.gems*.2)))*multiplier):0;const gameScore:GameScore={id:`boss-${chapter.id}-${difficulty}-${Date.now()}`,game:`${chapter.title} Boss · ${config.label}`,score,total,createdAt:new Date().toISOString()};persistLearning({...learning,xp:Math.max(0,learning.xp+earnedXp),diamonds:learning.diamonds+gemAward,streak:streak.streak,activityDates:addUnique(learning.activityDates,[today]),protectedDates:addUnique(learning.protectedDates,datesBetween(learning.lastActiveDate,today)),lastActiveDate:streak.lastActiveDate,bossWins:passed&&firstChapterWin?[...learning.bossWins,chapter.id]:learning.bossWins,difficultyWins:passed&&firstDifficultyWin?[...learning.difficultyWins,winKey]:learning.difficultyWins,xpKeys:reward.xp>0&&!learning.xpKeys.includes(reward.key)?[...learning.xpKeys,reward.key]:learning.xpKeys,events:[...learning.events,event],gameScores:[gameScore,...learning.gameScores],sessions:learning.sessions+1,minutesStudied:learning.minutesStudied+(difficulty==='hard'?18:difficulty==='normal'?12:8)});setBossId(null);notify(passed?(firstDifficultyWin?`New achievement · ${config.label} ${chapter.title} cleared · +${earnedXp} XP · +${gemAward} ◆`:`${config.label} replay cleared · +${earnedXp} XP · +${gemAward} ◆`):`${config.label} boss score ${score}/${total} · −${Math.abs(earnedXp)} XP · review and try again`,passed&&firstDifficultyWin?{label:'View achievements',destination:'Progress'}:null);
+  function rateHskFlashcard(wordId: string, rating: FlashcardRating) {
+    const now = new Date();
+    const correct = rating !== "again";
+    const points = rating === "again" ? 1 : rating === "hard" ? 2 : 4;
+    const award = awardXpOnce(
+      learning.xpKeys,
+      `flashcard:${wordId}`,
+      points,
+      now,
+    );
+    const streak = updateStreakWithGrace(
+      learning.lastActiveDate,
+      learning.streak,
+      now,
+    );
+    const today = localDateKey(now);
+    const event: LearningEvent = {
+      id: `${award.key}:${Date.now()}`,
+      type: "review",
+      skill: "Vocabulary",
+      correct,
+      xp: award.xp,
+      createdAt: now.toISOString(),
+    };
+    persistLearning({
+      ...learning,
+      xp: learning.xp + award.xp,
+      diamonds: learning.diamonds + (award.xp ? 1 : 0),
+      streak: streak.streak,
+      activityDates: addUnique(learning.activityDates, [today]),
+      protectedDates: addUnique(
+        learning.protectedDates,
+        datesBetween(learning.lastActiveDate, today),
+      ),
+      lastActiveDate: streak.lastActiveDate,
+      xpKeys: learning.xpKeys.includes(award.key)
+        ? learning.xpKeys
+        : [...learning.xpKeys, award.key],
+      events: [...learning.events, event],
+      flashcardStats: {
+        ...learning.flashcardStats,
+        [wordId]: updateFlashcardStat(
+          learning.flashcardStats[wordId],
+          rating,
+          now,
+        ),
+      },
+      wordsPracticed: learning.wordsPracticed + 1,
+    });
   }
-  function finishDailySession(plan:DailySessionPlan,results:DailySessionAnswer[]) {
-    const now=new Date();const timestamp=now.toISOString();const award=awardXpOnce(learning.xpKeys,'daily-session',40,now);const streak=updateStreakWithGrace(learning.lastActiveDate,learning.streak,now);const today=localDateKey(now);const incorrect=results.filter(result=>!result.correct);const cards={...learning.reviewCards};
-    for(const wordId of dailySessionReviewWordIds(results)){const current=cards[wordId]??createReviewCards([wordId],now)[wordId];cards[wordId]={...current,dueAt:timestamp,mastery:Math.max(0,current.mastery-8)}}
-    const events=createDailySessionEvents(results,now,award.xp);
-    const mistakes=incorrect.map(result=>createMistake({chapterId:currentChapter.id,prompt:result.question.prompt,answer:result.selected,correction:result.question.answer,explanation:result.question.explanation,skill:result.question.skill,source:'daily',sourceKey:`${currentChapter.id}:${result.question.kind}:${result.question.reviewWordId??result.question.prompt}`},now));
-    const next={...learning,xp:learning.xp+award.xp,diamonds:learning.diamonds+(award.xp?4:0),reviews:dueReviewIds(cards,now).length,streak:streak.streak,activityDates:addUnique(learning.activityDates,[today]),protectedDates:addUnique(learning.protectedDates,datesBetween(learning.lastActiveDate,today)),lastActiveDate:streak.lastActiveDate,xpKeys:learning.xpKeys.includes(award.key)?learning.xpKeys:[...learning.xpKeys,award.key],events:[...learning.events,...events],mistakes:mergeMistakes(learning.mistakes,mistakes),reviewCards:cards,sessions:learning.sessions+1,minutesStudied:learning.minutesStudied+plan.estimatedMinutes,wordsPracticed:learning.wordsPracticed+results.filter(result=>result.question.kind==='warmup').length};
-    persistLearning(next);setDailySessionOpen(false);notify(award.xp?`Daily session complete · +40 XP · +4 ◆${incorrect.length?` · ${incorrect.length} review${incorrect.length===1?'':'s'} added`:''}`:'Daily session practiced again · results recorded');
+  function awardActivity(
+    label: string,
+    points = 20,
+    skill: LearningEvent["skill"] = "Vocabulary",
+    correct = true,
+    gameResult?: { score: number; total: number; mistakes?: GameMistake[] },
+  ) {
+    const now = new Date();
+    const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const award = awardXpOnce(learning.xpKeys, `activity:${id}`, points, now);
+    const streak = updateStreakWithGrace(
+      learning.lastActiveDate,
+      learning.streak,
+      now,
+    );
+    const today = localDateKey(now);
+    const type: LearningEvent["type"] = label.toLowerCase().includes("story")
+      ? "story"
+      : label.toLowerCase().includes("speaking")
+        ? "speaking"
+        : "game";
+    const boosted = award.xp > 0 && learning.inventory.doubleXpCredits > 0;
+    const earnedXp = award.xp * (boosted ? 2 : 1);
+    const inventory = boosted
+      ? {
+          ...learning.inventory,
+          doubleXpCredits: learning.inventory.doubleXpCredits - 1,
+        }
+      : learning.inventory;
+    const event: LearningEvent = {
+      id: `${award.key}:${Date.now()}`,
+      type,
+      skill,
+      correct,
+      xp: earnedXp,
+      createdAt: new Date().toISOString(),
+    };
+    const gameScores = gameResult
+      ? [
+          {
+            id: `${id}-${Date.now()}`,
+            game: label,
+            score: gameResult.score,
+            total: gameResult.total,
+            createdAt: new Date().toISOString(),
+          },
+          ...learning.gameScores,
+        ]
+      : learning.gameScores;
+    const incoming =
+      gameResult?.mistakes?.map((mistake) =>
+        createMistake(
+          {
+            chapterId: currentChapter.id,
+            prompt: mistake.prompt,
+            answer: mistake.answer,
+            correction: mistake.correction,
+            explanation: mistake.explanation,
+            skill,
+            source: "game",
+            sourceKey: `${id}:${mistake.prompt}`,
+          },
+          now,
+        ),
+      ) ?? [];
+    const multiplier =
+      type === "game" && correct
+        ? gameGemMultiplier(consecutiveCheckInDays(learning.checkInDates))
+        : 1;
+    const gemAward = award.xp ? Math.round(2 * multiplier) : 0;
+    const projectedEvents = [...learning.events, event];
+    const mergedMistakes = mergeMistakes(learning.mistakes, incoming);
+    persistLearning({
+      ...learning,
+      inventory,
+      xp: learning.xp + earnedXp,
+      diamonds: learning.diamonds + gemAward,
+      streak: streak.streak,
+      activityDates: addUnique(learning.activityDates, [today]),
+      protectedDates: addUnique(
+        learning.protectedDates,
+        datesBetween(learning.lastActiveDate, today),
+      ),
+      lastActiveDate: streak.lastActiveDate,
+      xpKeys: learning.xpKeys.includes(award.key)
+        ? learning.xpKeys
+        : [...learning.xpKeys, award.key],
+      events: projectedEvents,
+      gameScores,
+      mistakes: mergedMistakes,
+      sessions: learning.sessions + 1,
+      minutesStudied: learning.minutesStudied + 4,
+    });
+    const nextWeakest = (
+      Object.entries(calculateSkillScores(projectedEvents, now)) as [
+        LearningEvent["skill"],
+        number,
+      ][]
+    ).sort((a, b) => a[1] - b[1])[0][0];
+    const nextRecommendation = smartLearningRecommendation({
+      dueReviews: dueReviewIds(learning.reviewCards, now).length,
+      dueMistakes: dueMistakes(mergedMistakes, now).length,
+      weakestSkill: nextWeakest,
+      currentChapterTitle: currentChapter.title,
+      chapterProgress: learning.chapterProgress[currentChapter.id] ?? 0,
+    });
+    notify(
+      streak.protectedByGrace
+        ? `Grace days protected · ${label} complete`
+        : award.xp
+          ? `${label} complete · +${earnedXp} XP${boosted ? " (2× BOOST)" : ""} · +${gemAward} ◆${multiplier > 1 ? ` (${multiplier}× check-in bonus)` : ""}${incoming.length ? ` · ${incoming.length} review${incoming.length === 1 ? "" : "s"} added` : ""}`
+          : `${label} recorded · daily XP already earned${incoming.length ? ` · ${incoming.length} reviews added` : ""}`,
+      {
+        label: nextRecommendation.action,
+        destination: nextRecommendation.destination,
+      },
+    );
   }
-  function resolveStreak(method:'diamonds'|'challenge'|'reset') { const today=localDateKey(); if(method==='reset'){persistLearning({...learning,streak:0,lastActiveDate:''});setRecoveryOpen(false);notify('Streak reset. Your next activity starts a fresh streak.');return} if(method==='diamonds'&&learning.diamonds<80)return; const gaps=datesBetween(learning.lastActiveDate,today);persistLearning({...learning,diamonds:method==='diamonds'?learning.diamonds-80:learning.diamonds,streak:learning.streak+1,lastActiveDate:today,activityDates:addUnique(learning.activityDates,[today]),protectedDates:addUnique(learning.protectedDates,gaps)});setRecoveryOpen(false);notify(method==='diamonds'?'Streak rescued with 80 diamonds':'15-question rescue complete · streak saved'); }
-  function startPull(event:React.TouchEvent<HTMLElement>){const target=event.target as HTMLElement;if(refreshing||window.scrollY>0||target.closest('.modal-backdrop,input,textarea,select,[data-no-pull]'))return;pullStart.current=event.touches[0]?.clientY??null}
-  function movePull(event:React.TouchEvent<HTMLElement>){if(pullStart.current===null)return;const distance=dampedPullDistance((event.touches[0]?.clientY??pullStart.current)-pullStart.current);setPullDistance(distance);if(distance>0&&event.cancelable)event.preventDefault()}
-  function endPull(){if(pullStart.current===null)return;pullStart.current=null;if(shouldTriggerPullRefresh(pullDistance)){setRefreshing(true);setPullDistance(82);window.setTimeout(()=>window.location.reload(),420)}else setPullDistance(0)}
-  function cancelPull(){pullStart.current=null;if(!refreshing)setPullDistance(0)}
-  function startNavHold(label:string){if(navHoldTimer.current)window.clearTimeout(navHoldTimer.current);navHoldTimer.current=window.setTimeout(()=>{setNavPreview(label);window.setTimeout(()=>setNavPreview(''),3600)},520)}
-  function endNavHold(){if(navHoldTimer.current)window.clearTimeout(navHoldTimer.current);navHoldTimer.current=null}
-  function setColorMode(colorMode:'light'|'dark'){setLearning(current=>({...current,inventory:{...current.inventory,colorMode}}));notify(colorMode==='dark'?'Dark mode enabled':'Light mode enabled')}
-  function setFontScale(fontScale:'small'|'medium'|'large'){setLearning(current=>({...current,inventory:{...current.inventory,fontScale}}));notify(`${fontScale[0].toUpperCase()+fontScale.slice(1)} text size enabled`)}
-  function setHskBackground(equippedHskBackground:string){setLearning(current=>({...current,inventory:{...current.inventory,equippedHskBackground}}))}
-  function setHskBackgroundAuto(hskBackgroundAuto:boolean){setLearning(current=>({...current,inventory:{...current.inventory,hskBackgroundAuto}}));notify(hskBackgroundAuto?'HSK backgrounds will rotate automatically':'HSK background rotation paused')}
-  function setHskBackgroundPlaylist(hskBackgroundPlaylist:string[]){setLearning(current=>({...current,inventory:{...current.inventory,hskBackgroundPlaylist}}));notify(hskBackgroundPlaylist.length>1?`${hskBackgroundPlaylist.length} HSK backgrounds selected for rotation`:'HSK background set to one location')}
-  function closeQuickTour(){window.localStorage.setItem('long-quick-tour-v1','seen');setTourOpen(false);setTourStep(0)}
-  function openQuickTour(){setSettingsOpen(false);setTourStep(0);setTourOpen(true)}
-  function visitTourTarget(target:string){if(target==='Gems')setGemsOpen(true);else setActive(target)}
-  function exportBackup(){const text=createLocalBackup({profile:{...(profile??{name:'Learner'})},learning:{...learning},voice:{...voicePrefs}});const blob=new Blob([text],{type:'application/json'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`long-chinese-backup-${localDateKey()}.json`;link.click();window.setTimeout(()=>URL.revokeObjectURL(url),0);notify('Private local backup downloaded')}
-  async function importBackup(file:File){const backup=parseLocalBackup(await file.text());const restoredProfile=backup.profile as Profile;const restoredLearning={...defaultState,...backup.learning,reviewCards:(backup.learning.reviewCards as LearningState['reviewCards'])??defaultState.reviewCards,events:(backup.learning.events as LearningEvent[])??[],xpKeys:(backup.learning.xpKeys as string[])??[],questClaims:(backup.learning.questClaims as string[])??[],favorites:(backup.learning.favorites as string[])??[],personalWords:(backup.learning.personalWords as PersonalWord[])??[],flashcardStats:(backup.learning.flashcardStats as Record<string,FlashcardStat>)??{},gameScores:(backup.learning.gameScores as GameScore[])??[],mistakes:(backup.learning.mistakes as Mistake[])??[],checkInDates:(backup.learning.checkInDates as string[])??[],checkInMilestones:(backup.learning.checkInMilestones as number[])??[]} as LearningState;const restoredVoice={...defaultVoice,...backup.voice} as VoicePrefs;const stored=[writeLocalJson(window.localStorage,'long-profile',restoredProfile),writeLocalJson(window.localStorage,'long-learning-v2',restoredLearning),writeLocalJson(window.localStorage,'long-voice',restoredVoice)];if(stored.some(result=>!result))throw new Error('The backup is valid, but this browser could not save it. Check private-browsing or storage settings.');setProfile(restoredProfile);setLearning(restoredLearning);setVoicePrefs(restoredVoice);queueCloudSync(restoredProfile,restoredLearning,restoredVoice);setSettingsOpen(false);setActive('Today');notify('Backup restored and queued for sync')}
+  function claimQuest(id: string, xp: number, diamonds: number) {
+    if (learning.questClaims.includes(id)) return;
+    const before = getLevelProgress(learning.xp).level;
+    const after = getLevelProgress(learning.xp + xp).level;
+    persistLearning({
+      ...learning,
+      xp: learning.xp + xp,
+      diamonds: learning.diamonds + diamonds,
+      questClaims: [...learning.questClaims, id],
+    });
+    notify(
+      after > before
+        ? `Level up! You reached Level ${after} · +${diamonds} ◆`
+        : `New achievement · quest reward +${xp} XP · +${diamonds} ◆`,
+      {
+        label: after > before ? "View progress" : "View achievements",
+        destination: "Progress",
+      },
+    );
+  }
+  function buyReward(kind: string, cost: number) {
+    const inventory = { ...learning.inventory };
+    if (kind.startsWith("cosmetic:")) {
+      const id = kind.slice(9);
+      if (inventory.cosmetics.includes(id)) {
+        if (id.startsWith("avatar-")) inventory.equippedAvatar = id;
+        if (id.startsWith("frame-")) inventory.equippedFrame = id;
+        if (id.startsWith("wallpaper-")) inventory.equippedWallpaper = id;
+        if (id.startsWith("badge-")) inventory.equippedBadge = id;
+        if (id.startsWith("hsk-bg-")) inventory.equippedHskBackground = id;
+        if (isThemeCosmetic(id)) inventory.equippedTheme = id;
+        persistLearning({ ...learning, inventory });
+        return notify("Cosmetic equipped · no gems spent");
+      }
+    }
+    if (learning.diamonds < cost)
+      return notify(`You need ${cost - learning.diamonds} more gems.`);
+    let message = "Reward unlocked";
+    if (kind === "freeze") {
+      if (inventory.freezeTokens >= 2)
+        return notify(
+          "Inventory already holds the maximum of 2 freeze tokens.",
+        );
+      inventory.freezeTokens++;
+      message = "Streak freeze added to inventory";
+    } else if (kind === "ticket") {
+      inventory.adventureTickets++;
+      message = "Elite Adventure ticket added";
+    } else if (kind === "xp") {
+      if (inventory.doubleXpDate === localDateKey())
+        return notify("Double XP can only be bought once each day.");
+      inventory.doubleXpCredits++;
+      inventory.doubleXpDate = localDateKey();
+      message = "Double XP is ready for your next scored session";
+    } else if (kind === "mistake") {
+      inventory.mistakeBoosters++;
+      message = "Mistake Recovery session is ready";
+    } else if (kind.startsWith("voice:")) {
+      const id = kind.slice(6);
+      if (inventory.voicePacks.includes(id))
+        return notify("This voice pack is already unlocked.");
+      inventory.voicePacks = [...inventory.voicePacks, id];
+      message = "Voice pack unlocked";
+    } else if (kind.startsWith("cosmetic:")) {
+      const id = kind.slice(9);
+      inventory.cosmetics = [...inventory.cosmetics, id];
+      if (id.startsWith("avatar-")) inventory.equippedAvatar = id;
+      if (id.startsWith("frame-")) inventory.equippedFrame = id;
+      if (id.startsWith("wallpaper-")) inventory.equippedWallpaper = id;
+      if (id.startsWith("badge-")) inventory.equippedBadge = id;
+      if (id.startsWith("hsk-bg-")) inventory.equippedHskBackground = id;
+      if (isThemeCosmetic(id)) inventory.equippedTheme = id;
+      message = "Cosmetic unlocked and equipped";
+    } else if (kind.startsWith("story:")) {
+      const id = kind.slice(6);
+      if (inventory.unlockedStories.includes(id))
+        return notify("This bonus story is already unlocked.");
+      inventory.unlockedStories = [...inventory.unlockedStories, id];
+      message = "Bonus story unlocked";
+    }
+    persistLearning({
+      ...learning,
+      diamonds: learning.diamonds - cost,
+      inventory,
+    });
+    notify(`${message} · −${cost} ◆`);
+  }
+  function finishBoss(
+    chapter: Chapter,
+    score: number,
+    total: number,
+    difficulty: AdventureDifficulty,
+  ) {
+    const config = adventureDifficultyConfig[difficulty];
+    const passed = score / total >= config.pass;
+    const winKey = `${chapter.id}:${difficulty}`;
+    const firstDifficultyWin = !learning.difficultyWins.includes(winKey);
+    const firstChapterWin = !learning.bossWins.includes(chapter.id);
+    const today = localDateKey();
+    const rewardKey = firstDifficultyWin
+      ? `boss:${chapter.id}:${difficulty}`
+      : `boss-replay:${chapter.id}:${difficulty}:${today}`;
+    const reward = passed
+      ? awardXpOnce(
+          learning.xpKeys,
+          rewardKey,
+          firstDifficultyWin ? config.firstXp : config.replayXp,
+        )
+      : {
+          xp: -config.failPenalty,
+          key: `boss-fail:${chapter.id}:${difficulty}:${Date.now()}`,
+        };
+    const earnedXp = passed
+      ? reward.xp
+      : -Math.min(config.failPenalty, learning.xp);
+    const streak = updateStreakWithGrace(
+      learning.lastActiveDate,
+      learning.streak,
+    );
+    const event: LearningEvent = {
+      id: `${reward.key}:${Date.now()}`,
+      type: "game",
+      skill: "Grammar",
+      correct: passed,
+      xp: earnedXp,
+      createdAt: new Date().toISOString(),
+    };
+    const multiplier = gameGemMultiplier(
+      consecutiveCheckInDays(learning.checkInDates),
+    );
+    const gemAward =
+      passed && reward.xp
+        ? Math.round(
+            (firstDifficultyWin
+              ? config.gems
+              : Math.max(3, Math.round(config.gems * 0.2))) * multiplier,
+          )
+        : 0;
+    const gameScore: GameScore = {
+      id: `boss-${chapter.id}-${difficulty}-${Date.now()}`,
+      game: `${chapter.title} Boss · ${config.label}`,
+      score,
+      total,
+      createdAt: new Date().toISOString(),
+    };
+    persistLearning({
+      ...learning,
+      xp: Math.max(0, learning.xp + earnedXp),
+      diamonds: learning.diamonds + gemAward,
+      streak: streak.streak,
+      activityDates: addUnique(learning.activityDates, [today]),
+      protectedDates: addUnique(
+        learning.protectedDates,
+        datesBetween(learning.lastActiveDate, today),
+      ),
+      lastActiveDate: streak.lastActiveDate,
+      bossWins:
+        passed && firstChapterWin
+          ? [...learning.bossWins, chapter.id]
+          : learning.bossWins,
+      difficultyWins:
+        passed && firstDifficultyWin
+          ? [...learning.difficultyWins, winKey]
+          : learning.difficultyWins,
+      xpKeys:
+        reward.xp > 0 && !learning.xpKeys.includes(reward.key)
+          ? [...learning.xpKeys, reward.key]
+          : learning.xpKeys,
+      events: [...learning.events, event],
+      gameScores: [gameScore, ...learning.gameScores],
+      sessions: learning.sessions + 1,
+      minutesStudied:
+        learning.minutesStudied +
+        (difficulty === "hard" ? 18 : difficulty === "normal" ? 12 : 8),
+    });
+    setBossId(null);
+    notify(
+      passed
+        ? firstDifficultyWin
+          ? `New achievement · ${config.label} ${chapter.title} cleared · +${earnedXp} XP · +${gemAward} ◆`
+          : `${config.label} replay cleared · +${earnedXp} XP · +${gemAward} ◆`
+        : `${config.label} boss score ${score}/${total} · −${Math.abs(earnedXp)} XP · review and try again`,
+      passed && firstDifficultyWin
+        ? { label: "View achievements", destination: "Progress" }
+        : null,
+    );
+  }
+  function finishDailySession(
+    plan: DailySessionPlan,
+    results: DailySessionAnswer[],
+  ) {
+    const now = new Date();
+    const timestamp = now.toISOString();
+    const award = awardXpOnce(learning.xpKeys, "daily-session", 40, now);
+    const streak = updateStreakWithGrace(
+      learning.lastActiveDate,
+      learning.streak,
+      now,
+    );
+    const today = localDateKey(now);
+    const incorrect = results.filter((result) => !result.correct);
+    const cards = { ...learning.reviewCards };
+    for (const wordId of dailySessionReviewWordIds(results)) {
+      const current = cards[wordId] ?? createReviewCards([wordId], now)[wordId];
+      cards[wordId] = {
+        ...current,
+        dueAt: timestamp,
+        mastery: Math.max(0, current.mastery - 8),
+      };
+    }
+    const events = createDailySessionEvents(results, now, award.xp);
+    const mistakes = incorrect.map((result) =>
+      createMistake(
+        {
+          chapterId: currentChapter.id,
+          prompt: result.question.prompt,
+          answer: result.selected,
+          correction: result.question.answer,
+          explanation: result.question.explanation,
+          skill: result.question.skill,
+          source: "daily",
+          sourceKey: `${currentChapter.id}:${result.question.kind}:${result.question.reviewWordId ?? result.question.prompt}`,
+        },
+        now,
+      ),
+    );
+    const next = {
+      ...learning,
+      xp: learning.xp + award.xp,
+      diamonds: learning.diamonds + (award.xp ? 4 : 0),
+      reviews: dueReviewIds(cards, now).length,
+      streak: streak.streak,
+      activityDates: addUnique(learning.activityDates, [today]),
+      protectedDates: addUnique(
+        learning.protectedDates,
+        datesBetween(learning.lastActiveDate, today),
+      ),
+      lastActiveDate: streak.lastActiveDate,
+      xpKeys: learning.xpKeys.includes(award.key)
+        ? learning.xpKeys
+        : [...learning.xpKeys, award.key],
+      events: [...learning.events, ...events],
+      mistakes: mergeMistakes(learning.mistakes, mistakes),
+      reviewCards: cards,
+      sessions: learning.sessions + 1,
+      minutesStudied: learning.minutesStudied + plan.estimatedMinutes,
+      wordsPracticed:
+        learning.wordsPracticed +
+        results.filter((result) => result.question.kind === "warmup").length,
+    };
+    persistLearning(next);
+    setDailySessionOpen(false);
+    const nextScores = calculateSkillScores(next.events, timestamp);
+    const nextWeakest = (
+      Object.entries(nextScores) as [LearningEvent["skill"], number][]
+    ).sort((a, b) => a[1] - b[1])[0][0];
+    const nextRecommendation = smartLearningRecommendation({
+      dueReviews: dueReviewIds(next.reviewCards, now).length,
+      dueMistakes: dueMistakes(next.mistakes, now).length,
+      weakestSkill: nextWeakest,
+      currentChapterTitle: currentChapter.title,
+      chapterProgress: next.chapterProgress[currentChapter.id] ?? 0,
+    });
+    notify(
+      award.xp
+        ? `Daily journey complete · +40 XP · +4 ◆${incorrect.length ? ` · ${incorrect.length} review${incorrect.length === 1 ? "" : "s"} added` : ""} · Next: ${nextRecommendation.title}`
+        : `Daily journey practiced again · Next: ${nextRecommendation.title}`,
+      {
+        label: nextRecommendation.action,
+        destination: nextRecommendation.destination,
+      },
+    );
+  }
+  function resolveStreak(method: "diamonds" | "challenge" | "reset") {
+    const today = localDateKey();
+    if (method === "reset") {
+      persistLearning({ ...learning, streak: 0, lastActiveDate: "" });
+      setRecoveryOpen(false);
+      notify("Streak reset. Your next activity starts a fresh streak.");
+      return;
+    }
+    if (method === "diamonds" && learning.diamonds < 80) return;
+    const gaps = datesBetween(learning.lastActiveDate, today);
+    persistLearning({
+      ...learning,
+      diamonds:
+        method === "diamonds" ? learning.diamonds - 80 : learning.diamonds,
+      streak: learning.streak + 1,
+      lastActiveDate: today,
+      activityDates: addUnique(learning.activityDates, [today]),
+      protectedDates: addUnique(learning.protectedDates, gaps),
+    });
+    setRecoveryOpen(false);
+    notify(
+      method === "diamonds"
+        ? "Streak rescued with 80 diamonds"
+        : "15-question rescue complete · streak saved",
+    );
+  }
+  function startPull(event: React.TouchEvent<HTMLElement>) {
+    const target = event.target as HTMLElement;
+    if (
+      refreshing ||
+      window.scrollY > 0 ||
+      target.closest(".modal-backdrop,input,textarea,select,[data-no-pull]")
+    )
+      return;
+    pullStart.current = event.touches[0]?.clientY ?? null;
+  }
+  function movePull(event: React.TouchEvent<HTMLElement>) {
+    if (pullStart.current === null) return;
+    const distance = dampedPullDistance(
+      (event.touches[0]?.clientY ?? pullStart.current) - pullStart.current,
+    );
+    setPullDistance(distance);
+    if (distance > 0 && event.cancelable) event.preventDefault();
+  }
+  function endPull() {
+    if (pullStart.current === null) return;
+    pullStart.current = null;
+    if (shouldTriggerPullRefresh(pullDistance)) {
+      setRefreshing(true);
+      setPullDistance(82);
+      window.setTimeout(() => window.location.reload(), 420);
+    } else setPullDistance(0);
+  }
+  function cancelPull() {
+    pullStart.current = null;
+    if (!refreshing) setPullDistance(0);
+  }
+  function startNavHold(label: string) {
+    if (navHoldTimer.current) window.clearTimeout(navHoldTimer.current);
+    navHoldTimer.current = window.setTimeout(() => {
+      setNavPreview(label);
+      window.setTimeout(() => setNavPreview(""), 3600);
+    }, 520);
+  }
+  function endNavHold() {
+    if (navHoldTimer.current) window.clearTimeout(navHoldTimer.current);
+    navHoldTimer.current = null;
+  }
+  function setColorMode(colorMode: "light" | "dark") {
+    setLearning((current) => ({
+      ...current,
+      inventory: { ...current.inventory, colorMode },
+    }));
+    notify(colorMode === "dark" ? "Dark mode enabled" : "Light mode enabled");
+  }
+  function setFontScale(fontScale: "small" | "medium" | "large") {
+    setLearning((current) => ({
+      ...current,
+      inventory: { ...current.inventory, fontScale },
+    }));
+    notify(
+      `${fontScale[0].toUpperCase() + fontScale.slice(1)} text size enabled`,
+    );
+  }
+  function setHskBackground(equippedHskBackground: string) {
+    setLearning((current) => ({
+      ...current,
+      inventory: { ...current.inventory, equippedHskBackground },
+    }));
+  }
+  function setHskBackgroundAuto(hskBackgroundAuto: boolean) {
+    setLearning((current) => ({
+      ...current,
+      inventory: { ...current.inventory, hskBackgroundAuto },
+    }));
+    notify(
+      hskBackgroundAuto
+        ? "HSK backgrounds will rotate automatically"
+        : "HSK background rotation paused",
+    );
+  }
+  function setHskBackgroundPlaylist(hskBackgroundPlaylist: string[]) {
+    setLearning((current) => ({
+      ...current,
+      inventory: { ...current.inventory, hskBackgroundPlaylist },
+    }));
+    notify(
+      hskBackgroundPlaylist.length > 1
+        ? `${hskBackgroundPlaylist.length} HSK backgrounds selected for rotation`
+        : "HSK background set to one location",
+    );
+  }
+  function closeQuickTour() {
+    window.localStorage.setItem("long-quick-tour-v1", "seen");
+    setTourOpen(false);
+    setTourStep(0);
+  }
+  function openQuickTour() {
+    setSettingsOpen(false);
+    setTourStep(0);
+    setTourOpen(true);
+  }
+  function visitTourTarget(target: string) {
+    if (target === "Gems") setGemsOpen(true);
+    else setActive(target);
+  }
+  function exportBackup() {
+    const text = createLocalBackup({
+      profile: { ...(profile ?? { name: "Learner" }) },
+      learning: { ...learning },
+      voice: { ...voicePrefs },
+    });
+    const blob = new Blob([text], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `long-chinese-backup-${localDateKey()}.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    notify("Private local backup downloaded");
+  }
+  async function importBackup(file: File) {
+    const backup = parseLocalBackup(await file.text());
+    const restoredProfile = backup.profile as Profile;
+    const restoredLearning = {
+      ...defaultState,
+      ...backup.learning,
+      reviewCards:
+        (backup.learning.reviewCards as LearningState["reviewCards"]) ??
+        defaultState.reviewCards,
+      events: (backup.learning.events as LearningEvent[]) ?? [],
+      xpKeys: (backup.learning.xpKeys as string[]) ?? [],
+      questClaims: (backup.learning.questClaims as string[]) ?? [],
+      favorites: (backup.learning.favorites as string[]) ?? [],
+      personalWords: (backup.learning.personalWords as PersonalWord[]) ?? [],
+      flashcardStats:
+        (backup.learning.flashcardStats as Record<string, FlashcardStat>) ?? {},
+      gameScores: (backup.learning.gameScores as GameScore[]) ?? [],
+      mistakes: (backup.learning.mistakes as Mistake[]) ?? [],
+      checkInDates: (backup.learning.checkInDates as string[]) ?? [],
+      checkInMilestones: (backup.learning.checkInMilestones as number[]) ?? [],
+    } as LearningState;
+    const restoredVoice = { ...defaultVoice, ...backup.voice } as VoicePrefs;
+    const stored = [
+      writeLocalJson(window.localStorage, "long-profile", restoredProfile),
+      writeLocalJson(window.localStorage, "long-learning-v2", restoredLearning),
+      writeLocalJson(window.localStorage, "long-voice", restoredVoice),
+    ];
+    if (stored.some((result) => !result))
+      throw new Error(
+        "The backup is valid, but this browser could not save it. Check private-browsing or storage settings.",
+      );
+    setProfile(restoredProfile);
+    setLearning(restoredLearning);
+    setVoicePrefs(restoredVoice);
+    queueCloudSync(restoredProfile, restoredLearning, restoredVoice);
+    setSettingsOpen(false);
+    setActive("Today");
+    notify("Backup restored and queued for sync");
+  }
 
-  if (!hydrated) return <div className="app-loading"><span className="brand-mark">龙</span><p>Preparing your Chinese world…</p></div>;
-  activeGemWallet={balance:learning.diamonds,spend:spendGems};
+  if (!hydrated)
+    return (
+      <div className="app-loading">
+        <span className="brand-mark">龙</span>
+        <p>Preparing your Chinese world…</p>
+      </div>
+    );
+  activeGemWallet = { balance: learning.diamonds, spend: spendGems };
 
-  const avatarGlyph=avatarGlyphs[learning.inventory.equippedAvatar]??profile?.name?.[0]??'你';const badgeGlyph=badgeGlyphs[learning.inventory.equippedBadge]??'冠';
-  return <main id="main-content" className={`app-shell mode-${learning.inventory.colorMode} theme-${learning.inventory.equippedTheme} wallpaper-${learning.inventory.equippedWallpaper} frame-${learning.inventory.equippedFrame} font-${learning.inventory.fontScale} ${pullDistance?'pulling':''}`} onTouchStart={startPull} onTouchMove={movePull} onTouchEnd={endPull} onTouchCancel={cancelPull}>
-    <div className={`pull-refresh-indicator ${shouldTriggerPullRefresh(pullDistance)?'ready':''} ${refreshing?'refreshing':''}`} style={{transform:`translate(-50%, ${pullDistance-58}px)`,opacity:pullDistance?1:0}} role="status" aria-live="polite"><span>↻</span><small>{pullRefreshLabel(pullDistance,refreshing)}</small></div>
-    <aside className="sidebar"><button className="brand brand-home" onClick={()=>setActive('Today')} aria-label="Go to Today home"><span className="brand-mark">龙</span><span>Lóng</span></button><nav aria-label="Main navigation">{nav.map(([icon,label]) => <button key={label} title={`${label} — ${navDescriptions[label]}`} data-label={label} data-tour={label} className={`${active === label ? 'nav-item active' : 'nav-item'} ${tourOpen&&quickTourSteps[tourStep]?.target===label?'tour-target':''}`} onPointerDown={()=>startNavHold(label)} onPointerUp={endNavHold} onPointerCancel={endNavHold} onPointerLeave={endNavHold} onContextMenu={event=>event.preventDefault()} onClick={() => setActive(label)}><span aria-hidden="true">{icon}</span>{label}</button>)}</nav><button className="sidebar-foot profile-button compact-profile" onClick={() => setSettingsOpen(true)} aria-label="Open profile settings"><i>•••</i></button>{navPreview&&<div className="nav-preview" role="status"><small>{navPreview.toUpperCase()}</small><strong>{navPreview==='Games'?'Game Center':navPreview}</strong><p>{navDescriptions[navPreview]}</p></div>}</aside>
-      <section className="content"><header className="topbar"><button className="mobile-brand brand-home" onClick={()=>setActive('Today')} aria-label="Go to Today home"><span className="brand-mark">龙</span><span className="mobile-brand-name">Lóng</span></button><div className="top-stats"><button className="xp-status" onClick={()=>setXpOpen(true)} aria-label={`Level ${levelProgress.level}, ${learning.xp} total XP, ${levelProgress.remainingXp} XP to next level`}><span>◆</span><div><b>Level {levelProgress.level}</b><small>{learning.xp.toLocaleString()} XP · {levelProgress.remainingXp} to next</small><i><em style={{width:`${levelProgress.progress}%`}}/></i></div></button><button className="streak-status" onClick={()=>setStreakOpen(true)}><b>🔥</b><span><strong>{learning.streak} day streak</strong><small>Open calendar</small></span></button><button data-tour="Gems" className={`diamond-status ${tourOpen&&quickTourSteps[tourStep]?.target==='Gems'?'tour-target':''}`} title="Open gems and rewards" onClick={()=>setGemsOpen(true)}><b>◆</b> {learning.diamonds}</button><span className="review-status"><b>◫</b> {learning.reviews+dueMistakes(learning.mistakes).length} reviews</span></div><button className="tour-help" onClick={openQuickTour} aria-label="Open quick app tutorial" title="Quick tutorial">?</button><button className="audio-settings" onClick={() => setVoiceOpen(true)} aria-label="Voice and accent settings"><span>◖))</span><b>{voicePrefs.accent.replace('zh-','')}</b></button><button className="avatar" onClick={() => setSettingsOpen(true)} aria-label="Open account and Mandarin skill profile">{avatarGlyph}{learning.inventory.equippedBadge!=='none'&&<small>{badgeGlyph}</small>}</button></header>
-      {active === 'Today' && <Dashboard profile={profile} learning={learning} current={currentChapter} specialization={specialization} openChapter={openChapter} setActive={setActive} openComeback={()=>setComebackOpen(true)} openDailySession={()=>setDailySessionOpen(true)} openFocusMode={openFocusMode} claimQuest={claimQuest} openGemShop={()=>setGemsOpen(true)} buyReward={buyReward} speak={speak} />}
-      {active === 'Adventure' && <Adventure learning={learning} openChapter={openChapter} openBoss={openBossChallenge} setDifficulty={setChapterDifficulty} speak={speak} markStageSeen={markAdventureStageSeen} award={awardActivity} />}
-      {active === 'Learn' && <><LearnCenter profile={profile} chapter={currentChapter} specialization={specialization} favorites={learning.favorites} personalWords={learning.personalWords} flashcardStats={learning.flashcardStats} toggleFavorite={toggleFavorite} addPersonalWord={addPersonalWord} removePersonalWord={removePersonalWord} rateFlashcard={rateHskFlashcard} speak={speak} award={awardActivity} updateHsk={level => saveProfile({ ...(profile ?? { name: 'Learner', goals: ['Daily Conversation'], dailyMinutes: 10, hsk: 1, path: 'General',career:pathPacks.General.careers[0] }), hsk: level })} updateCareer={career=>profile&&saveProfile({...profile,career})} /><OfflineDownloads/></>}
-      {active === 'Games' && <><GameNavigationDock/><GamesCenter chapter={currentChapter} path={(profile?.path??'General') as PathId} speak={speak} award={awardActivity} /></>}
-      {active === 'Games' && <aside className="global-hint-dock"><small>OPTIONAL GEM HINTS</small><GemHintBar answer={currentChapter.question.chinesePrompt} audio={currentChapter.question.chinesePrompt} speak={speak}/></aside>}
-      {active === 'Stories' && <><MajorStoryShelf learning={learning} speak={speak}/><TextbookStories profile={profile} learning={learning} speak={speak} award={awardActivity} addPersonalWord={addPersonalWord} /></>}
-      {active === 'Review' && <Review learning={learning} rate={rateReview} rateMistake={rateMistake} speak={speak} openChapter={openChapter} addPersonalWord={addPersonalWord} />}
-      {active === 'Progress' && <><EnhancedHskReadinessDashboard profile={profile} learning={learning} setBackground={setHskBackground} setAuto={setHskBackgroundAuto} setPlaylist={setHskBackgroundPlaylist}/><Progress profile={profile} learning={learning} /></>}
-    </section>
-    <nav className="mobile-nav" aria-label="Mobile navigation">{mobileNav.map(([icon,label]) => <button key={label} data-tour={label} className={`${active === label ? 'active' : ''} ${tourOpen&&quickTourSteps[tourStep]?.target===label?'tour-target':''}`} onClick={() => setActive(label)}><span>{icon}</span>{label}</button>)}</nav>
-    {lessonId && <LessonModal chapter={adventureChapters.find(c => c.id === lessonId)!} difficulty={learning.chapterDifficulties[lessonId]??'normal'} savedStep={learning.chapterSteps[lessonId]??0} close={() => setLessonId(null)} finish={finishLesson} updateProgress={saveChapterProgress} speak={speak} />}
-    {bossId && <BossChallenge chapter={adventureChapters.find(c => c.id === bossId)!} difficulty={learning.chapterDifficulties[bossId]??'normal'} close={() => setBossId(null)} finish={finishBoss} speak={speak} />}
-    {streakOpen&&<StreakCalendar learning={learning} close={()=>setStreakOpen(false)}/>}
-    {xpOpen&&<XpProgress learning={learning} progress={levelProgress} close={()=>setXpOpen(false)}/>}
-    {recoveryOpen&&<StreakRecovery diamonds={learning.diamonds} missedDays={streakGapStatus(learning.lastActiveDate).missedDays} resolve={resolveStreak}/>}
-    {comebackOpen&&<ComebackSession learning={learning} speak={speak} close={()=>setComebackOpen(false)} finish={()=>{awardActivity('Comeback session',20,'Vocabulary',true);setComebackOpen(false)}}/>}
-    {dailySessionOpen&&<DailySession profile={profile} learning={learning} chapter={currentChapter} speak={speak} close={()=>setDailySessionOpen(false)} finish={finishDailySession} saveWord={addPersonalWord}/>}
-    {onboarding && <Onboarding current={profile} save={saveProfile} close={profile ? () => setOnboarding(false) : undefined} />}
-    {settingsOpen&&<SettingsCenter profile={profile} learning={learning} syncStatus={syncStatus} cloudAccount={cloudAccount} syncError={syncError} connectEmailAccount={handleConnectEmail} connectGoogleAccount={handleConnectGoogle} signOutAccount={handleSignOut} close={()=>setSettingsOpen(false)} editProfile={()=>{setSettingsOpen(false);setOnboarding(true)}} exportBackup={exportBackup} importBackup={importBackup} setColorMode={setColorMode} navigate={destination=>{setSettingsOpen(false);setActive(destination)}} openGuide={()=>{setSettingsOpen(false);openQuickTour()}}/>}
-    {settingsOpen&&<FontSizeDock value={learning.inventory.fontScale} setValue={setFontScale} navigate={destination=>{setSettingsOpen(false);setActive(destination)}} openGuide={()=>{setSettingsOpen(false);openQuickTour()}}/>}
-    {gemsOpen&&<GemsCenter learning={learning} close={()=>setGemsOpen(false)} go={destination=>{setGemsOpen(false);setActive(destination)}} buy={buyReward}/>} 
-    {voiceOpen && <VoiceSettings prefs={voicePrefs} voices={voices} save={saveVoice} test={prefs => speak('你好，欢迎来到你的中文世界。', prefs)} close={() => setVoiceOpen(false)} />}
-    {tourOpen&&<QuickTour step={tourStep} setStep={setTourStep} close={closeQuickTour} visit={visitTourTarget}/>}
-    {focusModeOpen&&<FocusMode elapsed={focusElapsed} timerVisible={focusTimerVisible} muted={focusMuteNotifications} setTimerVisible={setFocusTimerVisible} setMuted={setFocusMuteNotifications} reset={resetFocusMode} study={()=>{closeFocusMode();setDailySessionOpen(true)}} close={closeFocusMode}/>}
-    {toast && <div className="toast toast-enhanced" role="status" aria-live="polite"><span className="toast-icon">✓</span><div><strong>{toast}</strong><small>Closing in {toastSeconds}s</small><i><em style={{width:`${toastSeconds*10}%`}}/></i></div>{toastAction&&<button className="toast-action" onClick={()=>{setActive(toastAction.destination);setToast('')}}>{toastAction.label}</button>}<button className="toast-close" onClick={()=>setToast('')} aria-label="Close notification">×</button></div>}
-  </main>;
+  const avatarGlyph =
+    avatarGlyphs[learning.inventory.equippedAvatar] ??
+    profile?.name?.[0] ??
+    "你";
+  const badgeGlyph = badgeGlyphs[learning.inventory.equippedBadge] ?? "冠";
+  return (
+    <main
+      id="main-content"
+      className={`app-shell mode-${learning.inventory.colorMode} theme-${learning.inventory.equippedTheme} wallpaper-${learning.inventory.equippedWallpaper} frame-${learning.inventory.equippedFrame} font-${learning.inventory.fontScale} ${pullDistance ? "pulling" : ""}`}
+      onTouchStart={startPull}
+      onTouchMove={movePull}
+      onTouchEnd={endPull}
+      onTouchCancel={cancelPull}
+    >
+      <div
+        className={`pull-refresh-indicator ${shouldTriggerPullRefresh(pullDistance) ? "ready" : ""} ${refreshing ? "refreshing" : ""}`}
+        style={{
+          transform: `translate(-50%, ${pullDistance - 58}px)`,
+          opacity: pullDistance ? 1 : 0,
+        }}
+        role="status"
+        aria-live="polite"
+      >
+        <span>↻</span>
+        <small>{pullRefreshLabel(pullDistance, refreshing)}</small>
+      </div>
+      <aside className="sidebar">
+        <button
+          className="brand brand-home"
+          onClick={() => setActive("Today")}
+          aria-label="Go to Today home"
+        >
+          <span className="brand-mark">龙</span>
+          <span>Lóng</span>
+        </button>
+        <nav aria-label="Main navigation">
+          {nav.map(([icon, label]) => (
+            <button
+              key={label}
+              title={`${label} — ${navDescriptions[label]}`}
+              data-label={label}
+              data-tour={label}
+              className={`${active === label ? "nav-item active" : "nav-item"} ${tourOpen && quickTourSteps[tourStep]?.target === label ? "tour-target" : ""}`}
+              onPointerDown={() => startNavHold(label)}
+              onPointerUp={endNavHold}
+              onPointerCancel={endNavHold}
+              onPointerLeave={endNavHold}
+              onContextMenu={(event) => event.preventDefault()}
+              onClick={() => setActive(label)}
+            >
+              <span aria-hidden="true">{icon}</span>
+              {label}
+            </button>
+          ))}
+        </nav>
+        <button
+          className="sidebar-foot profile-button compact-profile"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Open profile settings"
+        >
+          <i>•••</i>
+        </button>
+        {navPreview && (
+          <div className="nav-preview" role="status">
+            <small>{navPreview.toUpperCase()}</small>
+            <strong>
+              {navPreview === "Games" ? "Game Center" : navPreview}
+            </strong>
+            <p>{navDescriptions[navPreview]}</p>
+          </div>
+        )}
+      </aside>
+      <section className="content">
+        <header className="topbar">
+          <button
+            className="mobile-brand brand-home"
+            onClick={() => setActive("Today")}
+            aria-label="Go to Today home"
+          >
+            <span className="brand-mark">龙</span>
+            <span className="mobile-brand-name">Lóng</span>
+          </button>
+          <div className="top-stats">
+            <button
+              className="xp-status"
+              onClick={() => setXpOpen(true)}
+              aria-label={`Level ${levelProgress.level}, ${learning.xp} total XP, ${levelProgress.remainingXp} XP to next level`}
+            >
+              <span>◆</span>
+              <div>
+                <b>Level {levelProgress.level}</b>
+                <small>
+                  {learning.xp.toLocaleString()} XP ·{" "}
+                  {levelProgress.remainingXp} to next
+                </small>
+                <i>
+                  <em style={{ width: `${levelProgress.progress}%` }} />
+                </i>
+              </div>
+            </button>
+            <button
+              className="streak-status"
+              onClick={() => setStreakOpen(true)}
+            >
+              <b>🔥</b>
+              <span>
+                <strong>{learning.streak} day streak</strong>
+                <small>Open calendar</small>
+              </span>
+            </button>
+            <button
+              data-tour="Gems"
+              className={`diamond-status ${tourOpen && quickTourSteps[tourStep]?.target === "Gems" ? "tour-target" : ""}`}
+              title="Open gems and rewards"
+              onClick={() => setGemsOpen(true)}
+            >
+              <b>◆</b> {learning.diamonds}
+            </button>
+            <span className="review-status">
+              <b>◫</b>{" "}
+              {learning.reviews + dueMistakes(learning.mistakes).length} reviews
+            </span>
+          </div>
+          <button
+            className="tour-help"
+            onClick={openQuickTour}
+            aria-label="Open quick app tutorial"
+            title="Quick tutorial"
+          >
+            ?
+          </button>
+          <button
+            className="audio-settings"
+            onClick={() => setVoiceOpen(true)}
+            aria-label="Voice and accent settings"
+          >
+            <span>◖))</span>
+            <b>{voicePrefs.accent.replace("zh-", "")}</b>
+          </button>
+          <button
+            className="avatar"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Open account and Mandarin skill profile"
+          >
+            {avatarGlyph}
+            {learning.inventory.equippedBadge !== "none" && (
+              <small>{badgeGlyph}</small>
+            )}
+          </button>
+        </header>
+        {active === "Today" && (
+          <Dashboard
+            profile={profile}
+            learning={learning}
+            current={currentChapter}
+            specialization={specialization}
+            openChapter={openChapter}
+            setActive={setActive}
+            openComeback={() => setComebackOpen(true)}
+            openDailySession={() => setDailySessionOpen(true)}
+            openFocusMode={openFocusMode}
+            claimQuest={claimQuest}
+            openGemShop={() => setGemsOpen(true)}
+            buyReward={buyReward}
+            speak={speak}
+          />
+        )}
+        {active === "Adventure" && (
+          <Adventure
+            learning={learning}
+            openChapter={openChapter}
+            openBoss={openBossChallenge}
+            setDifficulty={setChapterDifficulty}
+            speak={speak}
+            markStageSeen={markAdventureStageSeen}
+            award={awardActivity}
+          />
+        )}
+        {active === "Learn" && (
+          <>
+            <LearnCenter
+              profile={profile}
+              chapter={currentChapter}
+              specialization={specialization}
+              favorites={learning.favorites}
+              personalWords={learning.personalWords}
+              flashcardStats={learning.flashcardStats}
+              toggleFavorite={toggleFavorite}
+              addPersonalWord={addPersonalWord}
+              removePersonalWord={removePersonalWord}
+              rateFlashcard={rateHskFlashcard}
+              speak={speak}
+              award={awardActivity}
+              updateHsk={(level) =>
+                saveProfile({
+                  ...(profile ?? {
+                    name: "Learner",
+                    goals: ["Daily Conversation"],
+                    dailyMinutes: 10,
+                    hsk: 1,
+                    path: "General",
+                    career: pathPacks.General.careers[0],
+                  }),
+                  hsk: level,
+                })
+              }
+              updateCareer={(career) =>
+                profile && saveProfile({ ...profile, career })
+              }
+            />
+            <OfflineDownloads />
+          </>
+        )}
+        {active === "Games" && (
+          <>
+            <GameNavigationDock />
+            <GamesCenter
+              chapter={currentChapter}
+              path={(profile?.path ?? "General") as PathId}
+              speak={speak}
+              award={awardActivity}
+              practiceChanged={setRoutePracticeOpen}
+            />
+          </>
+        )}
+        {active === "Games" && (
+          <aside className="global-hint-dock">
+            <small>OPTIONAL GEM HINTS</small>
+            <GemHintBar
+              answer={currentChapter.question.chinesePrompt}
+              audio={currentChapter.question.chinesePrompt}
+              speak={speak}
+            />
+          </aside>
+        )}
+        {active === "Stories" && (
+          <>
+            <MajorStoryShelf learning={learning} speak={speak} />
+            <TextbookStories
+              profile={profile}
+              learning={learning}
+              speak={speak}
+              award={awardActivity}
+              addPersonalWord={addPersonalWord}
+            />
+          </>
+        )}
+        {active === "Review" && (
+          <Review
+            profile={profile}
+            learning={learning}
+            rate={rateReview}
+            rateMistake={rateMistake}
+            speak={speak}
+            openChapter={openChapter}
+            addPersonalWord={addPersonalWord}
+          />
+        )}
+        {active === "Progress" && (
+          <>
+            <EnhancedHskReadinessDashboard
+              profile={profile}
+              learning={learning}
+              setBackground={setHskBackground}
+              setAuto={setHskBackgroundAuto}
+              setPlaylist={setHskBackgroundPlaylist}
+            />
+            <Progress profile={profile} learning={learning} />
+          </>
+        )}
+      </section>
+      <nav className="mobile-nav" aria-label="Mobile navigation">
+        {mobileNav.map(([icon, label]) => (
+          <button
+            key={label}
+            data-tour={label}
+            className={`${active === label ? "active" : ""} ${tourOpen && quickTourSteps[tourStep]?.target === label ? "tour-target" : ""}`}
+            onClick={() => setActive(label)}
+          >
+            <span>{icon}</span>
+            {label}
+          </button>
+        ))}
+      </nav>
+      {lessonId && (
+        <LessonModal
+          chapter={adventureChapters.find((c) => c.id === lessonId)!}
+          difficulty={learning.chapterDifficulties[lessonId] ?? "normal"}
+          savedStep={learning.chapterSteps[lessonId] ?? 0}
+          close={() => setLessonId(null)}
+          finish={finishLesson}
+          updateProgress={saveChapterProgress}
+          speak={speak}
+        />
+      )}
+      {bossId && (
+        <BossChallenge
+          chapter={adventureChapters.find((c) => c.id === bossId)!}
+          difficulty={learning.chapterDifficulties[bossId] ?? "normal"}
+          close={() => setBossId(null)}
+          finish={finishBoss}
+          speak={speak}
+        />
+      )}
+      {streakOpen && (
+        <StreakCalendar
+          learning={learning}
+          close={() => setStreakOpen(false)}
+        />
+      )}
+      {xpOpen && (
+        <XpProgress
+          learning={learning}
+          progress={levelProgress}
+          close={() => setXpOpen(false)}
+        />
+      )}
+      {recoveryOpen && (
+        <StreakRecovery
+          diamonds={learning.diamonds}
+          missedDays={streakGapStatus(learning.lastActiveDate).missedDays}
+          resolve={resolveStreak}
+        />
+      )}
+      {comebackOpen && (
+        <ComebackSession
+          learning={learning}
+          speak={speak}
+          close={() => setComebackOpen(false)}
+          finish={() => {
+            awardActivity("Comeback session", 20, "Vocabulary", true);
+            setComebackOpen(false);
+          }}
+        />
+      )}
+      {dailySessionOpen && (
+        <DailySession
+          profile={profile}
+          learning={learning}
+          chapter={currentChapter}
+          speak={speak}
+          close={() => setDailySessionOpen(false)}
+          finish={finishDailySession}
+          saveWord={addPersonalWord}
+        />
+      )}
+      {onboarding && (
+        <Onboarding
+          current={profile}
+          save={saveProfile}
+          close={profile ? () => setOnboarding(false) : undefined}
+        />
+      )}
+      {settingsOpen && (
+        <SettingsCenter
+          profile={profile}
+          learning={learning}
+          syncStatus={syncStatus}
+          cloudAccount={cloudAccount}
+          syncError={syncError}
+          connectEmailAccount={handleConnectEmail}
+          connectGoogleAccount={handleConnectGoogle}
+          signOutAccount={handleSignOut}
+          signOutEverywhere={handleSignOutEverywhere}
+          protectOtherDevices={handleProtectOtherDevices}
+          close={() => setSettingsOpen(false)}
+          editProfile={() => {
+            setSettingsOpen(false);
+            setOnboarding(true);
+          }}
+          exportBackup={exportBackup}
+          importBackup={importBackup}
+          setColorMode={setColorMode}
+          navigate={(destination) => {
+            setSettingsOpen(false);
+            setActive(destination);
+          }}
+          openGuide={() => {
+            setSettingsOpen(false);
+            openQuickTour();
+          }}
+        />
+      )}
+      {settingsOpen && (
+        <FontSizeDock
+          value={learning.inventory.fontScale}
+          setValue={setFontScale}
+          navigate={(destination) => {
+            setSettingsOpen(false);
+            setActive(destination);
+          }}
+          openGuide={() => {
+            setSettingsOpen(false);
+            openQuickTour();
+          }}
+        />
+      )}
+      {gemsOpen && (
+        <GemsCenter
+          learning={learning}
+          close={() => setGemsOpen(false)}
+          go={(destination) => {
+            setGemsOpen(false);
+            setActive(destination);
+          }}
+          buy={buyReward}
+        />
+      )}
+      {voiceOpen && (
+        <VoiceSettings
+          prefs={voicePrefs}
+          voices={voices}
+          save={saveVoice}
+          test={(prefs) => speak("你好，欢迎来到你的中文世界。", prefs)}
+          close={() => setVoiceOpen(false)}
+        />
+      )}
+      {tourOpen && (
+        <QuickTour
+          step={tourStep}
+          setStep={setTourStep}
+          close={closeQuickTour}
+          visit={visitTourTarget}
+        />
+      )}
+      {focusModeOpen && (
+        <FocusMode
+          elapsed={focusElapsed}
+          timerVisible={focusTimerVisible}
+          muted={focusMuteNotifications}
+          setTimerVisible={setFocusTimerVisible}
+          setMuted={setFocusMuteNotifications}
+          reset={resetFocusMode}
+          study={() => {
+            closeFocusMode();
+            setDailySessionOpen(true);
+          }}
+          close={closeFocusMode}
+        />
+      )}
+      <BackToTop
+        blocked={Boolean(
+          routePracticeOpen ||
+            lessonId ||
+            bossId ||
+            dailySessionOpen ||
+            comebackOpen ||
+            onboarding ||
+            settingsOpen ||
+            gemsOpen ||
+            voiceOpen ||
+            tourOpen ||
+            focusModeOpen ||
+            streakOpen ||
+            xpOpen ||
+            recoveryOpen,
+        )}
+      />
+      {toast && (
+        <div className="toast toast-enhanced" role="status" aria-live="polite">
+          <span className="toast-icon">✓</span>
+          <div>
+            <strong>{toast}</strong>
+            <small>Closing in {toastSeconds}s</small>
+            <i>
+              <em style={{ width: `${toastSeconds * 10}%` }} />
+            </i>
+          </div>
+          {toastAction && (
+            <button
+              className="toast-action"
+              onClick={() => {
+                setActive(toastAction.destination);
+                setToast("");
+              }}
+            >
+              {toastAction.label}
+            </button>
+          )}
+          <button
+            className="toast-close"
+            onClick={() => setToast("")}
+            aria-label="Close notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
+    </main>
+  );
 }
 
-function FocusMode({elapsed,timerVisible,muted,setTimerVisible,setMuted,reset,study,close}:{elapsed:number;timerVisible:boolean;muted:boolean;setTimerVisible:(value:boolean)=>void;setMuted:(value:boolean)=>void;reset:()=>void;study:()=>void;close:()=>void}){
-  const minutes=Math.floor(elapsed/60);const seconds=elapsed%60;
-  return <div className="focus-mode-layer" role="dialog" aria-modal="true" aria-label="Focus study timer"><section><header><div><p className="eyebrow">FOCUS MODE · 专注学习</p><h2>Make this study time yours</h2><p>The timer keeps running even when its number is hidden.</p></div><button onClick={close} aria-label="Minimize focus mode">—</button></header><div className={`focus-clock ${timerVisible?'':'hidden'}`}><span>{timerVisible?`${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`:'计时中'}</span><small>{timerVisible?'elapsed study time':'timer is still running'}</small></div><div className="focus-mode-controls"><button className={timerVisible?'active':''} onClick={()=>setTimerVisible(!timerVisible)}><span>{timerVisible?'◉':'○'}</span><p><strong>{timerVisible?'Hide timer':'Show timer'}</strong><small>Counting continues in background</small></p></button><button className={muted?'active':''} onClick={()=>setMuted(!muted)}><span>{muted?'静':'铃'}</span><p><strong>{muted?'Notifications muted':'Mute notifications'}</strong><small>Keep the session interruption-free</small></p></button></div><footer><button onClick={reset}>Reset timer</button><button className="primary" onClick={study}>Start today’s learning mix →</button></footer></section></div>
+function BackToTop({ blocked }: { blocked: boolean }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const update = () => setVisible(!blocked && window.scrollY > 640);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [blocked]);
+  if (!visible) return null;
+  return (
+    <button
+      className="back-to-top"
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label="Back to the top of this menu"
+      title="Back to top"
+    >
+      <span>↑</span>
+      <b>Top</b>
+    </button>
+  );
 }
 
-function GameNavigationDock(){
-  function jumpTo(index:number){document.querySelector<HTMLElement>(`.game-catalog .game-card:nth-child(${index})`)?.scrollIntoView({behavior:'smooth',block:'center'})}
-  return <nav className="game-navigation-dock" aria-label="Quick navigation for learning games"><div><small>GAME NAVIGATOR</small><strong>Choose a skill</strong></div><button onClick={()=>jumpTo(1)}><span>拼</span>Words</button><button onClick={()=>jumpTo(2)}><span>句</span>Grammar</button><button onClick={()=>jumpTo(6)}><span>声</span>Listening</button><button onClick={()=>jumpTo(10)}><span>写</span>Hanzi</button><button onClick={()=>jumpTo(12)}><span>专</span>Specialized</button></nav>
+function FocusMode({
+  elapsed,
+  timerVisible,
+  muted,
+  setTimerVisible,
+  setMuted,
+  reset,
+  study,
+  close,
+}: {
+  elapsed: number;
+  timerVisible: boolean;
+  muted: boolean;
+  setTimerVisible: (value: boolean) => void;
+  setMuted: (value: boolean) => void;
+  reset: () => void;
+  study: () => void;
+  close: () => void;
+}) {
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  return (
+    <div
+      className="focus-mode-layer"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Focus study timer"
+    >
+      <section>
+        <header>
+          <div>
+            <p className="eyebrow">FOCUS MODE · 专注学习</p>
+            <h2>Make this study time yours</h2>
+            <p>The timer keeps running even when its number is hidden.</p>
+          </div>
+          <button onClick={close} aria-label="Minimize focus mode">
+            —
+          </button>
+        </header>
+        <div className={`focus-clock ${timerVisible ? "" : "hidden"}`}>
+          <span>
+            {timerVisible
+              ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+              : "计时中"}
+          </span>
+          <small>
+            {timerVisible ? "elapsed study time" : "timer is still running"}
+          </small>
+        </div>
+        <div className="focus-mode-controls">
+          <button
+            className={timerVisible ? "active" : ""}
+            onClick={() => setTimerVisible(!timerVisible)}
+          >
+            <span>{timerVisible ? "◉" : "○"}</span>
+            <p>
+              <strong>{timerVisible ? "Hide timer" : "Show timer"}</strong>
+              <small>Counting continues in background</small>
+            </p>
+          </button>
+          <button
+            className={muted ? "active" : ""}
+            onClick={() => setMuted(!muted)}
+          >
+            <span>{muted ? "静" : "铃"}</span>
+            <p>
+              <strong>
+                {muted ? "Notifications muted" : "Mute notifications"}
+              </strong>
+              <small>Keep the session interruption-free</small>
+            </p>
+          </button>
+        </div>
+        <footer>
+          <button onClick={reset}>Reset timer</button>
+          <button className="primary" onClick={study}>
+            Start today’s learning mix →
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
-function QuickTour({step,setStep,close,visit}:{step:number;setStep:(step:number)=>void;close:()=>void;visit:(target:string)=>void}){
-  const item=quickTourSteps[step];const last=step===quickTourSteps.length-1;
-  return <div className="quick-tour-layer" role="dialog" aria-modal="true" aria-label="Quick app tutorial"><section className="quick-tour-card"><header><span>{item.icon}</span><div><small>{item.eyebrow} · {step+1}/{quickTourSteps.length}</small><strong>{item.title}</strong></div><button onClick={close} aria-label="Close tutorial">×</button></header><p>{item.copy}</p><div className="quick-tour-route" aria-label="Tutorial progress">{quickTourSteps.map((tour,index)=><i className={index===step?'active':index<step?'done':''} key={tour.target}/>)}</div><footer><button className="tour-skip" onClick={close}>Lewati</button><div>{step>0&&<button onClick={()=>setStep(step-1)}>← Kembali</button>}<button className="tour-visit" onClick={()=>visit(item.target)}>Buka {item.target} ↗</button><button className="tour-next" onClick={()=>last?close():setStep(step+1)}>{last?'Selesai ✓':'Lanjut →'}</button></div></footer></section></div>
+function GameNavigationDock() {
+  function jumpTo(index: number) {
+    document
+      .querySelector<HTMLElement>(
+        `.game-catalog .game-card:nth-child(${index})`,
+      )
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  return (
+    <nav
+      className="game-navigation-dock"
+      aria-label="Quick navigation for learning games"
+    >
+      <div>
+        <small>GAME NAVIGATOR</small>
+        <strong>Choose a skill</strong>
+      </div>
+      <button onClick={() => jumpTo(1)}>
+        <span>拼</span>Words
+      </button>
+      <button onClick={() => jumpTo(2)}>
+        <span>句</span>Grammar
+      </button>
+      <button onClick={() => jumpTo(6)}>
+        <span>声</span>Listening
+      </button>
+      <button onClick={() => jumpTo(10)}>
+        <span>写</span>Hanzi
+      </button>
+      <button onClick={() => jumpTo(12)}>
+        <span>专</span>Specialized
+      </button>
+    </nav>
+  );
 }
 
-function ShopItemPreview({id,category,icon,title}:{id:string;category:string;icon:string;title:string}){
-  const cosmetic=id.replace('cosmetic:','');const landmark=hskBackgrounds.find(item=>item.id===cosmetic);const avatar=category==='avatars';const identity=category==='identity';
-  const selectedGlyph=avatar||identity?icon:'你';
-  return <div className={`shop-preview-stage preview-${category} cosmetic-preview-${cosmetic}`} style={landmark?.image?{backgroundImage:`linear-gradient(145deg,rgba(8,42,34,.34),rgba(8,42,34,.76)),url(${landmark.image})`}:undefined}><div className="shop-preview-comparison"><div><small>CURRENT</small><div className="shop-preview-app current"><header><i>龙</i><span>Level 5</span><b>◆ 126</b></header><main><small>YOUR DASHBOARD</small><strong>继续学习</strong><p>Continue learning</p></main><footer><span>你</span><i/><i/><i/></footer></div></div><span aria-hidden="true">→</span><div><small>SELECTED PREVIEW</small><div className="shop-preview-app selected"><header><i>{selectedGlyph}</i><span>Level 5</span><b>◆ 126</b></header><main><small>{category==='boosters'?'BOOST EFFECT READY':'LIVE STYLE PREVIEW'}</small><strong>{title}</strong><p>{category==='boosters'?'Applies to your next eligible session':'See it on navigation, cards, and profile'}</p></main><footer><span className={identity?'identity-ring':''}>{selectedGlyph}</span><i/><i/><i/></footer></div></div></div><b>{category==='boosters'?'See the learning effect before spending':'Current look compared with selected item'}</b></div>
+function QuickTour({
+  step,
+  setStep,
+  close,
+  visit,
+}: {
+  step: number;
+  setStep: (step: number) => void;
+  close: () => void;
+  visit: (target: string) => void;
+}) {
+  const item = quickTourSteps[step];
+  const last = step === quickTourSteps.length - 1;
+  return (
+    <div
+      className="quick-tour-layer"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Quick app tutorial"
+    >
+      <section className="quick-tour-card">
+        <header>
+          <span>{item.icon}</span>
+          <div>
+            <small>
+              {item.eyebrow} · {step + 1}/{quickTourSteps.length}
+            </small>
+            <strong>{item.title}</strong>
+          </div>
+          <button onClick={close} aria-label="Close tutorial">
+            ×
+          </button>
+        </header>
+        <p>{item.copy}</p>
+        <div className="quick-tour-route" aria-label="Tutorial progress">
+          {quickTourSteps.map((tour, index) => (
+            <i
+              className={index === step ? "active" : index < step ? "done" : ""}
+              key={tour.target}
+            />
+          ))}
+        </div>
+        <footer>
+          <button className="tour-skip" onClick={close}>
+            Lewati
+          </button>
+          <div>
+            {step > 0 && (
+              <button onClick={() => setStep(step - 1)}>← Kembali</button>
+            )}
+            <button className="tour-visit" onClick={() => visit(item.target)}>
+              Buka {item.target} ↗
+            </button>
+            <button
+              className="tour-next"
+              onClick={() => (last ? close() : setStep(step + 1))}
+            >
+              {last ? "Selesai ✓" : "Lanjut →"}
+            </button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
-function GemsCenter({learning,close,go,buy}:{learning:LearningState;close:()=>void;go:(destination:string)=>void;buy:(kind:string,cost:number)=>void}){
-  const day=consecutiveCheckInDays(learning.checkInDates);const multiplier=gameGemMultiplier(day);const milestone=checkInMilestoneProgress(day);
-  const [category,setCategory]=useState<ShopCategory>('boosters');
-  const [previewId,setPreviewId]=useState('freeze');
-  const cosmeticStatus=(id:string)=>learning.inventory.cosmetics.includes(id)?'Owned · tap to equip':'Unlock & equip';
-  const offers=[
-    {id:'freeze',category:'boosters',cost:50,icon:'冰',title:'Streak Freeze',description:'Protect one missed day',status:`${learning.inventory.freezeTokens}/2 owned`},{id:'mistake',category:'boosters',cost:10,icon:'复',title:'Mistake Recovery',description:'Focused session from your weak points',status:`${learning.inventory.mistakeBoosters} ready`},{id:'xp',category:'boosters',cost:35,icon:'倍',title:'Double XP Session',description:'Double the next scored session',status:'Once per day'},{id:'ticket',category:'boosters',cost:15,icon:'票',title:'Adventure Energy',description:'Enter an optional elite challenge',status:`${learning.inventory.adventureTickets} tickets`},{id:'story:tech-night',category:'boosters',cost:30,icon:'故',title:'Bonus Story Pack',description:'Technology, campus & alternate endings',status:`${learning.inventory.unlockedStories.length} unlocked`},{id:'voice:storyteller',category:'boosters',cost:30,icon:'声',title:'Storyteller Voice Pack',description:'Clear narration and shadowing presets',status:`${learning.inventory.voicePacks.length} packs`},
-    {id:'cosmetic:midnight',category:'themes',cost:25,icon:'夜',title:'Midnight Jade',description:'Deep jade surfaces with luminous type',status:cosmeticStatus('midnight')},{id:'cosmetic:peach',category:'themes',cost:25,icon:'桃',title:'Peach Blossom',description:'Warm paper with coral accents',status:cosmeticStatus('peach')},{id:'cosmetic:scholar',category:'themes',cost:30,icon:'冠',title:'Scholar Ink',description:'Classic study-card details',status:cosmeticStatus('scholar')},{id:'cosmetic:mountain',category:'themes',cost:30,icon:'山',title:'Mountain Trail',description:'Cool landscape-inspired accents',status:cosmeticStatus('mountain')},{id:'cosmetic:imperial',category:'themes',cost:35,icon:'宫',title:'Imperial Vermilion',description:'Palace red and antique gold',status:cosmeticStatus('imperial')},{id:'cosmetic:ocean',category:'themes',cost:35,icon:'海',title:'Coastal Blue',description:'Calm blue-green study mode',status:cosmeticStatus('ocean')},
-    {id:'cosmetic:wallpaper-lantern',category:'wallpapers',cost:35,icon:'灯',title:'Lantern Festival',description:'Soft lantern glow behind lessons',status:cosmeticStatus('wallpaper-lantern')},{id:'cosmetic:wallpaper-ink',category:'wallpapers',cost:35,icon:'墨',title:'Ink Mountains',description:'Quiet mountain silhouettes',status:cosmeticStatus('wallpaper-ink')},{id:'cosmetic:wallpaper-bamboo',category:'wallpapers',cost:30,icon:'竹',title:'Bamboo Study',description:'Minimal bamboo shadows',status:cosmeticStatus('wallpaper-bamboo')},{id:'cosmetic:wallpaper-city',category:'wallpapers',cost:40,icon:'城',title:'Shanghai Night',description:'A subtle modern skyline',status:cosmeticStatus('wallpaper-city')},{id:'cosmetic:wallpaper-silk',category:'wallpapers',cost:30,icon:'绢',title:'Cloud Silk',description:'Soft traditional cloud pattern',status:cosmeticStatus('wallpaper-silk')},
-    {id:'cosmetic:hsk-bg-bund',category:'wallpapers',cost:45,icon:'沪',title:'HSK Path · The Bund',description:'Shanghai skyline behind your HSK roadmap',status:cosmeticStatus('hsk-bg-bund')},{id:'cosmetic:hsk-bg-great-wall',category:'wallpapers',cost:45,icon:'长',title:'HSK Path · Great Wall',description:'Mutianyu mountains behind your progress',status:cosmeticStatus('hsk-bg-great-wall')},{id:'cosmetic:hsk-bg-west-lake',category:'wallpapers',cost:40,icon:'湖',title:'HSK Path · West Lake',description:'Hangzhou lake view with auto rotation support',status:cosmeticStatus('hsk-bg-west-lake')},{id:'cosmetic:hsk-bg-fuzimiao',category:'wallpapers',cost:40,icon:'宁',title:'HSK Path · Fuzimiao',description:'Nanjing heritage background for the HSK path',status:cosmeticStatus('hsk-bg-fuzimiao')},{id:'cosmetic:hsk-bg-zhangjiajie',category:'wallpapers',cost:50,icon:'峰',title:'HSK Path · Zhangjiajie',description:'Mountain pillars for a long learning journey',status:cosmeticStatus('hsk-bg-zhangjiajie')},
-    {id:'cosmetic:avatar-panda',category:'avatars',cost:20,icon:'熊',title:'Panda',description:'A friendly study companion',status:cosmeticStatus('avatar-panda')},{id:'cosmetic:avatar-dragon',category:'avatars',cost:25,icon:'龙',title:'Dragon',description:'The classic Lóng identity',status:cosmeticStatus('avatar-dragon')},{id:'cosmetic:avatar-scholar',category:'avatars',cost:25,icon:'学',title:'Scholar',description:'For serious HSK study',status:cosmeticStatus('avatar-scholar')},{id:'cosmetic:avatar-tiger',category:'avatars',cost:25,icon:'虎',title:'Tiger',description:'Bold challenge companion',status:cosmeticStatus('avatar-tiger')},{id:'cosmetic:avatar-rabbit',category:'avatars',cost:20,icon:'兔',title:'Jade Rabbit',description:'A calm nightly learner',status:cosmeticStatus('avatar-rabbit')},{id:'cosmetic:avatar-crane',category:'avatars',cost:30,icon:'鹤',title:'Red-crowned Crane',description:'Elegant long-term progress',status:cosmeticStatus('avatar-crane')},
-    {id:'cosmetic:frame-gold',category:'identity',cost:20,icon:'框',title:'Golden Frame',description:'A bright profile outline',status:cosmeticStatus('frame-gold')},{id:'cosmetic:frame-jade',category:'identity',cost:25,icon:'玉',title:'Jade Frame',description:'Layered green profile ring',status:cosmeticStatus('frame-jade')},{id:'cosmetic:frame-cloud',category:'identity',cost:25,icon:'云',title:'Cloud Frame',description:'Soft blue cloud halo',status:cosmeticStatus('frame-cloud')},{id:'cosmetic:badge-hsk',category:'identity',cost:30,icon:'级',title:'HSK Badge',description:'Show your learning target',status:cosmeticStatus('badge-hsk')},{id:'cosmetic:badge-tone',category:'identity',cost:25,icon:'调',title:'Tone Master Badge',description:'Celebrate listening practice',status:cosmeticStatus('badge-tone')},{id:'cosmetic:badge-story',category:'identity',cost:25,icon:'阅',title:'Story Reader Badge',description:'For dedicated readers',status:cosmeticStatus('badge-story')},{id:'cosmetic:badge-explorer',category:'identity',cost:25,icon:'游',title:'China Explorer Badge',description:'Adventure map identity',status:cosmeticStatus('badge-explorer')},
-    {id:'cosmetic:avatar-fox',category:'avatars',cost:22,icon:'狐',title:'Red Fox',description:'A quick and curious companion',status:cosmeticStatus('avatar-fox')},{id:'cosmetic:avatar-koi',category:'avatars',cost:28,icon:'鲤',title:'Golden Koi',description:'A symbol of patient progress',status:cosmeticStatus('avatar-koi')},{id:'cosmetic:avatar-cat',category:'avatars',cost:20,icon:'猫',title:'Study Cat',description:'A quiet late-night partner',status:cosmeticStatus('avatar-cat')},{id:'cosmetic:avatar-lion',category:'avatars',cost:30,icon:'狮',title:'Guardian Lion',description:'Confident challenge energy',status:cosmeticStatus('avatar-lion')},{id:'cosmetic:frame-vermilion',category:'identity',cost:25,icon:'朱',title:'Vermilion Frame',description:'A refined red profile ring',status:cosmeticStatus('frame-vermilion')},{id:'cosmetic:frame-porcelain',category:'identity',cost:28,icon:'瓷',title:'Porcelain Frame',description:'Blue-and-white ceramic detail',status:cosmeticStatus('frame-porcelain')},{id:'cosmetic:badge-hanzi',category:'identity',cost:25,icon:'字',title:'Hanzi Hunter Badge',description:'Celebrate character practice',status:cosmeticStatus('badge-hanzi')},{id:'cosmetic:badge-listener',category:'identity',cost:25,icon:'听',title:'Sharp Listener Badge',description:'Celebrate listening evidence',status:cosmeticStatus('badge-listener')},
-    {id:'cosmetic:hsk-bg-temple',category:'wallpapers',cost:45,icon:'天',title:'HSK Path · Temple of Heaven',description:'Beijing architecture behind your roadmap',status:cosmeticStatus('hsk-bg-temple')},{id:'cosmetic:hsk-bg-terracotta',category:'wallpapers',cost:45,icon:'秦',title:'HSK Path · Terracotta Army',description:'Xi’an history behind your roadmap',status:cosmeticStatus('hsk-bg-terracotta')},{id:'cosmetic:hsk-bg-li-river',category:'wallpapers',cost:45,icon:'漓',title:'HSK Path · Li River',description:'Guilin karst scenery behind your progress',status:cosmeticStatus('hsk-bg-li-river')},{id:'cosmetic:hsk-bg-canton',category:'wallpapers',cost:45,icon:'粤',title:'HSK Path · Canton Tower',description:'Guangzhou skyline behind your progress',status:cosmeticStatus('hsk-bg-canton')},
-    {id:'cosmetic:hsk-bg-panda',category:'wallpapers',cost:42,icon:'熊',title:'HSK Path · Chengdu Panda Base',description:'Chengdu bamboo scenery behind your progress',status:cosmeticStatus('hsk-bg-panda')},{id:'cosmetic:hsk-bg-harbin',category:'wallpapers',cost:48,icon:'冰',title:'HSK Path · Harbin Ice World',description:'Winter lights behind your HSK roadmap',status:cosmeticStatus('hsk-bg-harbin')},{id:'cosmetic:hsk-bg-suzhou',category:'wallpapers',cost:42,icon:'苏',title:'HSK Path · Pingjiang Road',description:'Suzhou canals behind your progress',status:cosmeticStatus('hsk-bg-suzhou')},{id:'cosmetic:hsk-bg-chongqing',category:'wallpapers',cost:45,icon:'渝',title:'HSK Path · Hongya Cave',description:'Chongqing night lights behind your roadmap',status:cosmeticStatus('hsk-bg-chongqing')},{id:'cosmetic:hsk-bg-shenzhen',category:'wallpapers',cost:42,icon:'深',title:'HSK Path · Shenzhen Bay',description:'A modern technology-city skyline',status:cosmeticStatus('hsk-bg-shenzhen')},
-    ...expandedShopCatalog.map(item=>({...item,status:item.id.startsWith('cosmetic:')?cosmeticStatus(item.id.slice(9)):item.id.startsWith('voice:')?(learning.inventory.voicePacks.includes(item.id.slice(6))?'Owned · voice preset ready':'Unlock voice preset'):(learning.inventory.unlockedStories.includes(item.id.slice(6))?'Owned · story pack ready':'Unlock story pack')})),
+function ShopItemPreview({
+  id,
+  category,
+  icon,
+  title,
+}: {
+  id: string;
+  category: string;
+  icon: string;
+  title: string;
+}) {
+  const cosmetic = id.replace("cosmetic:", "");
+  const landmark = hskBackgrounds.find((item) => item.id === cosmetic);
+  const avatar = category === "avatars";
+  const identity = category === "identity";
+  const selectedGlyph = avatar || identity ? icon : "你";
+  return (
+    <div
+      className={`shop-preview-stage preview-${category} cosmetic-preview-${cosmetic}`}
+      style={
+        landmark?.image
+          ? {
+              backgroundImage: `linear-gradient(145deg,rgba(8,42,34,.34),rgba(8,42,34,.76)),url(${landmark.image})`,
+            }
+          : undefined
+      }
+    >
+      <div className="shop-preview-comparison">
+        <div>
+          <small>CURRENT</small>
+          <div className="shop-preview-app current">
+            <header>
+              <i>龙</i>
+              <span>Level 5</span>
+              <b>◆ 126</b>
+            </header>
+            <main>
+              <small>YOUR DASHBOARD</small>
+              <strong>继续学习</strong>
+              <p>Continue learning</p>
+            </main>
+            <footer>
+              <span>你</span>
+              <i />
+              <i />
+              <i />
+            </footer>
+          </div>
+        </div>
+        <span aria-hidden="true">→</span>
+        <div>
+          <small>SELECTED PREVIEW</small>
+          <div className="shop-preview-app selected">
+            <header>
+              <i>{selectedGlyph}</i>
+              <span>Level 5</span>
+              <b>◆ 126</b>
+            </header>
+            <main>
+              <small>
+                {category === "boosters"
+                  ? "BOOST EFFECT READY"
+                  : "LIVE STYLE PREVIEW"}
+              </small>
+              <strong>{title}</strong>
+              <p>
+                {category === "boosters"
+                  ? "Applies to your next eligible session"
+                  : "See it on navigation, cards, and profile"}
+              </p>
+            </main>
+            <footer>
+              <span className={identity ? "identity-ring" : ""}>
+                {selectedGlyph}
+              </span>
+              <i />
+              <i />
+              <i />
+            </footer>
+          </div>
+        </div>
+      </div>
+      <b>
+        {category === "boosters"
+          ? "See the learning effect before spending"
+          : "Current look compared with selected item"}
+      </b>
+    </div>
+  );
+}
+
+function GemsCenter({
+  learning,
+  close,
+  go,
+  buy,
+}: {
+  learning: LearningState;
+  close: () => void;
+  go: (destination: string) => void;
+  buy: (kind: string, cost: number) => void;
+}) {
+  const day = consecutiveCheckInDays(learning.checkInDates);
+  const multiplier = gameGemMultiplier(day);
+  const milestone = checkInMilestoneProgress(day);
+  const [category, setCategory] = useState<ShopCategory>("boosters");
+  const [previewId, setPreviewId] = useState("freeze");
+  const cosmeticStatus = (id: string) =>
+    learning.inventory.cosmetics.includes(id)
+      ? "Owned · tap to equip"
+      : "Unlock & equip";
+  const offers = [
+    {
+      id: "freeze",
+      category: "boosters",
+      cost: 50,
+      icon: "冰",
+      title: "Streak Freeze",
+      description: "Protect one missed day",
+      status: `${learning.inventory.freezeTokens}/2 owned`,
+    },
+    {
+      id: "mistake",
+      category: "boosters",
+      cost: 10,
+      icon: "复",
+      title: "Mistake Recovery",
+      description: "Focused session from your weak points",
+      status: `${learning.inventory.mistakeBoosters} ready`,
+    },
+    {
+      id: "xp",
+      category: "boosters",
+      cost: 35,
+      icon: "倍",
+      title: "Double XP Session",
+      description: "Double the next scored session",
+      status: "Once per day",
+    },
+    {
+      id: "ticket",
+      category: "boosters",
+      cost: 15,
+      icon: "票",
+      title: "Adventure Energy",
+      description: "Enter an optional elite challenge",
+      status: `${learning.inventory.adventureTickets} tickets`,
+    },
+    {
+      id: "story:tech-night",
+      category: "boosters",
+      cost: 30,
+      icon: "故",
+      title: "Bonus Story Pack",
+      description: "Technology, campus & alternate endings",
+      status: `${learning.inventory.unlockedStories.length} unlocked`,
+    },
+    {
+      id: "voice:storyteller",
+      category: "boosters",
+      cost: 30,
+      icon: "声",
+      title: "Storyteller Voice Pack",
+      description: "Clear narration and shadowing presets",
+      status: `${learning.inventory.voicePacks.length} packs`,
+    },
+    {
+      id: "cosmetic:midnight",
+      category: "themes",
+      cost: 25,
+      icon: "夜",
+      title: "Midnight Jade",
+      description: "Deep jade surfaces with luminous type",
+      status: cosmeticStatus("midnight"),
+    },
+    {
+      id: "cosmetic:peach",
+      category: "themes",
+      cost: 25,
+      icon: "桃",
+      title: "Peach Blossom",
+      description: "Warm paper with coral accents",
+      status: cosmeticStatus("peach"),
+    },
+    {
+      id: "cosmetic:scholar",
+      category: "themes",
+      cost: 30,
+      icon: "冠",
+      title: "Scholar Ink",
+      description: "Classic study-card details",
+      status: cosmeticStatus("scholar"),
+    },
+    {
+      id: "cosmetic:mountain",
+      category: "themes",
+      cost: 30,
+      icon: "山",
+      title: "Mountain Trail",
+      description: "Cool landscape-inspired accents",
+      status: cosmeticStatus("mountain"),
+    },
+    {
+      id: "cosmetic:imperial",
+      category: "themes",
+      cost: 35,
+      icon: "宫",
+      title: "Imperial Vermilion",
+      description: "Palace red and antique gold",
+      status: cosmeticStatus("imperial"),
+    },
+    {
+      id: "cosmetic:ocean",
+      category: "themes",
+      cost: 35,
+      icon: "海",
+      title: "Coastal Blue",
+      description: "Calm blue-green study mode",
+      status: cosmeticStatus("ocean"),
+    },
+    {
+      id: "cosmetic:wallpaper-lantern",
+      category: "wallpapers",
+      cost: 35,
+      icon: "灯",
+      title: "Lantern Festival",
+      description: "Soft lantern glow behind lessons",
+      status: cosmeticStatus("wallpaper-lantern"),
+    },
+    {
+      id: "cosmetic:wallpaper-ink",
+      category: "wallpapers",
+      cost: 35,
+      icon: "墨",
+      title: "Ink Mountains",
+      description: "Quiet mountain silhouettes",
+      status: cosmeticStatus("wallpaper-ink"),
+    },
+    {
+      id: "cosmetic:wallpaper-bamboo",
+      category: "wallpapers",
+      cost: 30,
+      icon: "竹",
+      title: "Bamboo Study",
+      description: "Minimal bamboo shadows",
+      status: cosmeticStatus("wallpaper-bamboo"),
+    },
+    {
+      id: "cosmetic:wallpaper-city",
+      category: "wallpapers",
+      cost: 40,
+      icon: "城",
+      title: "Shanghai Night",
+      description: "A subtle modern skyline",
+      status: cosmeticStatus("wallpaper-city"),
+    },
+    {
+      id: "cosmetic:wallpaper-silk",
+      category: "wallpapers",
+      cost: 30,
+      icon: "绢",
+      title: "Cloud Silk",
+      description: "Soft traditional cloud pattern",
+      status: cosmeticStatus("wallpaper-silk"),
+    },
+    {
+      id: "cosmetic:hsk-bg-bund",
+      category: "wallpapers",
+      cost: 45,
+      icon: "沪",
+      title: "HSK Path · The Bund",
+      description: "Shanghai skyline behind your HSK roadmap",
+      status: cosmeticStatus("hsk-bg-bund"),
+    },
+    {
+      id: "cosmetic:hsk-bg-great-wall",
+      category: "wallpapers",
+      cost: 45,
+      icon: "长",
+      title: "HSK Path · Great Wall",
+      description: "Mutianyu mountains behind your progress",
+      status: cosmeticStatus("hsk-bg-great-wall"),
+    },
+    {
+      id: "cosmetic:hsk-bg-west-lake",
+      category: "wallpapers",
+      cost: 40,
+      icon: "湖",
+      title: "HSK Path · West Lake",
+      description: "Hangzhou lake view with auto rotation support",
+      status: cosmeticStatus("hsk-bg-west-lake"),
+    },
+    {
+      id: "cosmetic:hsk-bg-fuzimiao",
+      category: "wallpapers",
+      cost: 40,
+      icon: "宁",
+      title: "HSK Path · Fuzimiao",
+      description: "Nanjing heritage background for the HSK path",
+      status: cosmeticStatus("hsk-bg-fuzimiao"),
+    },
+    {
+      id: "cosmetic:hsk-bg-zhangjiajie",
+      category: "wallpapers",
+      cost: 50,
+      icon: "峰",
+      title: "HSK Path · Zhangjiajie",
+      description: "Mountain pillars for a long learning journey",
+      status: cosmeticStatus("hsk-bg-zhangjiajie"),
+    },
+    {
+      id: "cosmetic:avatar-panda",
+      category: "avatars",
+      cost: 20,
+      icon: "熊",
+      title: "Panda",
+      description: "A friendly study companion",
+      status: cosmeticStatus("avatar-panda"),
+    },
+    {
+      id: "cosmetic:avatar-dragon",
+      category: "avatars",
+      cost: 25,
+      icon: "龙",
+      title: "Dragon",
+      description: "The classic Lóng identity",
+      status: cosmeticStatus("avatar-dragon"),
+    },
+    {
+      id: "cosmetic:avatar-scholar",
+      category: "avatars",
+      cost: 25,
+      icon: "学",
+      title: "Scholar",
+      description: "For serious HSK study",
+      status: cosmeticStatus("avatar-scholar"),
+    },
+    {
+      id: "cosmetic:avatar-tiger",
+      category: "avatars",
+      cost: 25,
+      icon: "虎",
+      title: "Tiger",
+      description: "Bold challenge companion",
+      status: cosmeticStatus("avatar-tiger"),
+    },
+    {
+      id: "cosmetic:avatar-rabbit",
+      category: "avatars",
+      cost: 20,
+      icon: "兔",
+      title: "Jade Rabbit",
+      description: "A calm nightly learner",
+      status: cosmeticStatus("avatar-rabbit"),
+    },
+    {
+      id: "cosmetic:avatar-crane",
+      category: "avatars",
+      cost: 30,
+      icon: "鹤",
+      title: "Red-crowned Crane",
+      description: "Elegant long-term progress",
+      status: cosmeticStatus("avatar-crane"),
+    },
+    {
+      id: "cosmetic:frame-gold",
+      category: "identity",
+      cost: 20,
+      icon: "框",
+      title: "Golden Frame",
+      description: "A bright profile outline",
+      status: cosmeticStatus("frame-gold"),
+    },
+    {
+      id: "cosmetic:frame-jade",
+      category: "identity",
+      cost: 25,
+      icon: "玉",
+      title: "Jade Frame",
+      description: "Layered green profile ring",
+      status: cosmeticStatus("frame-jade"),
+    },
+    {
+      id: "cosmetic:frame-cloud",
+      category: "identity",
+      cost: 25,
+      icon: "云",
+      title: "Cloud Frame",
+      description: "Soft blue cloud halo",
+      status: cosmeticStatus("frame-cloud"),
+    },
+    {
+      id: "cosmetic:badge-hsk",
+      category: "identity",
+      cost: 30,
+      icon: "级",
+      title: "HSK Badge",
+      description: "Show your learning target",
+      status: cosmeticStatus("badge-hsk"),
+    },
+    {
+      id: "cosmetic:badge-tone",
+      category: "identity",
+      cost: 25,
+      icon: "调",
+      title: "Tone Master Badge",
+      description: "Celebrate listening practice",
+      status: cosmeticStatus("badge-tone"),
+    },
+    {
+      id: "cosmetic:badge-story",
+      category: "identity",
+      cost: 25,
+      icon: "阅",
+      title: "Story Reader Badge",
+      description: "For dedicated readers",
+      status: cosmeticStatus("badge-story"),
+    },
+    {
+      id: "cosmetic:badge-explorer",
+      category: "identity",
+      cost: 25,
+      icon: "游",
+      title: "China Explorer Badge",
+      description: "Adventure map identity",
+      status: cosmeticStatus("badge-explorer"),
+    },
+    {
+      id: "cosmetic:avatar-fox",
+      category: "avatars",
+      cost: 22,
+      icon: "狐",
+      title: "Red Fox",
+      description: "A quick and curious companion",
+      status: cosmeticStatus("avatar-fox"),
+    },
+    {
+      id: "cosmetic:avatar-koi",
+      category: "avatars",
+      cost: 28,
+      icon: "鲤",
+      title: "Golden Koi",
+      description: "A symbol of patient progress",
+      status: cosmeticStatus("avatar-koi"),
+    },
+    {
+      id: "cosmetic:avatar-cat",
+      category: "avatars",
+      cost: 20,
+      icon: "猫",
+      title: "Study Cat",
+      description: "A quiet late-night partner",
+      status: cosmeticStatus("avatar-cat"),
+    },
+    {
+      id: "cosmetic:avatar-lion",
+      category: "avatars",
+      cost: 30,
+      icon: "狮",
+      title: "Guardian Lion",
+      description: "Confident challenge energy",
+      status: cosmeticStatus("avatar-lion"),
+    },
+    {
+      id: "cosmetic:frame-vermilion",
+      category: "identity",
+      cost: 25,
+      icon: "朱",
+      title: "Vermilion Frame",
+      description: "A refined red profile ring",
+      status: cosmeticStatus("frame-vermilion"),
+    },
+    {
+      id: "cosmetic:frame-porcelain",
+      category: "identity",
+      cost: 28,
+      icon: "瓷",
+      title: "Porcelain Frame",
+      description: "Blue-and-white ceramic detail",
+      status: cosmeticStatus("frame-porcelain"),
+    },
+    {
+      id: "cosmetic:badge-hanzi",
+      category: "identity",
+      cost: 25,
+      icon: "字",
+      title: "Hanzi Hunter Badge",
+      description: "Celebrate character practice",
+      status: cosmeticStatus("badge-hanzi"),
+    },
+    {
+      id: "cosmetic:badge-listener",
+      category: "identity",
+      cost: 25,
+      icon: "听",
+      title: "Sharp Listener Badge",
+      description: "Celebrate listening evidence",
+      status: cosmeticStatus("badge-listener"),
+    },
+    {
+      id: "cosmetic:hsk-bg-temple",
+      category: "wallpapers",
+      cost: 45,
+      icon: "天",
+      title: "HSK Path · Temple of Heaven",
+      description: "Beijing architecture behind your roadmap",
+      status: cosmeticStatus("hsk-bg-temple"),
+    },
+    {
+      id: "cosmetic:hsk-bg-terracotta",
+      category: "wallpapers",
+      cost: 45,
+      icon: "秦",
+      title: "HSK Path · Terracotta Army",
+      description: "Xi’an history behind your roadmap",
+      status: cosmeticStatus("hsk-bg-terracotta"),
+    },
+    {
+      id: "cosmetic:hsk-bg-li-river",
+      category: "wallpapers",
+      cost: 45,
+      icon: "漓",
+      title: "HSK Path · Li River",
+      description: "Guilin karst scenery behind your progress",
+      status: cosmeticStatus("hsk-bg-li-river"),
+    },
+    {
+      id: "cosmetic:hsk-bg-canton",
+      category: "wallpapers",
+      cost: 45,
+      icon: "粤",
+      title: "HSK Path · Canton Tower",
+      description: "Guangzhou skyline behind your progress",
+      status: cosmeticStatus("hsk-bg-canton"),
+    },
+    {
+      id: "cosmetic:hsk-bg-panda",
+      category: "wallpapers",
+      cost: 42,
+      icon: "熊",
+      title: "HSK Path · Chengdu Panda Base",
+      description: "Chengdu bamboo scenery behind your progress",
+      status: cosmeticStatus("hsk-bg-panda"),
+    },
+    {
+      id: "cosmetic:hsk-bg-harbin",
+      category: "wallpapers",
+      cost: 48,
+      icon: "冰",
+      title: "HSK Path · Harbin Ice World",
+      description: "Winter lights behind your HSK roadmap",
+      status: cosmeticStatus("hsk-bg-harbin"),
+    },
+    {
+      id: "cosmetic:hsk-bg-suzhou",
+      category: "wallpapers",
+      cost: 42,
+      icon: "苏",
+      title: "HSK Path · Pingjiang Road",
+      description: "Suzhou canals behind your progress",
+      status: cosmeticStatus("hsk-bg-suzhou"),
+    },
+    {
+      id: "cosmetic:hsk-bg-chongqing",
+      category: "wallpapers",
+      cost: 45,
+      icon: "渝",
+      title: "HSK Path · Hongya Cave",
+      description: "Chongqing night lights behind your roadmap",
+      status: cosmeticStatus("hsk-bg-chongqing"),
+    },
+    {
+      id: "cosmetic:hsk-bg-shenzhen",
+      category: "wallpapers",
+      cost: 42,
+      icon: "深",
+      title: "HSK Path · Shenzhen Bay",
+      description: "A modern technology-city skyline",
+      status: cosmeticStatus("hsk-bg-shenzhen"),
+    },
+    ...expandedShopCatalog.map((item) => ({
+      ...item,
+      status: item.id.startsWith("cosmetic:")
+        ? cosmeticStatus(item.id.slice(9))
+        : item.id.startsWith("voice:")
+          ? learning.inventory.voicePacks.includes(item.id.slice(6))
+            ? "Owned · voice preset ready"
+            : "Unlock voice preset"
+          : learning.inventory.unlockedStories.includes(item.id.slice(6))
+            ? "Owned · story pack ready"
+            : "Unlock story pack",
+    })),
   ] as const;
-  const visible=offers.filter(offer=>offer.category===category);const preview=(offers.find(offer=>offer.id===previewId)??visible[0])!;
-  const tabs=[['boosters','Boosters'],['themes','Themes'],['wallpapers','Wallpapers'],['avatars','Avatars'],['identity','Frames & badges']] as const;
-  return <div className="modal-backdrop gems-backdrop" role="dialog" aria-modal="true" aria-label="Gems and rewards"><section className="gems-modal expanded-shop"><header><div><p className="eyebrow">GEMS, BOOSTERS & STYLE · 宝石商店</p><h2><span>◆</span> {learning.diamonds} gems</h2><p>Spend earned gems on optional learning support and a look that feels like yours. No real-money purchases.</p></div><button onClick={close} aria-label="Close gems">×</button></header><div className="checkin-hero"><span>签</span><div><small>AUTO CHECK-IN · DAY {day}</small><strong>{multiplier}× gems on every game win</strong><p>{milestone.next?`${milestone.remaining} days until the day ${milestone.next} reward.`:'Highest day-80 multiplier unlocked.'}</p><i><em style={{width:`${milestone.progress}%`}}/></i></div></div><div className="reward-ladder">{[{day:7,reward:'+20 ◆'},{day:20,reward:'1.5× game gems'},{day:40,reward:'2× game gems'},{day:80,reward:'2.5× game gems'}].map(item=><article className={day>=item.day?'unlocked':''} key={item.day}><span>{day>=item.day?'✓':'○'}</span><small>DAY {item.day}</small><strong>{item.reward}</strong></article>)}</div><section className="gem-market"><div className="shop-heading"><div><p className="eyebrow">SPEND YOUR GEMS · 使用宝石</p><h3>Learning boosters & personal style</h3><p>Choose an item to see exactly what changes before spending.</p></div><strong><span>◆</span>{learning.diamonds}<small>available</small></strong></div><nav className="shop-tabs" aria-label="Shop categories">{tabs.map(([id,label])=><button className={category===id?'active':''} key={id} onClick={()=>{setCategory(id);const first=offers.find(offer=>offer.category===id);if(first)setPreviewId(first.id)}}>{label}<small>{offers.filter(offer=>offer.category===id).length}</small></button>)}</nav><div className="shop-preview"><ShopItemPreview id={preview.id} category={preview.category} icon={preview.icon} title={preview.title}/><div><p className="eyebrow">PREVIEW · TRY BEFORE YOU BUY</p><h4>{preview.title}</h4><p>{preview.description}. This preview does not spend gems or change your current setup.</p><small>{preview.status}</small><button disabled={learning.diamonds<preview.cost} onClick={()=>buy(preview.id,preview.cost)}>{learning.inventory.cosmetics.includes(preview.id.replace('cosmetic:',''))?'Equip now':`Unlock for ${preview.cost} ◆`}</button></div></div><div className="gem-shop-grid">{visible.map(offer=><article className={preview.id===offer.id?'selected':''} key={offer.id} onClick={()=>setPreviewId(offer.id)}><span>{offer.icon}</span><div><strong>{offer.title}</strong><p>{offer.description}</p><small>{offer.status}</small></div><button disabled={learning.diamonds<offer.cost} onClick={event=>{event.stopPropagation();buy(offer.id,offer.cost)}}>{offer.cost} ◆</button></article>)}</div></section><div className="earn-gems"><button onClick={()=>go('Adventure')}><span>课</span><div><strong>Earn gems in lessons</strong><small>First completion rewards XP + gems</small></div><b>Start →</b></button><button onClick={()=>go('Games')}><span>游</span><div><strong>Win learning games</strong><small>Current multiplier: {multiplier}×</small></div><b>Play →</b></button><button onClick={()=>go('Review')}><span>复</span><div><strong>Use a recovery booster</strong><small>Review exact errors and due words</small></div><b>Review →</b></button></div><footer>Core lessons remain free. Gems only unlock optional support, bonus content, and cosmetics.</footer></section></div>
+  const visible = offers.filter((offer) => offer.category === category);
+  const preview = (offers.find((offer) => offer.id === previewId) ??
+    visible[0])!;
+  const tabs = [
+    ["boosters", "Boosters"],
+    ["themes", "Themes"],
+    ["wallpapers", "Wallpapers"],
+    ["avatars", "Avatars"],
+    ["identity", "Frames & badges"],
+  ] as const;
+  return (
+    <div
+      className="modal-backdrop gems-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Gems and rewards"
+    >
+      <section className="gems-modal expanded-shop">
+        <header>
+          <div>
+            <p className="eyebrow">GEMS, BOOSTERS & STYLE · 宝石商店</p>
+            <h2>
+              <span>◆</span> {learning.diamonds} gems
+            </h2>
+            <p>
+              Spend earned gems on optional learning support and a look that
+              feels like yours. No real-money purchases.
+            </p>
+          </div>
+          <button onClick={close} aria-label="Close gems">
+            ×
+          </button>
+        </header>
+        <div className="checkin-hero">
+          <span>签</span>
+          <div>
+            <small>AUTO CHECK-IN · DAY {day}</small>
+            <strong>{multiplier}× gems on every game win</strong>
+            <p>
+              {milestone.next
+                ? `${milestone.remaining} days until the day ${milestone.next} reward.`
+                : "Highest day-80 multiplier unlocked."}
+            </p>
+            <i>
+              <em style={{ width: `${milestone.progress}%` }} />
+            </i>
+          </div>
+        </div>
+        <div className="reward-ladder">
+          {[
+            { day: 7, reward: "+20 ◆" },
+            { day: 20, reward: "1.5× game gems" },
+            { day: 40, reward: "2× game gems" },
+            { day: 80, reward: "2.5× game gems" },
+          ].map((item) => (
+            <article
+              className={day >= item.day ? "unlocked" : ""}
+              key={item.day}
+            >
+              <span>{day >= item.day ? "✓" : "○"}</span>
+              <small>DAY {item.day}</small>
+              <strong>{item.reward}</strong>
+            </article>
+          ))}
+        </div>
+        <section className="gem-market">
+          <div className="shop-heading">
+            <div>
+              <p className="eyebrow">SPEND YOUR GEMS · 使用宝石</p>
+              <h3>Learning boosters & personal style</h3>
+              <p>Choose an item to see exactly what changes before spending.</p>
+            </div>
+            <strong>
+              <span>◆</span>
+              {learning.diamonds}
+              <small>available</small>
+            </strong>
+          </div>
+          <nav className="shop-tabs" aria-label="Shop categories">
+            {tabs.map(([id, label]) => (
+              <button
+                className={category === id ? "active" : ""}
+                key={id}
+                onClick={() => {
+                  setCategory(id);
+                  const first = offers.find((offer) => offer.category === id);
+                  if (first) setPreviewId(first.id);
+                }}
+              >
+                {label}
+                <small>
+                  {offers.filter((offer) => offer.category === id).length}
+                </small>
+              </button>
+            ))}
+          </nav>
+          <div className="shop-preview">
+            <ShopItemPreview
+              id={preview.id}
+              category={preview.category}
+              icon={preview.icon}
+              title={preview.title}
+            />
+            <div>
+              <p className="eyebrow">PREVIEW · TRY BEFORE YOU BUY</p>
+              <h4>{preview.title}</h4>
+              <p>
+                {preview.description}. This preview does not spend gems or
+                change your current setup.
+              </p>
+              <small>{preview.status}</small>
+              <button
+                disabled={learning.diamonds < preview.cost}
+                onClick={() => buy(preview.id, preview.cost)}
+              >
+                {learning.inventory.cosmetics.includes(
+                  preview.id.replace("cosmetic:", ""),
+                )
+                  ? "Equip now"
+                  : `Unlock for ${preview.cost} ◆`}
+              </button>
+            </div>
+          </div>
+          <div className="gem-shop-grid">
+            {visible.map((offer) => (
+              <article
+                className={preview.id === offer.id ? "selected" : ""}
+                key={offer.id}
+                onClick={() => setPreviewId(offer.id)}
+              >
+                <span>{offer.icon}</span>
+                <div>
+                  <strong>{offer.title}</strong>
+                  <p>{offer.description}</p>
+                  <small>{offer.status}</small>
+                </div>
+                <button
+                  disabled={learning.diamonds < offer.cost}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    buy(offer.id, offer.cost);
+                  }}
+                >
+                  {offer.cost} ◆
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+        <div className="earn-gems">
+          <button onClick={() => go("Adventure")}>
+            <span>课</span>
+            <div>
+              <strong>Earn gems in lessons</strong>
+              <small>First completion rewards XP + gems</small>
+            </div>
+            <b>Start →</b>
+          </button>
+          <button onClick={() => go("Games")}>
+            <span>游</span>
+            <div>
+              <strong>Win learning games</strong>
+              <small>Current multiplier: {multiplier}×</small>
+            </div>
+            <b>Play →</b>
+          </button>
+          <button onClick={() => go("Review")}>
+            <span>复</span>
+            <div>
+              <strong>Use a recovery booster</strong>
+              <small>Review exact errors and due words</small>
+            </div>
+            <b>Review →</b>
+          </button>
+        </div>
+        <footer>
+          Core lessons remain free. Gems only unlock optional support, bonus
+          content, and cosmetics.
+        </footer>
+      </section>
+    </div>
+  );
 }
 
-function OfflineDownloads(){const [downloaded,setDownloaded]=useState<string[]>([]);const [busy,setBusy]=useState('');useEffect(()=>{if(!('caches'in window))return;caches.open('long-downloads-v1').then(cache=>cache.keys()).then(keys=>setDownloaded(keys.map(request=>new URL(request.url).pathname))).catch(()=>undefined)},[]);async function toggle(id:string){if(!('caches'in window))return;setBusy(id);const cache=await caches.open('long-downloads-v1');const path=`/?offline-pack=${id}`;if(downloaded.includes(path)){await cache.delete(path);setDownloaded(items=>items.filter(item=>item!==path))}else{await cache.add('/');const response=await cache.match('/');if(response)await cache.put(path,response.clone());setDownloaded(items=>[...items,path])}setBusy('')}return <section className="offline-downloads"><header><div><p className="eyebrow">OFFLINE LIBRARY · 离线下载</p><h2>Keep lessons ready without internet</h2><p>Download an HSK or story pack on this device. Progress waits locally and syncs when the connection returns.</p></div><span>{navigator.onLine?'● Online · sync ready':'○ Offline · changes queued'}</span></header><div>{['HSK 1–2 Essentials','HSK 3–4 Course','HSK 5–6 Advanced','Stories & Major Packs'].map((label,index)=>{const id=`pack-${index+1}`;const saved=downloaded.includes(`/?offline-pack=${id}`);return <article key={id}><span>{['基','中','高','故'][index]}</span><p><strong>{label}</strong><small>{saved?'Available offline on this device':'Tap to cache the current app and learning shell'}</small></p><button disabled={busy===id} onClick={()=>toggle(id)}>{busy===id?'Saving…':saved?'Remove':'Download'}</button></article>})}</div></section>}
-
-function FontSizeDock({value,setValue,navigate,openGuide}:{value:'small'|'medium'|'large';setValue:(scale:'small'|'medium'|'large')=>void;navigate:(destination:string)=>void;openGuide:()=>void}){
-  const [open,setOpen]=useState(false);const [search,setSearch]=useState('');const featureSearch=[...nav.map(([,label])=>({title:label,copy:navDescriptions[label],destination:label})),{title:'HSK course files',copy:'HSK 1–6 lessons and mock exams',destination:'Learn'},{title:'Dictionary & saved words',copy:'Search words and open My Library',destination:'Learn'},{title:'Focus timer',copy:'Start a distraction-free timer from Today',destination:'Today'},...allNetworkVocabulary.slice(0,80).map(word=>({title:`${word.hanzi} · ${word.pinyin}`,copy:word.english,destination:'Learn'}))];const results=search.trim()?featureSearch.filter(item=>`${item.title} ${item.copy}`.toLowerCase().includes(search.toLowerCase())).slice(0,5):[];
-  return <aside className={`font-size-dock ${open?'open':''}`} aria-label="Account tools"><button className="font-dock-toggle" onClick={()=>setOpen(value=>!value)} aria-expanded={open}><span>字</span><b>{open?'Close account tools':'Account tools'}</b></button>{open&&<div className="font-dock-panel"><label className="account-global-search"><span>⌕</span><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search HSK, features, or words…"/></label>{results.length>0&&<div className="account-search-results">{results.map((result,index)=><button onClick={()=>navigate(result.destination)} key={`${result.title}-${index}`}><p><strong>{result.title}</strong><small>{result.copy}</small></p><b>Open →</b></button>)}</div>}<button className="account-guide-button" onClick={openGuide}>? Open app guideline</button><p><small>READING COMFORT</small><strong>Choose a comfortable text size</strong></p><div>{(['small','medium','large'] as const).map(scale=><button className={value===scale?'active':''} onClick={()=>setValue(scale)} key={scale}><b>{scale==='small'?'A':scale==='medium'?'A+':'A++'}</b><small>{scale}</small></button>)}</div></div>}</aside>
+function OfflineDownloads() {
+  const [downloaded, setDownloaded] = useState<string[]>([]);
+  const [busy, setBusy] = useState("");
+  useEffect(() => {
+    if (!("caches" in window)) return;
+    caches
+      .open("long-downloads-v1")
+      .then((cache) => cache.keys())
+      .then((keys) =>
+        setDownloaded(keys.map((request) => new URL(request.url).pathname)),
+      )
+      .catch(() => undefined);
+  }, []);
+  async function toggle(id: string) {
+    if (!("caches" in window)) return;
+    setBusy(id);
+    const cache = await caches.open("long-downloads-v1");
+    const path = `/?offline-pack=${id}`;
+    if (downloaded.includes(path)) {
+      await cache.delete(path);
+      setDownloaded((items) => items.filter((item) => item !== path));
+    } else {
+      await cache.add("/");
+      const response = await cache.match("/");
+      if (response) await cache.put(path, response.clone());
+      setDownloaded((items) => [...items, path]);
+    }
+    setBusy("");
+  }
+  return (
+    <section className="offline-downloads">
+      <header>
+        <div>
+          <p className="eyebrow">OFFLINE LIBRARY · 离线下载</p>
+          <h2>Keep lessons ready without internet</h2>
+          <p>
+            Download an HSK or story pack on this device. Progress waits locally
+            and syncs when the connection returns.
+          </p>
+        </div>
+        <span>
+          {navigator.onLine
+            ? "● Online · sync ready"
+            : "○ Offline · changes queued"}
+        </span>
+      </header>
+      <div>
+        {[
+          "HSK 1–2 Essentials",
+          "HSK 3–4 Course",
+          "HSK 5–6 Advanced",
+          "Stories & Major Packs",
+        ].map((label, index) => {
+          const id = `pack-${index + 1}`;
+          const saved = downloaded.includes(`/?offline-pack=${id}`);
+          return (
+            <article key={id}>
+              <span>{["基", "中", "高", "故"][index]}</span>
+              <p>
+                <strong>{label}</strong>
+                <small>
+                  {saved
+                    ? "Available offline on this device"
+                    : "Tap to cache the current app and learning shell"}
+                </small>
+              </p>
+              <button disabled={busy === id} onClick={() => toggle(id)}>
+                {busy === id ? "Saving…" : saved ? "Remove" : "Download"}
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
-type SettingsCenterProps={profile:Profile|null;learning:LearningState;syncStatus:SyncStatus;cloudAccount:CloudAccount|null;syncError:string;connectEmailAccount:(email:string)=>Promise<void>;connectGoogleAccount:()=>Promise<void>;signOutAccount:()=>Promise<void>;close:()=>void;editProfile:()=>void;exportBackup:()=>void;importBackup:(file:File)=>Promise<void>;setColorMode:(mode:'light'|'dark')=>void;navigate?:(destination:string)=>void;openGuide?:()=>void};
+function FontSizeDock({
+  value,
+  setValue,
+  navigate,
+  openGuide,
+}: {
+  value: "small" | "medium" | "large";
+  setValue: (scale: "small" | "medium" | "large") => void;
+  navigate: (destination: string) => void;
+  openGuide: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const featureSearch = [
+    ...nav.map(([, label]) => ({
+      title: label,
+      copy: navDescriptions[label],
+      destination: label,
+    })),
+    {
+      title: "HSK course files",
+      copy: "HSK 1–6 lessons and mock exams",
+      destination: "Learn",
+    },
+    {
+      title: "Dictionary & saved words",
+      copy: "Search words and open My Library",
+      destination: "Learn",
+    },
+    {
+      title: "Focus timer",
+      copy: "Start a distraction-free timer from Today",
+      destination: "Today",
+    },
+    ...allNetworkVocabulary
+      .slice(0, 80)
+      .map((word) => ({
+        title: `${word.hanzi} · ${word.pinyin}`,
+        copy: word.english,
+        destination: "Learn",
+      })),
+  ];
+  const results = search.trim()
+    ? featureSearch
+        .filter((item) =>
+          `${item.title} ${item.copy}`
+            .toLowerCase()
+            .includes(search.toLowerCase()),
+        )
+        .slice(0, 5)
+    : [];
+  return (
+    <aside
+      className={`font-size-dock ${open ? "open" : ""}`}
+      aria-label="Account tools"
+    >
+      <button
+        className="font-dock-toggle"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+      >
+        <span>字</span>
+        <b>{open ? "Close account tools" : "Account tools"}</b>
+      </button>
+      {open && (
+        <div className="font-dock-panel">
+          <label className="account-global-search">
+            <span>⌕</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search HSK, features, or words…"
+            />
+          </label>
+          {results.length > 0 && (
+            <div className="account-search-results">
+              {results.map((result, index) => (
+                <button
+                  onClick={() => navigate(result.destination)}
+                  key={`${result.title}-${index}`}
+                >
+                  <p>
+                    <strong>{result.title}</strong>
+                    <small>{result.copy}</small>
+                  </p>
+                  <b>Open →</b>
+                </button>
+              ))}
+            </div>
+          )}
+          <button className="account-guide-button" onClick={openGuide}>
+            ? Open app guideline
+          </button>
+          <p>
+            <small>READING COMFORT</small>
+            <strong>Choose a comfortable text size</strong>
+          </p>
+          <div>
+            {(["small", "medium", "large"] as const).map((scale) => (
+              <button
+                className={value === scale ? "active" : ""}
+                onClick={() => setValue(scale)}
+                key={scale}
+              >
+                <b>
+                  {scale === "small" ? "A" : scale === "medium" ? "A+" : "A++"}
+                </b>
+                <small>{scale}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </aside>
+  );
+}
 
-function SettingsCenter({profile,learning,syncStatus,cloudAccount,syncError,connectEmailAccount,connectGoogleAccount,signOutAccount,close,editProfile,exportBackup,importBackup,setColorMode}:SettingsCenterProps){
-  const input=useRef<HTMLInputElement>(null);const [email,setEmail]=useState('');const [error,setError]=useState('');const evidence=calculateSkillEvidence(learning.events,learning.lastActiveDate||undefined);const values=Object.values(evidence);const readiness=Math.round(values.reduce((sum,item)=>sum+item.score,0)/Math.max(1,values.length));
-  async function restore(file?:File){if(!file)return;try{await importBackup(file)}catch(reason){setError(reason instanceof Error?reason.message:'The backup could not be restored.')}}
-  const statusCopy=syncStatus==='unavailable'?'Cloud setup is not active':syncStatus==='guest'?'Guest mode · saved on this device':syncStatus==='connecting'?'Connecting securely…':syncStatus==='syncing'?'Saving latest progress…':syncStatus==='synced'?'Progress safely synchronized':'Local progress is safe · sync needs attention';
-  return <div className="modal-backdrop settings-backdrop" role="dialog" aria-modal="true" aria-label="Account and learning settings"><section className="settings-modal account-modal"><header><div><p className="eyebrow">ACCOUNT & SKILL PROFILE · 我的资料</p><h2>{profile?.name??'Learner'}’s Mandarin profile</h2><p>Each signed-in learner has a separate private cloud record.</p></div><button onClick={close} aria-label="Close settings">×</button></header><div className="settings-profile"><span>{profile?.name?.[0]??'你'}</span><div><strong>{profile?.name??'Learner'}</strong><small>Target HSK {profile?.hsk??1} · {profile?.path??'General'} · {readiness}% readiness</small></div><button onClick={editProfile}>Edit learning profile</button></div><section className="appearance-settings"><div><span>{learning.inventory.colorMode==='dark'?'月':'日'}</span><p><small>APPEARANCE · 外观</small><strong>Reading appearance</strong><b>Choose a complete, high-contrast color mode.</b></p></div><div role="group" aria-label="Color mode"><button className={learning.inventory.colorMode==='light'?'active':''} onClick={()=>setColorMode('light')}><i>☀</i><span>Light<small>Warm paper</small></span></button><button className={learning.inventory.colorMode==='dark'?'active':''} onClick={()=>setColorMode('dark')}><i>☾</i><span>Dark<small>Midnight jade</small></span></button></div></section><section className={`cloud-account ${syncStatus}`}><div className="cloud-account-head"><span>云</span><div><small>PRIVATE CLOUD ACCOUNT</small><strong>{statusCopy}</strong><p>{cloudAccount?.email??'No shared owner account is used.'}</p></div><b>{syncStatus==='synced'?'✓':syncStatus==='connecting'||syncStatus==='syncing'?'↻':'·'}</b></div>{!cloudAccount&&syncStatus!=='unavailable'&&<><p className="cloud-explainer">Continue as a guest or sign in with your own free account. Progress from one learner is never shown as another learner’s account.</p><div className="cloud-auth-options"><button className="google-connect" onClick={()=>connectGoogleAccount()} disabled={syncStatus==='connecting'}><span>G</span><p><strong>Continue with Google</strong><small>Private progress across phone, tablet, and desktop</small></p><b>→</b></button><div className="cloud-divider"><span>or use a free email link</span></div><div className="cloud-connect"><input type="email" value={email} onChange={event=>setEmail(event.target.value)} placeholder="Your email address"/><button disabled={!email.includes('@')||syncStatus==='connecting'} onClick={()=>connectEmailAccount(email)}>Send secure link</button></div></div></>}{cloudAccount&&<div className="cloud-signed-in"><p><strong>Signed in as {cloudAccount.email??'this learner'}</strong><small>Only this account can access its synchronized progress.</small></p><button onClick={()=>signOutAccount()}>Sign out & switch learner</button></div>}{syncStatus==='unavailable'&&<p className="cloud-setup-note"><strong>Setup needed:</strong> add the Supabase URL and publishable key, enable Google and email providers, then apply the included database schema.</p>}{syncError&&<p className="cloud-error" role="alert">{syncError}</p>}</section><div className="account-skills">{Object.entries(evidence).map(([skill,item])=><article key={skill}><header><span>{skill}</span><strong>{item.score}%</strong></header><i><em style={{width:`${item.score}%`}}/></i><footer><b>{item.status}</b><small>{item.attempts} attempts · {item.activeDays} days</small></footer></article>)}</div><div className="settings-data-summary"><article><small>LIFETIME XP</small><strong>{learning.xp.toLocaleString()}</strong></article><article><small>SAVED WORDS</small><strong>{learning.favorites.length+learning.personalWords.length}</strong></article><article><small>ACTIVE DAYS</small><strong>{learning.activityDates.length}</strong></article><article><small>MISTAKES</small><strong>{learning.mistakes.length}</strong></article></div><div className="account-backup-actions"><button onClick={exportBackup}>↓ Download private backup</button><input ref={input} type="file" accept="application/json,.json" onChange={event=>restore(event.target.files?.[0])}/><button onClick={()=>input.current?.click()}>↑ Restore backup</button></div>{error&&<p className="settings-error" role="alert">! {error}</p>}<div className="settings-privacy"><span>盾</span><p><strong>Private by design</strong><small>Row-level security limits every cloud snapshot to its authenticated owner. Guest data stays only in that browser.</small></p></div></section></div>
+type SettingsCenterProps = {
+  profile: Profile | null;
+  learning: LearningState;
+  syncStatus: SyncStatus;
+  cloudAccount: CloudAccount | null;
+  syncError: string;
+  connectEmailAccount: (email: string) => Promise<void>;
+  connectGoogleAccount: () => Promise<void>;
+  signOutAccount: () => Promise<void>;
+  signOutEverywhere: () => Promise<void>;
+  protectOtherDevices: () => Promise<void>;
+  close: () => void;
+  editProfile: () => void;
+  exportBackup: () => void;
+  importBackup: (file: File) => Promise<void>;
+  setColorMode: (mode: "light" | "dark") => void;
+  navigate?: (destination: string) => void;
+  openGuide?: () => void;
+};
+
+function SettingsCenter({
+  profile,
+  learning,
+  syncStatus,
+  cloudAccount,
+  syncError,
+  connectEmailAccount,
+  connectGoogleAccount,
+  signOutAccount,
+  signOutEverywhere,
+  protectOtherDevices,
+  close,
+  editProfile,
+  exportBackup,
+  importBackup,
+  setColorMode,
+}: SettingsCenterProps) {
+  const input = useRef<HTMLInputElement>(null);
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const evidence = calculateSkillEvidence(
+    learning.events,
+    learning.lastActiveDate || undefined,
+  );
+  const values = Object.values(evidence);
+  const readiness = Math.round(
+    values.reduce((sum, item) => sum + item.score, 0) /
+      Math.max(1, values.length),
+  );
+  async function restore(file?: File) {
+    if (!file) return;
+    try {
+      await importBackup(file);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The backup could not be restored.",
+      );
+    }
+  }
+  const statusCopy =
+    syncStatus === "unavailable"
+      ? "Cloud setup is not active"
+      : syncStatus === "guest"
+        ? "Guest mode · saved on this device"
+        : syncStatus === "connecting"
+          ? "Connecting securely…"
+          : syncStatus === "syncing"
+            ? "Saving latest progress…"
+            : syncStatus === "synced"
+              ? "Progress safely synchronized"
+              : "Local progress is safe · sync needs attention";
+  return (
+    <div
+      className="modal-backdrop settings-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Account and learning settings"
+    >
+      <section className="settings-modal account-modal">
+        <header>
+          <div>
+            <p className="eyebrow">ACCOUNT & SKILL PROFILE · 我的资料</p>
+            <h2>{profile?.name ?? "Learner"}’s Mandarin profile</h2>
+            <p>Each signed-in learner has a separate private cloud record.</p>
+          </div>
+          <button onClick={close} aria-label="Close settings">
+            ×
+          </button>
+        </header>
+        <div className="settings-profile">
+          <span>{profile?.name?.[0] ?? "你"}</span>
+          <div>
+            <strong>{profile?.name ?? "Learner"}</strong>
+            <small>
+              Target HSK {profile?.hsk ?? 1} · {profile?.path ?? "General"} ·{" "}
+              {readiness}% readiness
+            </small>
+          </div>
+          <button onClick={editProfile}>Edit learning profile</button>
+        </div>
+        <section className="appearance-settings">
+          <div>
+            <span>{learning.inventory.colorMode === "dark" ? "月" : "日"}</span>
+            <p>
+              <small>APPEARANCE · 外观</small>
+              <strong>Reading appearance</strong>
+              <b>Choose a complete, high-contrast color mode.</b>
+            </p>
+          </div>
+          <div role="group" aria-label="Color mode">
+            <button
+              className={
+                learning.inventory.colorMode === "light" ? "active" : ""
+              }
+              onClick={() => setColorMode("light")}
+            >
+              <i>☀</i>
+              <span>
+                Light<small>Warm paper</small>
+              </span>
+            </button>
+            <button
+              className={
+                learning.inventory.colorMode === "dark" ? "active" : ""
+              }
+              onClick={() => setColorMode("dark")}
+            >
+              <i>☾</i>
+              <span>
+                Dark<small>Midnight jade</small>
+              </span>
+            </button>
+          </div>
+        </section>
+        <section className={`cloud-account ${syncStatus}`}>
+          <div className="cloud-account-head">
+            <span>云</span>
+            <div>
+              <small>PRIVATE CLOUD ACCOUNT</small>
+              <strong>{statusCopy}</strong>
+              <p>{cloudAccount?.email ?? "No shared owner account is used."}</p>
+            </div>
+            <b>
+              {syncStatus === "synced"
+                ? "✓"
+                : syncStatus === "connecting" || syncStatus === "syncing"
+                  ? "↻"
+                  : "·"}
+            </b>
+          </div>
+          {!cloudAccount && syncStatus !== "unavailable" && (
+            <>
+              <p className="cloud-explainer">
+                Continue as a guest or sign in with your own free account.
+                Progress from one learner is never shown as another learner’s
+                account.
+              </p>
+              <div className="cloud-auth-options">
+                <button
+                  className="google-connect"
+                  onClick={() => connectGoogleAccount()}
+                  disabled={syncStatus === "connecting"}
+                >
+                  <span>G</span>
+                  <p>
+                    <strong>Continue with Google</strong>
+                    <small>
+                      Private progress across phone, tablet, and desktop
+                    </small>
+                  </p>
+                  <b>→</b>
+                </button>
+                <div className="cloud-divider">
+                  <span>or use a free email link</span>
+                </div>
+                <div className="cloud-connect">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="Your email address"
+                  />
+                  <button
+                    disabled={
+                      !email.includes("@") || syncStatus === "connecting"
+                    }
+                    onClick={() => connectEmailAccount(email)}
+                  >
+                    Send secure link
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+          {cloudAccount && (
+            <>
+              <div className="cloud-signed-in">
+                <p>
+                  <strong>
+                    Signed in as {cloudAccount.email ?? "this learner"}
+                  </strong>
+                  <small>
+                    Only this account can access its synchronized progress.
+                  </small>
+                </p>
+                <button onClick={() => signOutAccount()}>
+                  Sign out & switch learner
+                </button>
+              </div>
+              <div className="account-device-safety">
+                <article>
+                  <span>此</span>
+                  <p>
+                    <strong>This device</strong>
+                    <small>{navigator.userAgent.includes("Mobile") ? "Phone or tablet" : "Laptop or desktop"} · active now</small>
+                  </p>
+                  <b>✓ Protected</b>
+                </article>
+                <div>
+                  <button onClick={() => protectOtherDevices()}>
+                    Sign out other devices
+                  </button>
+                  <button className="danger" onClick={() => signOutEverywhere()}>
+                    Sign out everywhere
+                  </button>
+                </div>
+                <small>
+                  Use this if you signed in on a shared device. Your cloud learning record remains attached only to your account.
+                </small>
+              </div>
+            </>
+          )}
+          {syncStatus === "unavailable" && (
+            <p className="cloud-setup-note">
+              <strong>Setup needed:</strong> add the Supabase URL and
+              publishable key, enable Google and email providers, then apply the
+              included database schema.
+            </p>
+          )}
+          {syncError && (
+            <p className="cloud-error" role="alert">
+              {syncError}
+            </p>
+          )}
+        </section>
+        <div className="account-skills">
+          {Object.entries(evidence).map(([skill, item]) => (
+            <article key={skill}>
+              <header>
+                <span>{skill}</span>
+                <strong>{item.score}%</strong>
+              </header>
+              <i>
+                <em style={{ width: `${item.score}%` }} />
+              </i>
+              <footer>
+                <b>{item.status}</b>
+                <small>
+                  {item.attempts} attempts · {item.activeDays} days
+                </small>
+              </footer>
+            </article>
+          ))}
+        </div>
+        <div className="settings-data-summary">
+          <article>
+            <small>LIFETIME XP</small>
+            <strong>{learning.xp.toLocaleString()}</strong>
+          </article>
+          <article>
+            <small>SAVED WORDS</small>
+            <strong>
+              {learning.favorites.length + learning.personalWords.length}
+            </strong>
+          </article>
+          <article>
+            <small>ACTIVE DAYS</small>
+            <strong>{learning.activityDates.length}</strong>
+          </article>
+          <article>
+            <small>MISTAKES</small>
+            <strong>{learning.mistakes.length}</strong>
+          </article>
+        </div>
+        <div className="account-backup-actions">
+          <button onClick={exportBackup}>↓ Download private backup</button>
+          <input
+            ref={input}
+            type="file"
+            accept="application/json,.json"
+            onChange={(event) => restore(event.target.files?.[0])}
+          />
+          <button onClick={() => input.current?.click()}>
+            ↑ Restore backup
+          </button>
+        </div>
+        {error && (
+          <p className="settings-error" role="alert">
+            ! {error}
+          </p>
+        )}
+        <div className="settings-privacy">
+          <span>盾</span>
+          <p>
+            <strong>Private by design</strong>
+            <small>
+              Row-level security limits every cloud snapshot to its
+              authenticated owner. Guest data stays only in that browser.
+            </small>
+          </p>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 // Kept temporarily as a migration reference while existing account-layout snapshots are retired.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function LegacySettingsCenter({profile,learning,syncStatus,cloudAccount,syncError,connectEmailAccount,connectGoogleAccount,signOutAccount,close,editProfile,exportBackup,importBackup,setColorMode}:SettingsCenterProps){
-  const input=useRef<HTMLInputElement>(null);const [error,setError]=useState('');const [restoring,setRestoring]=useState(false);const [email,setEmail]=useState('');const evidence=calculateSkillEvidence(learning.events,learning.lastActiveDate||undefined);const evidenceValues=Object.values(evidence);const average=Math.round(evidenceValues.reduce((sum,item)=>sum+item.score,0)/evidenceValues.length);const breadth=Math.min(100,Math.round(learning.events.length/100*100));const consistency=Math.min(100,Math.round(new Set(learning.activityDates).size/30*100));const targetProgress=Math.round(average*.5+breadth*.3+consistency*.2);
-  async function restore(file?:File){if(!file)return;setError('');setRestoring(true);try{await importBackup(file)}catch(reason){setError(reason instanceof Error?reason.message:'The backup could not be restored.');setRestoring(false)}}
-  const statusCopy=syncStatus==='unavailable'?'Waiting for Supabase project keys':syncStatus==='guest'?'Guest mode · saved only on this device':syncStatus==='connecting'?'Connecting securely…':syncStatus==='syncing'?'Saving latest progress…':syncStatus==='synced'?'Progress safely synchronized':'Local progress safe · sync needs attention';
-  return <div className="modal-backdrop settings-backdrop" role="dialog" aria-modal="true" aria-label="Account, Mandarin skill profile, and cloud sync settings"><section className="settings-modal account-modal"><header><div><p className="eyebrow">ACCOUNT & SKILL PROFILE · 我的资料</p><h2>{profile?.name??'Learner'}’s Mandarin profile</h2><p>Scores reflect durable in-app evidence, not an official HSK certificate.</p></div><button onClick={close} aria-label="Close settings">×</button></header><div className="settings-profile"><span>{profile?.name?.[0]??'你'}</span><div><strong>{profile?.name??'Learner'}</strong><small>Target HSK {profile?.hsk??1} · {profile?.path??'General'} · {profile?.dailyMinutes??10} min/day</small></div><button onClick={editProfile}>Edit learning profile</button></div><section className="appearance-settings"><div><span>{learning.inventory.colorMode==='dark'?'月':'日'}</span><p><small>APPEARANCE · 外观</small><strong>Choose light or dark mode</strong><b>The complete interface changes while keeping text contrast readable.</b></p></div><div role="group" aria-label="Color mode"><button className={learning.inventory.colorMode==='light'?'active':''} onClick={()=>setColorMode('light')}><i>☀</i><span>Light<small>Warm paper</small></span></button><button className={learning.inventory.colorMode==='dark'?'active':''} onClick={()=>setColorMode('dark')}><i>☾</i><span>Dark<small>Midnight jade</small></span></button></div></section><section className={`cloud-account ${syncStatus}`}><div className="cloud-account-head"><span>云</span><div><small>SUPABASE CLOUD SYNC</small><strong>{statusCopy}</strong><p>{cloudAccount?.email??(cloudAccount?.anonymous?'Anonymous account · no login required':'Your local data remains available offline.')}</p></div><b>{syncStatus==='synced'?'✓':syncStatus==='syncing'||syncStatus==='connecting'?'↻':'!'}</b></div>{cloudAccount?.anonymous&&<><p className="cloud-explainer">This device already syncs anonymously. Connect a Google or email account if you want to restore the same progress on another device.</p><div className="cloud-auth-options"><button className="google-connect" disabled={syncStatus==='connecting'} onClick={()=>connectGoogleAccount()}><span>G</span><p><strong>Continue with Google</strong><small>Use one account across phone, tablet, and desktop</small></p><b>→</b></button><div className="cloud-divider"><span>or use email</span></div><div className="cloud-connect"><input type="email" value={email} onChange={event=>setEmail(event.target.value)} placeholder="Email for cross-device access" aria-label="Email for cloud account"/><button disabled={!email.includes('@')||syncStatus==='connecting'} onClick={()=>connectEmailAccount(email)}>Send secure link</button></div></div></>}{syncStatus==='unavailable'&&<p className="cloud-setup-note"><strong>Setup needed:</strong> add Supabase URL and publishable key, enable Anonymous + Google providers, then run the included database schema.</p>}{syncError&&<p className="cloud-error" role="alert">{syncError}</p>}</section><section className="account-target"><div><span>目</span><p><small>HSK {profile?.hsk??1} TARGET · EVIDENCE-BASED</small><strong>{targetProgress}% learning readiness</strong><b>{learning.events.length} scored events · {new Set(learning.activityDates).size} active days</b></p></div><i><em style={{width:`${targetProgress}%`}}/></i><p>Readiness combines skill evidence (50%), practice breadth (30%), and consistency (20%). It deliberately grows slowly.</p></section><div className="account-skills">{Object.entries(evidence).map(([skill,item])=><article key={skill}><header><span>{skill}</span><strong>{item.score}%</strong></header><i><em style={{width:`${item.score}%`}}/></i><footer><b>{item.status}</b><small>{item.attempts} attempts · {item.activeDays} days</small></footer></article>)}</div><div className="settings-data-summary"><article><small>LIFETIME XP</small><strong>{learning.xp.toLocaleString()}</strong></article><article><small>SAVED WORDS</small><strong>{learning.favorites.length+learning.personalWords.length}</strong></article><article><small>CHECK-IN DAYS</small><strong>{consecutiveCheckInDays(learning.checkInDates)}</strong></article><article><small>MISTAKES</small><strong>{learning.mistakes.length}</strong></article></div><section className="local-backup"><div><span>↓</span><p><strong>Download private backup</strong><small>Keep a personal offline copy of profile, XP, streak, library, reviews, and mistakes.</small></p></div><button onClick={exportBackup}>Download backup</button></section><section className="local-backup restore"><div><span>↑</span><p><strong>Restore from backup</strong><small>The restored data is saved locally and synchronized when cloud sync is active.</small></p></div><input ref={input} type="file" accept="application/json,.json" onChange={event=>restore(event.target.files?.[0])}/><button disabled={restoring} onClick={()=>input.current?.click()}>{restoring?'Validating…':'Choose backup file'}</button></section>{error&&<p className="settings-error" role="alert">! {error}</p>}<div className="settings-privacy"><span>盾</span><p><strong>Private by default</strong><small>Row-level security keeps each learning snapshot limited to its owner. No service-role secret is shipped to the browser.</small></p></div></section></div>
-}
-
-function StreakCalendar({learning,close}:{learning:LearningState;close:()=>void}){const now=new Date();const [month,setMonth]=useState(now.getMonth());const [year,setYear]=useState(now.getFullYear());const today=localDateKey(now);const inferred=learning.activityDates.length?learning.activityDates:Array.from({length:learning.streak},(_,index)=>{const date=new Date();date.setDate(date.getDate()-index);return localDateKey(date)});const active=new Set(inferred);const protectedDays=new Set(learning.protectedDates);const firstOffset=(new Date(year,month,1).getDay()+6)%7;const totalDays=new Date(year,month+1,0).getDate();const cells=Array.from({length:firstOffset+totalDays},(_,index)=>index<firstOffset?null:index-firstOffset+1);function move(direction:number){const next=new Date(year,month+direction,1);setYear(next.getFullYear());setMonth(next.getMonth())}return <div className="modal-backdrop streak-backdrop" role="dialog" aria-modal="true" aria-label="Streak calendar"><section className="streak-modal"><header><div><p className="eyebrow">LEARNING RHYTHM · 连续学习</p><h2>{learning.streak}-day streak</h2><p>One or two missed days are protected automatically.</p></div><button onClick={close}>×</button></header><div className="calendar-head"><button onClick={()=>move(-1)}>←</button><strong>{new Intl.DateTimeFormat('en',{month:'long',year:'numeric'}).format(new Date(year,month,1))}</strong><button onClick={()=>move(1)}>→</button></div><div className="calendar-week">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day=><span key={day}>{day}</span>)}</div><div className="calendar-grid">{cells.map((day,index)=>{if(!day)return <i key={`empty-${index}`}/>;const key=localDateKey(new Date(year,month,day));const isActive=active.has(key);const isProtected=protectedDays.has(key);return <div className={`${key===today?'today ':''}${isActive?'active ':''}${isProtected?'protected':''}`} key={key}><span>{day}</span>{isProtected?<b>◆</b>:isActive?<b>🔥</b>:null}</div>})}</div><footer><span><b>🔥</b> Learning day</span><span><b>◆</b> Grace/rescue day</span><small>Three consecutive missed days trigger streak rescue.</small></footer></section></div>}
-
-function XpProgress({learning,progress,close}:{learning:LearningState;progress:ReturnType<typeof getLevelProgress>;close:()=>void}){const title=playerTitle(progress.level);const nextTitle=playerTitle(progress.level+1);return <div className="modal-backdrop xp-backdrop" role="dialog" aria-modal="true" aria-label="XP and player level"><section className="xp-modal"><header><div><p className="eyebrow">PLAYER PROGRESS · {title.toUpperCase()}</p><h2>Level {progress.level} · {title}</h2><p>Your player title celebrates engagement; it never represents official Chinese proficiency.</p></div><button onClick={close}>×</button></header><div className="xp-hero"><span>◆</span><div><small>LIFETIME XP</small><strong>{learning.xp.toLocaleString()} XP</strong><p>{progress.remainingXp.toLocaleString()} XP more to reach Level {progress.level+1}{nextTitle!==title?` and become ${nextTitle}`:''}</p></div></div><div className="xp-level-bar"><div><span>Level {progress.level}</span><b>{progress.earnedThisLevel.toLocaleString()} / {progress.requiredThisLevel.toLocaleString()} XP</b></div><i><em style={{width:`${progress.progress}%`}}/></i><small>Next level unlocks at {progress.nextLevelXp.toLocaleString()} lifetime XP.</small></div><div className="xp-details"><article><span>◆</span><div><small>DIAMONDS</small><strong>{learning.diamonds}</strong><p>Earned from first-time learning, quest rewards, and boss wins.</p></div></article><article><span>🔥</span><div><small>STREAK</small><strong>{learning.streak} days</strong><p>Two grace days, then rescue with diamonds or a hard challenge.</p></div></article></div></section></div>}
-
-function StreakRecovery({diamonds,missedDays,resolve}:{diamonds:number;missedDays:number;resolve:(method:'diamonds'|'challenge'|'reset')=>void}){const [mode,setMode]=useState<'choice'|'challenge'>('choice');const [index,setIndex]=useState(0);const [selected,setSelected]=useState('');const [feedback,setFeedback]=useState('');const [score,setScore]=useState(0);const [confirmReset,setConfirmReset]=useState(false);const questions=allVocabulary.slice(0,15).map((word,wordIndex)=>{const choices=[word.hanzi,allVocabulary[(wordIndex+5)%allVocabulary.length].hanzi,allVocabulary[(wordIndex+9)%allVocabulary.length].hanzi];return {prompt:word.example.hanzi.replace(word.hanzi,'＿＿'),meaning:word.english,answer:word.hanzi,choices}});function check(){if(!selected)return;const correct=selected===questions[index].answer;setFeedback(correct?'Correct':`Correct answer: ${questions[index].answer}`);if(correct)setScore(score+1)}function next(){if(index===questions.length-1)resolve('challenge');else{setIndex(index+1);setSelected('');setFeedback('')}}if(mode==='challenge')return <div className="modal-backdrop rescue-backdrop" role="dialog" aria-modal="true" aria-label="15 question streak rescue"><section className="rescue-modal challenge"><header><div><p className="eyebrow">STREAK RESCUE · HARD MODE</p><h2>Question {index+1} of {questions.length}</h2></div><span>{score} correct</span></header><div className="rescue-progress"><i style={{width:`${(index+1)/questions.length*100}%`}}/></div><div className="rescue-question"><small>CHOOSE THE WORD · {questions[index].meaning.toUpperCase()}</small><h3>{questions[index].prompt}</h3><div>{questions[index].choices.map(choice=><button disabled={!!feedback} className={selected===choice?'selected':''} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!feedback?<button className="primary" disabled={!selected} onClick={check}>Check answer</button>:<div className={feedback==='Correct'?'rescue-feedback good':'rescue-feedback try'}><strong>{feedback==='Correct'?'✓ Correct':feedback}</strong><button onClick={next}>{index===questions.length-1?'Save my streak':'Next hard question →'}</button></div>}</div></section></div>;return <div className="modal-backdrop rescue-backdrop" role="dialog" aria-modal="true" aria-label="Streak rescue"><section className="rescue-modal"><header><div><p className="eyebrow">STREAK AT RISK</p><h2>Rescue your {missedDays}-day gap</h2></div><span className="rescue-fire">🔥</span></header><p className="rescue-copy">Your first two missed days were protected. Choose how to save your streak now—there is no shame in starting fresh.</p><div className="rescue-options"><button disabled={diamonds<80} onClick={()=>resolve('diamonds')}><span>◆</span><div><strong>Use 80 diamonds</strong><small>You have {diamonds} diamonds</small></div><b>{diamonds>=80?'Rescue →':'Need more'}</b></button><button onClick={()=>setMode('challenge')}><span>难</span><div><strong>Complete 15 hard questions</strong><small>No diamond cost · active recall</small></div><b>Start →</b></button><button className="reset-option" onClick={()=>setConfirmReset(true)}><span>新</span><div><strong>Start a fresh streak</strong><small>Keep all XP, words, and progress</small></div><b>Reset →</b></button></div>{confirmReset&&<div className="reset-confirm"><p>Reset only the streak counter? All learning progress stays safe.</p><button onClick={()=>setConfirmReset(false)}>Keep streak</button><button onClick={()=>resolve('reset')}>Yes, start fresh</button></div>}</section></div>}
-
-function ComebackSession({learning,speak,close,finish}:{learning:LearningState;speak:(text:string)=>void;close:()=>void;finish:()=>void}){const due=dueReviewIds(learning.reviewCards).map(id=>allVocabulary.find(word=>word.id===id)).filter(Boolean).slice(0,5);const words=(due.length>=5?due:allVocabulary.slice(0,5)) as typeof allVocabulary;const [index,setIndex]=useState(0);const [selected,setSelected]=useState('');const [feedback,setFeedback]=useState('');const word=words[index];const choices=[word.english,words[(index+2)%words.length].english,words[(index+3)%words.length].english];function check(){setFeedback(selected===word.english?'Correct':`Answer: ${word.english}`)}function next(){if(index===4)finish();else{setIndex(index+1);setSelected('');setFeedback('')}}return <div className="modal-backdrop comeback-backdrop" role="dialog" aria-modal="true" aria-label="Five minute comeback session"><section className="comeback-modal"><header><div><p className="eyebrow">5-MINUTE COMEBACK · {index+1}/5</p><h2>Welcome back</h2></div><button onClick={close}>×</button></header><div className="comeback-track"><i style={{width:`${(index+1)*20}%`}}/></div><div className="comeback-question"><button onClick={()=>speak(word.hanzi)}>▶ Hear word</button><strong>{word.hanzi}</strong><span>{word.pinyin}</span><h3>What does this word mean?</h3><div>{choices.map(choice=><button disabled={!!feedback} className={selected===choice?'selected':''} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!feedback?<button className="primary" disabled={!selected} onClick={check}>Check</button>:<div className={feedback==='Correct'?'flow-feedback good':'flow-feedback try'}><p><strong>{feedback==='Correct'?'✓ Correct':feedback}</strong><span>{word.example.hanzi} · {word.example.english}</span></p><button onClick={next}>{index===4?'Finish refresh':'Next word →'}</button></div>}</div></section></div>}
-
-function DailySession({profile,learning,chapter,speak,close,finish,saveWord}:{profile:Profile|null;learning:LearningState;chapter:Chapter;speak:(text:string)=>void;close:()=>void;finish:(plan:DailySessionPlan,results:DailySessionAnswer[])=>void;saveWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}){
-  const scores=calculateSkillScores(learning.events,learning.lastActiveDate||undefined);const weakest=(Object.entries(scores) as [LearningEvent['skill'],number][]).sort((a,b)=>a[1]-b[1])[0][0];const path=(profile?.path??'General') as PathId;const pack=pathPacks[path];const plan=buildDailySession({dayKey:localDateKey(),dailyMinutes:profile?.dailyMinutes??10,hsk:profile?.hsk??3,path,career:profile?.career??pack.careers[0],weakestSkill:weakest,chapter,hskQuestions:hskStyleBanks[profile?.hsk??3],specializationQuestions:pack.gameQuestions});const [index,setIndex]=useState(0);const [selected,setSelected]=useState('');const [graded,setGraded]=useState(false);const [results,setResults]=useState<DailySessionAnswer[]>([]);const [done,setDone]=useState(false);const question=plan.questions[index];const correct=selected===question.answer;
-  function next(){const updated=[...results,{question,selected,correct}];setResults(updated);if(index===plan.questions.length-1){setDone(true);return}setIndex(index+1);setSelected('');setGraded(false)}
-  const correctCount=results.filter(result=>result.correct).length;const dailyChoices=question?balancedShuffle(question.choices,question.answer,`${localDateKey()}-${question.prompt}-${index}`,index):[];
-  return <div className="modal-backdrop daily-session-backdrop" role="dialog" aria-modal="true" aria-label="Personalized daily Chinese session"><section className="daily-session-modal"><header><div><p className="eyebrow">TODAY’S MIX · {plan.estimatedMinutes} MINUTES</p><h2>{done?'Session complete':plan.title}</h2><p>{done?'Save the evidence, then continue whenever you are ready.':plan.subtitle}</p></div><button onClick={close} aria-label="Close daily session">×</button></header>{!done?<><div className="daily-session-progress"><div><span>Question {index+1} of {plan.questions.length}</span><b>{question.skill} · focus on {plan.weakestSkill}</b></div><i><em style={{width:`${(index+1)/plan.questions.length*100}%`}}/></i><footer>{plan.skillMix.map(skill=><span className={skill===question.skill?'active':''} key={skill}>{skill}</span>)}</footer></div><div className="daily-session-question"><p className="eyebrow">{question.eyebrow}</p>{question.audio&&<button className="daily-session-audio" onClick={()=>speak(question.audio!)}><span>▶</span><div><strong>Play Chinese clue</strong><small>Listen before choosing an answer</small></div></button>}<h3>{question.prompt}</h3><div className="daily-session-choices">{dailyChoices.map(choice=><button disabled={graded} className={`${selected===choice?'selected ':''}${graded&&choice===question.answer?'correct ':''}${graded&&selected===choice&&choice!==question.answer?'wrong':''}`} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!graded?<button className="primary daily-session-check" disabled={!selected} onClick={()=>setGraded(true)}>Check answer</button>:<><div className={`daily-session-feedback ${correct?'good':'try'}`}><span>{correct?'✓':'学'}</span><div><strong>{correct?'Correct — evidence recorded after the session':`Not yet · ${question.answer}`}</strong><p>{question.explanation}</p></div><button onClick={next}>{index===plan.questions.length-1?'See session report':'Next question →'}</button></div><PracticeAnswerGuide answer={question.answer} explanation={question.explanation} saveWord={saveWord}/></>}</div></>:<div className="daily-session-result"><span className="daily-result-seal">成</span><p className="eyebrow">ACTIVE RECALL COMPLETE</p><h3>{correctCount}/{results.length} correct</h3><p>You practiced {plan.skillMix.length} skills across HSK, Adventure, and your personal path.</p><div className="daily-result-grid"><article><small>ACCURACY</small><strong>{Math.round(correctCount/Math.max(1,results.length)*100)}%</strong></article><article><small>SKILL EVIDENCE</small><strong>{results.length} answers</strong></article><article><small>FOCUSED REVIEWS</small><strong>{results.filter(result=>!result.correct&&result.question.reviewWordId).length} added</strong></article></div><div className="daily-result-skills">{plan.skillMix.map(skill=><span key={skill}><b>{skill}</b><small>{results.filter(result=>result.question.skill===skill&&result.correct).length}/{results.filter(result=>result.question.skill===skill).length} correct</small></span>)}</div><button className="primary" onClick={()=>finish(plan,results)}>Save today’s progress →</button><small>Replaying later is always allowed, but daily XP can only be claimed once.</small></div>}</section></div>
-}
-
-function JourneyCarousel({learning,openChapter,setActive}:{learning:LearningState;openChapter:(id:string)=>void;setActive:(value:string)=>void}){
-  const initial=Math.min(learning.completed.length,adventureChapters.length-1);const [index,setIndex]=useState(initial);const rail=useRef<HTMLDivElement>(null);const chapter=adventureChapters[index];const unlocked=index<=learning.completed.length;const image=chapterScenes[chapter.id]?.[0]?.image??chapterScenes.arrival[0].image;
-  function move(direction:number){const next=(index+direction+adventureChapters.length)%adventureChapters.length;setIndex(next);rail.current?.children[next]?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
-  return <section className="card journey-card journey-carousel"><div className="section-head"><div><p className="eyebrow">YOUR JOURNEY · CONTINUE LAST SESSION</p><h3>{learning.completed.length} of {adventureChapters.length} chapters complete</h3></div><button onClick={()=>setActive('Adventure')}>Full map →</button></div><div className="journey-feature" style={{backgroundImage:`linear-gradient(90deg,rgba(13,56,47,.94),rgba(13,56,47,.58)),url(${image})`}}><button onClick={()=>move(-1)} aria-label="Previous chapter">←</button><div key={chapter.id}><small>CHAPTER {index+1} · {chapter.chinese}</small><strong>{chapter.title}</strong><p>{chapter.description}</p><button disabled={!unlocked} onClick={()=>openChapter(chapter.id)}>{unlocked?(learning.chapterProgress[chapter.id]??0)>0?'Continue last session →':'Start this chapter →':'Complete earlier chapters'}</button></div><button onClick={()=>move(1)} aria-label="Next chapter">→</button></div><div className="journey-swipe-rail" ref={rail}>{adventureChapters.map((item,itemIndex)=>{const done=learning.completed.includes(item.id);const available=itemIndex<=learning.completed.length;return <button className={`${itemIndex===index?'selected ':''}${done?'done ':available?'current':'locked'}`} onClick={()=>setIndex(itemIndex)} key={item.id}><i>{done?'✓':available?item.icon:'·'}</i><span>{itemIndex+1}</span><small>{item.title}</small></button>})}</div><small className="journey-swipe-hint">Swipe left or right · tap a chapter to preview it</small></section>
-}
-
-function DashboardQuickReview({learning,current,setActive,speak}:{learning:LearningState;current:Chapter;setActive:(value:string)=>void;speak:(text:string)=>void}){
-  const [index,setIndex]=useState(0);const [revealed,setRevealed]=useState(false);const [focusOpen,setFocusOpen]=useState(false);const [changing,setChanging]=useState(false);const words=current.vocabulary;const word=words[index%words.length];
-  function next(){setChanging(true);window.setTimeout(()=>{setIndex(value=>(value+1)%words.length);setRevealed(false);setChanging(false)},180)}
-  const recallCard=<div key={word.id} className={`quick-recall-word ${revealed?'revealed':''} ${changing?'changing':''}`} onClick={()=>setRevealed(true)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' ')setRevealed(true)}} role="button" tabIndex={0}><small>What does this word mean?</small><strong>{word.hanzi}</strong><button onClick={event=>{event.stopPropagation();speak(word.hanzi)}}>◖)) Listen</button>{revealed?<div><b>{word.pinyin}</b><span>{word.english}</span><p>{word.example.hanzi}<small>{word.example.english}</small></p></div>:<em>Tap to reveal the answer</em>}</div>;
-  const actions=<div className="quick-recall-actions">{revealed?<><button onClick={next}>Again later</button><button className="primary" onClick={next}>I remembered →</button></>:<button className="secondary" onClick={()=>setRevealed(true)}>Reveal answer</button>}<button onClick={()=>setFocusOpen(true)}>⛶ Focus mode</button><button onClick={()=>setActive('Review')}>Open full review</button></div>;
-  return <><section className="card review-card dashboard-quick-review"><div className="review-top"><div className="review-icon">复</div><div><p className="eyebrow">QUICK RECALL · MEMORY CHECK</p><h3>{learning.reviews+dueMistakes(learning.mistakes).length} reviews are due</h3></div><span>{index+1}/{words.length}</span></div>{recallCard}{actions}</section>{focusOpen&&<div className="quick-recall-focus" role="dialog" aria-modal="true" aria-label="Focused quick recall"><section><header><div><p className="eyebrow">FOCUS RECALL · {index+1}/{words.length}</p><h2>One word. No distractions.</h2></div><button onClick={()=>setFocusOpen(false)} aria-label="Close focus mode">×</button></header>{recallCard}{actions}<small>Press the card to reveal, then choose how well you remembered it.</small></section></div>}</>
-}
-
-function Dashboard({ profile, learning, current, specialization, openChapter, setActive,openComeback,openDailySession,openFocusMode,claimQuest,openGemShop,buyReward,speak }: { profile: Profile | null; learning: LearningState; current: Chapter; specialization: (typeof specializationContent)[keyof typeof specializationContent]; openChapter:(id:string)=>void; setActive:(v:string)=>void;openComeback:()=>void;openDailySession:()=>void;openFocusMode:()=>void;claimQuest:(id:string,xp:number,diamonds:number)=>void;openGemShop:()=>void;buyReward:(kind:string,cost:number)=>void;speak:(text:string)=>void }) {
-  const progress = learning.chapterProgress[current.id] ?? 0;
-  const today=localDateKey();const todayEvents=learning.events.filter(event=>localDateKey(new Date(event.createdAt))===today);const todayMinutes=Math.min(profile?.dailyMinutes??10,todayEvents.length*4);const questBoard=buildQuestBoard({events:learning.events,xpKeys:learning.xpKeys,activityDates:learning.activityDates,dailyMinutes:profile?.dailyMinutes??10});const scores=calculateSkillScores(learning.events,learning.lastActiveDate||undefined);const weakest=Object.entries(scores).sort((a,b)=>a[1]-b[1])[0];const pack=pathPacks[(profile?.path??'General') as PathId];const gap=streakGapStatus(learning.lastActiveDate).missedDays;
-  function openQuest(action:'daily'|'review'|'games'|'stories'){if(action==='daily')openDailySession();else setActive(action==='review'?'Review':action==='games'?'Games':'Stories')}
-  function openWeeklyMission(label:string){if(label.includes('review'))setActive('Review');else if(label.includes('game'))setActive('Games');else if(label.includes('story'))setActive('Stories');else openDailySession()}
-  return <div className="page-wrap"><section className="welcome"><div><p className="eyebrow">YOUR PERSONAL CHINESE WORLD</p><h1>你好, {profile?.name ?? 'Learner'} <span>✦</span></h1><p>HSK {profile?.hsk ?? 3} · {profile?.dailyMinutes ?? 10}-minute daily goal · {profile?.career??pack.careers[0]}</p></div><button className="daily-ring" onClick={openFocusMode} aria-label={`Daily goal: ${todayMinutes} of ${profile?.dailyMinutes??10} minutes. Open focus timer.`}><svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="32"/><circle className="ring-value" cx="40" cy="40" r="32" style={{strokeDashoffset:201-Math.min(1,todayMinutes/(profile?.dailyMinutes??10))*201}}/></svg><div><b>{todayMinutes}</b><span>/ {profile?.dailyMinutes ?? 10} min</span><small>Focus mode</small></div></button></section>
-    {gap>0&&gap<3&&<section className="comeback-banner"><span>回</span><div><p className="eyebrow">WELCOME BACK · NO PRESSURE</p><h2>Your short refresh is ready</h2><p>Review five likely-forgotten words and continue with confidence.</p></div><button onClick={openComeback}>Start 5-minute comeback →</button></section>}
-    <section className={`daily-plan-card ${learning.xpKeys.includes(`${today}:daily-session`)?'complete':''}`}><div className="daily-plan-seal">{learning.xpKeys.includes(`${today}:daily-session`)?'✓':'今'}</div><div className="daily-plan-copy"><p className="eyebrow">PERSONALIZED DAILY SESSION · {learning.xpKeys.includes(`${today}:daily-session`)?'COMPLETED':'READY'}</p><h2>{learning.xpKeys.includes(`${today}:daily-session`)?'Today’s evidence is saved':'Your smartest next step'}</h2><p>Interleaves HSK {profile?.hsk??3}, {current.title}, {profile?.career??pack.careers[0]}, and extra {weakest[0].toLowerCase()} practice.</p><div><span>{dailySessionQuestionCount(profile?.dailyMinutes??10)} questions</span><span>{profile?.dailyMinutes??10} min goal</span><span>{learning.reviews} reviews considered</span></div></div><button onClick={openDailySession}>{learning.xpKeys.includes(`${today}:daily-session`)?'Practice again':'Start daily session'} →</button></section>
-    <section className="dashboard-live-strip"><article className="live-now"><i/><div><small>YOUR WORLD IS ACTIVE</small><strong>{todayEvents.length?`${todayEvents.length} learning moments today`:'A fresh session is waiting'}</strong></div><button onClick={openDailySession}>Continue →</button></article><article><span>词</span><div><small>WORD OF THE MOMENT</small><strong>{current.vocabulary[0]?.hanzi} · {current.vocabulary[0]?.pinyin}</strong><p>{current.vocabulary[0]?.english}</p></div></article><article><span>向</span><div><small>ADAPTIVE DIRECTION</small><strong>Strengthen {weakest[0]}</strong><p>Current evidence score: {weakest[1]}</p></div><button onClick={()=>setActive('Learn')}>Practice</button></article></section>
-    <section className="mission-card mission-focus-card" style={{'--mission-image':`url(${chapterScenes[current.id]?.[0]?.image??chapterScenes.arrival[0].image})`} as React.CSSProperties}><div className="mission-copy"><span className="pill">CONTINUE YOUR JOURNEY</span><p className="chapter-label">{current.chinese} · CHAPTER {adventureChapters.findIndex(c=>c.id===current.id)+1}</p><h2>{current.mission}</h2><p>{current.description} Learn useful phrases, see the situation in China, and apply them in context.</p><div className="mission-meta"><span>◷ 5 stages</span><span>▤ {adventureVocabularyStages(current.id).reduce((sum,stage)=>sum+stage.words.length,0)} words</span><span>▧ 5 scenes</span><span>♧ 1 challenge</span></div><div className="progress-row"><div className="progress"><i style={{width:`${progress}%`}}/></div><b>{progress}%</b></div><button className="primary" onClick={()=>openChapter(current.id)}>Continue lesson <span>→</span></button></div></section>
-    <section className="explore-china-card" aria-label="Explore places in China"><LandmarkArt speak={speak} /></section>
-    <div className="grid"><JourneyCarousel learning={learning} openChapter={openChapter} setActive={setActive}/><DashboardQuickReview learning={learning} current={current} setActive={setActive} speak={speak}/></div>
-    <section className="dashboard-gem-market"><header><div><p className="eyebrow">GEM MARKET · 宝石用途</p><h2>Turn gems into useful learning advantages</h2><p>Boosters support practice; they never replace learning or lock the core course.</p></div><button onClick={openGemShop}><span>◆ {learning.diamonds}</span> Open full shop →</button></header><div className="dashboard-gem-grid"><article><span>倍</span><div><strong>Double XP</strong><small>{learning.inventory.doubleXpCredits} ready · next scored session</small></div><button disabled={learning.diamonds<35||learning.inventory.doubleXpDate===today} onClick={()=>buyReward('xp',35)}>{learning.inventory.doubleXpDate===today?'Daily limit':'35 ◆'}</button></article><article><span>复</span><div><strong>Mistake Recovery</strong><small>{learning.inventory.mistakeBoosters} ready · weakest errors first</small></div><button disabled={learning.diamonds<10} onClick={()=>buyReward('mistake',10)}>10 ◆</button></article><article><span>票</span><div><strong>Adventure Energy</strong><small>{learning.inventory.adventureTickets} tickets · elite boss replay</small></div><button disabled={learning.diamonds<15} onClick={()=>buyReward('ticket',15)}>15 ◆</button></article><article><span>冰</span><div><strong>Streak Freeze</strong><small>{learning.inventory.freezeTokens}/2 stored · automatic protection</small></div><button disabled={learning.diamonds<50||learning.inventory.freezeTokens>=2} onClick={()=>buyReward('freeze',50)}>50 ◆</button></article></div><footer><span className={learning.inventory.doubleXpCredits?'active':''}>倍 {learning.inventory.doubleXpCredits} XP boosts</span><span className={learning.inventory.mistakeBoosters?'active':''}>复 {learning.inventory.mistakeBoosters} recovery</span><span className={learning.inventory.adventureTickets?'active':''}>票 {learning.inventory.adventureTickets} tickets</span><span className={learning.inventory.freezeTokens?'active':''}>冰 {learning.inventory.freezeTokens} freezes</span></footer></section>
-    <section className="focus-section"><div className="section-head"><div><p className="eyebrow">YOUR PERSONAL PATH</p><h3>{specialization.chinese} · {profile?.career??specialization.label}</h3></div><span className="skill-tag">Adaptive focus: {weakest[0]}</span></div><div className="focus-grid"><button className="focus-card coral" onClick={()=>setActive('Games')}><span>专</span><div><small>{pack.gameTitle.toUpperCase()} · PERSONALIZED</small><b>{pack.mission}</b><p>Uses your {specialization.label} vocabulary and learning history.</p></div><i>→</i></button><button className="focus-card cream" onClick={()=>setActive('Learn')}><span>强</span><div><small>SMART RECOMMENDATION</small><b>Strengthen {weakest[0]}</b><p>Your current event-based score is {weakest[1]}.</p></div><i>→</i></button></div></section><section className="quest-board quest-system"><div className="quest-summary"><p className="eyebrow">DAILY QUESTS · HEALTHY HABITS</p><h3>{questBoard.daily.filter(quest=>quest.done).length} of {questBoard.daily.length} complete</h3><span>Targets adapt to your {profile?.dailyMinutes??10}-minute goal. Tap any mission to jump directly to the right practice.</span><div className="weekly-challenge expanded"><header><div><strong>Weekly learning challenge</strong><span>{questBoard.weekly.progress}% complete · {questBoard.weekly.startDate.slice(5).replace('-','/')}–{questBoard.weekly.endDate.slice(5).replace('-','/')}</span></div><b>+{questBoard.weekly.rewardXp} XP · +{questBoard.weekly.rewardDiamonds} ◆</b></header><div className="weekly-track"><i style={{width:`${questBoard.weekly.progress}%`}}/></div><div className="weekly-task-list">{questBoard.weekly.tasks.map(task=><button className={task.done?'done':''} onClick={()=>openWeeklyMission(task.label)} key={task.label}><i>{task.done?'✓':'○'}</i><b>{task.label}</b><small>{task.current}/{task.target}</small><em>Go →</em></button>)}</div>{questBoard.weekly.done&&<button disabled={learning.questClaims.includes(questBoard.weekly.id)} onClick={()=>claimQuest(questBoard.weekly.id,questBoard.weekly.rewardXp,questBoard.weekly.rewardDiamonds)}>{learning.questClaims.includes(questBoard.weekly.id)?'Weekly reward claimed':'Claim weekly reward'}</button>}</div></div><div className="daily-quest-column"><div className="daily-quest-list">{questBoard.daily.map(quest=>{const claimed=learning.questClaims.includes(quest.id);return <article className={`${quest.done?'done ':''}${claimed?'claimed':''}`} key={quest.id}><i>{claimed?'◆':quest.done?'✓':'○'}</i><div><strong>{quest.label}</strong><small>{quest.detail}</small><span><em style={{width:`${quest.current/quest.target*100}%`}}/></span><b>{quest.current}/{quest.target}</b></div>{quest.done?<button disabled={claimed} onClick={()=>claimQuest(quest.id,quest.rewardXp,quest.rewardDiamonds)}>{claimed?'Claimed':`Claim +${quest.rewardXp} XP`}</button>:<button onClick={()=>openQuest(quest.action)}>Go →</button>}</article>})}</div><div className="quest-next-actions"><small>AFTER THE THREE DAILY QUESTS</small><strong>Keep learning without grinding XP</strong><div><button onClick={()=>setActive('Review')}>复 Review weak words</button><button onClick={()=>setActive('Learn')}>法 Practice grammar</button><button onClick={()=>setActive('Stories')}>故 Read a graded story</button></div></div></div></section>
-  </div>;
-}
-
-function LandmarkArt({speak}:{speak:(text:string)=>void}){
-  const [index,setIndex]=useState(0);
-  const [practiceOpen,setPracticeOpen]=useState(false);
-  useEffect(()=>{const timer=window.setTimeout(()=>setIndex(Math.floor(Math.random()*chinaPlaces.length)),0);return()=>window.clearTimeout(timer)},[]);
-  const landmark=chinaPlaces[index];
-  function move(direction:number){setIndex(current=>(current+direction+chinaPlaces.length)%chinaPlaces.length);setPracticeOpen(false)}
-  return <div className={`mission-art landmark-art ${practiceOpen?'words-open':''}`} style={{backgroundImage:`url(${landmark.image})`}}><div className="landmark-shade"/><div className="landmark-top"><span>EXPLORE CHINA · 看中国</span><div><button onClick={()=>move(-1)} aria-label="Previous place in China">←</button><button onClick={()=>move(1)} aria-label="Show another place in China">↻ Another place</button></div></div><div className="landmark-caption"><span>{landmark.city}</span><h3>{landmark.name}</h3><p><b>{landmark.pinyin}</b> · {landmark.english}</p><small>{landmark.fact}</small><div className="landmark-actions"><button onClick={()=>setPracticeOpen(!practiceOpen)}>词 {practiceOpen?'Hide':'Practice'} words</button><button onClick={()=>speak(landmark.name)}>▶ Hear name</button></div><a href={landmark.source} target="_blank" rel="noreferrer" aria-label={`Photo credit: ${landmark.credit}`}>{landmark.credit}</a></div>{practiceOpen&&<div className="landmark-word-drawer"><header><div><small>USE THESE HERE</small><strong>{landmark.english} word pack</strong></div><button onClick={()=>setPracticeOpen(false)}>×</button></header><div>{landmark.words.map(word=><button onClick={()=>speak(word.hanzi)} key={word.hanzi}><b>{word.hanzi}</b><span>{word.pinyin}</span><small>{word.english}</small><i>▶</i></button>)}</div></div>}<div className="landmark-dots" aria-label={`${index+1} of ${chinaPlaces.length} places`}>{chinaPlaces.map((item,itemIndex)=><button className={itemIndex===index?'active':''} onClick={()=>{setIndex(itemIndex);setPracticeOpen(false)}} aria-label={`Show ${item.english}`} key={item.id}/>)}</div></div>
-}
-
-function Adventure({ learning, openChapter, openBoss, setDifficulty, speak, markStageSeen, award }: { learning:LearningState; openChapter:(id:string)=>void; openBoss:(id:string)=>void;setDifficulty:(id:string,difficulty:AdventureDifficulty)=>void;speak:(text:string)=>void;markStageSeen:(id:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void }) {
-  const [openWords,setOpenWords]=useState<string[]>([]);
-  const [openStages,setOpenStages]=useState<string[]>([]);
-  const [selectedStages,setSelectedStages]=useState<Record<string,string[]>>({});
-  const [practice,setPractice]=useState<{chapter:Chapter;stageIds:string[]}|null>(null);
-  function toggleWords(id:string){setOpenWords(current=>current.includes(id)?current.filter(item=>item!==id):[...current,id])}
-  function toggleStage(id:string){setOpenStages(current=>{const opening=!current.includes(id);if(opening)markStageSeen(id);return opening?[...current,id]:current.filter(item=>item!==id)})}
-  function selectStage(chapterId:string,stageId:string){setSelectedStages(current=>{const existing=current[chapterId]??[];const next=existing.includes(stageId)?existing.filter(id=>id!==stageId):[...existing,stageId].slice(-2);return {...current,[chapterId]:next}})}
-  return <><div className="page-wrap subpage"><div className="subpage-title"><p className="eyebrow">YOUR CHINESE WORLD</p><h1>Adventure map <span>冒险地图</span></h1><p>Each chapter contains five vocabulary stages, visual scenes, three difficulty modes, playable practice, and a final boss challenge.</p></div><div className="adventure-map-summary"><span>境</span><div><small>VISUAL SITUATION LEARNING</small><strong>{adventureChapters.length} chapters · 5 stages each</strong><p>Keep every chapter photo gallery, learn 10 words per stage, then choose Easy, Normal, or Hard.</p></div></div><div className="map-list visual-map-list">{adventureChapters.map((chapter,index)=>{const done=learning.completed.includes(chapter.id);const bossWon=learning.bossWins.includes(chapter.id);const unlocked=index<=learning.completed.length;const state=done?'done':unlocked?'current':'locked';const stages=adventureVocabularyStages(chapter.id);const showing=openWords.includes(chapter.id);const totalWords=stages.reduce((sum,stage)=>sum+stage.words.length,0);const newStages=stages.filter(stage=>!learning.seenAdventureStages.includes(stage.id)).length;const chosen=selectedStages[chapter.id]??[];const difficulty=learning.chapterDifficulties[chapter.id]??'normal';const config=adventureDifficultyConfig[difficulty];return <article className={`map-card visual-map-card ${state}`} key={chapter.id}><div className="map-status-rail"><div className="map-number">{bossWon?'冠':done?'✓':index+1}</div><div className="map-icon">{chapter.icon}</div><small>CHAPTER {index+1}</small></div><ChapterSceneGallery chapterId={chapter.id}/><div className="map-copy"><small>{chapter.chinese}{bossWon?' · BOSS CLEARED':''}</small><h2>{chapter.title}</h2><p>{chapter.description}</p><div className="map-progress"><i style={{width:`${learning.chapterProgress[chapter.id]??0}%`}}/></div><div className="adventure-difficulty"><header><span><small>CHOOSE DIFFICULTY</small><strong>{config.label} · {config.chinese}</strong></span><b>{config.questions} boss questions · {Math.round(config.pass*100)}% to pass</b></header><div>{(Object.keys(adventureDifficultyConfig) as AdventureDifficulty[]).map(mode=>{const item=adventureDifficultyConfig[mode];const cleared=learning.difficultyWins.includes(`${chapter.id}:${mode}`);return <button className={difficulty===mode?'active':''} onClick={()=>setDifficulty(chapter.id,mode)} key={mode}><span>{mode==='easy'?'芽':mode==='normal'?'衡':'峰'}</span><p><strong>{item.label}{cleared?' ✓':''}</strong><small>{item.description}</small></p><b>+{item.firstXp} XP · +{item.gems} ◆</b></button>})}</div></div><button className="map-word-toggle" aria-expanded={showing} onClick={()=>toggleWords(chapter.id)}><b>词</b><span><strong>5 vocabulary stages · {totalWords} words</strong><small>{showing?'Choose up to two stages to practice':newStages?`${newStages} stages still marked New`:'All stage word lists viewed'}</small></span>{newStages>0&&<em>{newStages} NEW</em>}<i>{showing?'−':'+'}</i></button>{showing&&<div className="adventure-stage-list"><div className="stage-practice-toolbar"><div><small>BUILD A PRACTICE SET</small><strong>{chosen.length?`${chosen.length} stage${chosen.length>1?'s':''} selected`:'Choose one or two stages'}</strong></div><button disabled={!chosen.length} onClick={()=>setPractice({chapter,stageIds:chosen})}>Practice {chosen.length===2?'combined stages':'selected stage'} →</button></div>{stages.map(stage=>{const stageOpen=openStages.includes(stage.id);const isNew=!learning.seenAdventureStages.includes(stage.id);const selected=chosen.includes(stage.id);return <section className={`adventure-word-stage ${stageOpen?'open':''} ${selected?'selected':''}`} key={stage.id}><div className="adventure-stage-head"><button className="stage-select" onClick={()=>selectStage(chapter.id,stage.id)} aria-pressed={selected}>{selected?'✓':'+'}<small>{selected?'Selected':'Add to practice'}</small></button><button className="stage-expand" onClick={()=>toggleStage(stage.id)} aria-expanded={stageOpen}><span>{stage.stage}</span><div><small>STAGE {stage.stage} · {stage.sourceTitle.toUpperCase()}</small><strong>{stage.title}</strong><p>{stage.focus}</p></div>{isNew&&<em>NEW</em>}<b>{stage.words.length} words</b><i>{stageOpen?'−':'+'}</i></button></div>{stageOpen&&<><div className="map-word-list interactive stage-words">{stage.words.map(word=><button onClick={()=>speak(word.hanzi)} key={`${stage.id}-${word.id}`}><strong>{word.hanzi}</strong><span>{word.pinyin}</span><small>{word.english}</small><i>▶</i></button>)}</div><button className="practice-stage-now" onClick={()=>setPractice({chapter,stageIds:[stage.id]})}>Practice only Stage {stage.stage} →</button></>}</section>})}</div>}<div className="map-actions"><button disabled={!unlocked} onClick={()=>openChapter(chapter.id)}>{done?`Revisit · ${config.label}`:`Start ${config.label} chapter →`}</button>{done&&<button className={bossWon?'boss-won':'boss-button'} onClick={()=>openBoss(chapter.id)}>{bossWon?`Replay ${config.label} boss`:`${config.label} boss challenge`}</button>}</div></div></article>})}</div></div>{practice&&<AdventureStagePractice chapter={practice.chapter} stageIds={practice.stageIds} close={()=>setPractice(null)} award={award}/>}</>
-}
-
-function AdventureStagePractice({chapter,stageIds,close,award}:{chapter:Chapter;stageIds:string[];close:()=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){
-  const stages=adventureVocabularyStages(chapter.id).filter(stage=>stageIds.includes(stage.id));const words=stages.flatMap(stage=>stage.words);const questions:DrillQuestion[]=words.map((word,index)=>{const distractors=[1,4,7].map(offset=>words[(index+offset)%words.length]).filter(candidate=>candidate.id!==word.id);return{prompt:index%2===0?`Which word means “${word.english}”?`:`Choose the meaning of ${word.hanzi} (${word.pinyin}).`,choices:index%2===0?[word.hanzi,...distractors.map(item=>item.hanzi)]:[word.english,...distractors.map(item=>item.english)],answer:index%2===0?word.hanzi:word.english,explanation:`${word.hanzi} · ${word.pinyin} means “${word.english}.” ${word.example.hanzi} · ${word.example.english}`}});
-  return <div className="modal-backdrop adventure-practice-backdrop" role="dialog" aria-modal="true" aria-label={`${chapter.title} stage practice`}><section className="adventure-practice-modal"><header><div><p className="eyebrow">ADVENTURE PRACTICE · {stages.map(stage=>`STAGE ${stage.stage}`).join(' + ')}</p><h2>{chapter.title} recall lab</h2><p>{words.length} words · choices rotate positions every question.</p></div><button onClick={close} aria-label="Close stage practice">×</button></header><ChoiceDrill label={`Adventure ${chapter.id} ${stageIds.join('-')}`} questions={questions} award={award} skill="Vocabulary"/></section></div>
-}
-
-function ChapterSceneGallery({chapterId}:{chapterId:string}){
-  const scenes=chapterScenes[chapterId]??chapterScenes.arrival;const [index,setIndex]=useState(0);const [expanded,setExpanded]=useState(false);const [zoom,setZoom]=useState(1);const [tilt,setTilt]=useState({x:0,y:0});const scene=scenes[index];
-  function move(direction:number){setIndex(current=>(current+direction+scenes.length)%scenes.length);setZoom(1);setTilt({x:0,y:0})}
-  function perspective(event:React.PointerEvent<HTMLDivElement>){const box=event.currentTarget.getBoundingClientRect();setTilt({x:((event.clientY-box.top)/box.height-.5)*-5,y:((event.clientX-box.left)/box.width-.5)*7})}
-  return <><div className="chapter-scene-gallery"><div key={scene.image} className="chapter-scene-photo" style={{backgroundImage:`url(${scene.image})`}}/><div className="chapter-scene-shade"/><div className="chapter-scene-top"><span>{scene.chinese}</span><div><button onClick={()=>setExpanded(true)} aria-label="Open immersive full image">⛶ Full view</button><small>{index+1}/{scenes.length}</small></div></div><div className="chapter-scene-caption"><strong>{scene.label}</strong><p>{scene.prompt}</p><small>{scene.credit}</small></div><div className="chapter-scene-controls"><button onClick={()=>move(-1)} aria-label="Previous scene">←</button><div>{scenes.map((item,itemIndex)=><button className={itemIndex===index?'active':''} onClick={()=>setIndex(itemIndex)} aria-label={`Show ${item.label}`} key={`${item.image}-${itemIndex}`}/>)}</div><button onClick={()=>move(1)} aria-label="Next scene">→</button></div></div>{expanded&&<div className="scene-immersive-backdrop" role="dialog" aria-modal="true" aria-label={`Immersive view of ${scene.label}`}><section><header><div><small>IMMERSIVE FULL VIEW · DRAG TO TILT</small><strong>{scene.chinese} · {scene.label}</strong></div><button onClick={()=>setExpanded(false)}>×</button></header><div className="scene-immersive-stage" onPointerMove={perspective} onPointerLeave={()=>setTilt({x:0,y:0})}><Image src={scene.image} alt={scene.label} width={1600} height={1000} unoptimized style={{transform:`perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${zoom})`}}/></div><footer><button onClick={()=>move(-1)}>← Previous</button><div><button disabled={zoom<=1} onClick={()=>setZoom(value=>Math.max(1,value-.2))}>−</button><span>{Math.round(zoom*100)}%</span><button disabled={zoom>=2} onClick={()=>setZoom(value=>Math.min(2,value+.2))}>＋</button></div><button onClick={()=>move(1)}>Next →</button></footer><p>{scene.prompt}<small>{scene.credit}</small>{scene.source&&<a href={scene.source} target="_blank" rel="noreferrer">View licensed source ↗</a>}</p></section></div>}</>
-}
-
-function BossChallenge({chapter,difficulty,close,finish,speak}:{chapter:Chapter;difficulty:AdventureDifficulty;close:()=>void;finish:(chapter:Chapter,score:number,total:number,difficulty:AdventureDifficulty)=>void;speak:(text:string)=>void}){
-  const config=adventureDifficultyConfig[difficulty];
-  const wordBank=adventureVocabularyStages(chapter.id).flatMap(stage=>stage.words);
-  const questions=Array.from({length:config.questions},(_,questionIndex)=>{
-    const word=wordBank[(questionIndex*7)%wordBank.length];
-    const distractorOffsets=difficulty==='easy'?[1,5]:difficulty==='normal'?[1,5,11]:[1,3,5,11];
-    const distractors=distractorOffsets.map(offset=>wordBank[(questionIndex*7+offset)%wordBank.length]).filter(item=>item.id!==word.id);
-    const modeCount=difficulty==='easy'?3:difficulty==='normal'?5:7;
-    const mode=questionIndex%modeCount;
-    if(mode===0)return{prompt:`What does ${word.hanzi}${difficulty==='easy'?` (${word.pinyin})`:''} mean?`,audio:word.hanzi,choices:[word.english,...distractors.map(item=>item.english)],answer:word.english,explanation:`${word.hanzi} · ${word.pinyin} means “${word.english}.”`};
-    if(mode===1)return{prompt:`Choose the Hanzi for “${word.english}”.`,audio:word.hanzi,choices:[word.hanzi,...distractors.map(item=>item.hanzi)],answer:word.hanzi,explanation:`${word.hanzi} · ${word.pinyin} is “${word.english}.”`};
-    if(mode===2)return{prompt:difficulty==='easy'?`Choose the pinyin for ${word.hanzi}.`:`Listen, then choose the correct pinyin.`,audio:word.hanzi,choices:[word.pinyin,...distractors.map(item=>item.pinyin)],answer:word.pinyin,explanation:`The correct pronunciation is ${word.pinyin}.`};
-    if(mode===3)return{prompt:`Complete the situation: ${word.example.hanzi.replace(word.hanzi,'＿＿')}`,audio:word.example.hanzi,choices:[word.hanzi,...distractors.map(item=>item.hanzi)],answer:word.hanzi,explanation:`${word.example.hanzi} · ${word.example.pinyin} · ${word.example.english}`};
-    if(mode===4)return{prompt:`Listen and choose the meaning of the key word.`,audio:word.hanzi,choices:[word.english,...distractors.map(item=>item.english)],answer:word.english,explanation:`You heard ${word.hanzi} (${word.pinyin}), meaning “${word.english}.”`};
-    if(mode===5)return{prompt:`Which word best completes this real-life sentence? ${word.example.hanzi.replace(word.hanzi,'＿＿')}`,audio:word.example.hanzi,choices:[word.hanzi,...distractors.map(item=>item.hanzi)],answer:word.hanzi,explanation:`In context: ${word.example.hanzi} · ${word.example.english}`};
-    return{prompt:`Infer the key idea from the full sentence: ${word.example.hanzi}`,audio:word.example.hanzi,choices:[word.english,...distractors.map(item=>item.english)],answer:word.english,explanation:`${word.hanzi} (${word.pinyin}) carries the meaning “${word.english}” in this sentence.`};
-  });
-  const [index,setIndex]=useState(0);const [selected,setSelected]=useState('');const [score,setScore]=useState(0);const [done,setDone]=useState(false);const [graded,setGraded]=useState(false);const question=questions[index];const choices=seededShuffle(question.choices,`${localDateKey()}-boss-${chapter.id}-${difficulty}-${index}`);const correct=selected===question.answer;
-  function submit(){if(!selected)return;if(!graded){setScore(value=>value+(correct?1:0));setGraded(true);return}if(index===questions.length-1)setDone(true);else{setIndex(index+1);setSelected('');setGraded(false)}}
-  function retry(){setIndex(0);setSelected('');setScore(0);setDone(false);setGraded(false)}
-  const passed=score/questions.length>=config.pass;
-  return <div className="modal-backdrop boss-backdrop" role="dialog" aria-modal="true" aria-label={`${chapter.title} ${config.label} boss challenge`}><section className={`boss-modal boss-${difficulty}`}><header><div><p className="eyebrow">{config.label.toUpperCase()} BOSS · {config.chinese} · {chapter.chinese}</p><h2>{done?'Challenge result':`${chapter.title} · ${questions.length}-question exam`}</h2><small>{config.description}</small></div><button onClick={close}>×</button></header>{!done?<div className="boss-body"><div className="boss-score-live"><span>QUESTION {index+1}/{questions.length}</span><b>{score} correct so far</b><small>{Math.round(config.pass*100)}% required · +{config.firstXp} XP · +{config.gems} ◆</small></div><div className="boss-track"><i style={{width:`${(index+1)/questions.length*100}%`}}/></div><span className="boss-seal">{difficulty==='easy'?'芽':difficulty==='normal'?chapter.icon:'峰'}</span><button className="boss-audio" onClick={()=>speak(question.audio)}>▶ Hear clue</button><h3>{question.prompt}</h3><div className="boss-choices">{choices.map(choice=><button disabled={graded} className={`${selected===choice?'selected ':''}${graded&&choice===question.answer?'correct ':''}${graded&&selected===choice&&!correct?'wrong':''}`} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{graded&&<div className={`boss-answer-feedback ${correct?'good':'try'}`}><strong>{correct?'✓ Correct':`Correct answer: ${question.answer}`}</strong><p>{question.explanation}</p></div>}<button className="primary" disabled={!selected} onClick={submit}>{graded?(index===questions.length-1?'See result →':'Next question →'):'Check answer →'}</button></div>:<div className="boss-result"><span>{passed?'冠':'再'}</span><p className="eyebrow">{passed?`${config.label.toUpperCase()} BOSS CLEARED`:'REVIEW REQUIRED'}</p><h3>{score}/{questions.length} · {Math.round(score/questions.length*100)}%</h3><p>{passed?`Passed the ${config.label} threshold. First clears receive +${config.firstXp} XP and +${config.gems} gems; replays receive a smaller reward.`:`Below ${Math.round(config.pass*100)}%: ${config.failPenalty} XP is deducted when this result is saved. Review the chapter before another attempt.`}</p><button onClick={retry}>Retry {config.label}</button><button className="primary" onClick={()=>finish(chapter,score,questions.length,difficulty)}>{passed?'Save score & claim reward →':'Save score & leave →'}</button></div>}</section></div>
-}
-
-function Practice({chapter,award,speak}:{chapter:Chapter;award:()=>void;speak:(v:string)=>void}) {
-  const stages=adventureVocabularyStages(chapter.id);const [stageIds,setStageIds]=useState([stages[0].id]);const [round,setRound]=useState(0);const [selected,setSelected]=useState<string|null>(null);const [matched,setMatched]=useState<string[]>([]);const [awarded,setAwarded]=useState(false);const [voiceOn,setVoiceOn]=useState(true);const [feedback,setFeedback]=useState('');const source=stages.filter(stage=>stageIds.includes(stage.id)).flatMap(stage=>stage.words);const roundWords=seededShuffle(source,`${chapter.id}-${stageIds.join('-')}-round-${round}`).slice(0,Math.min(6,source.length));const hanziWords=seededShuffle(roundWords,`${chapter.id}-${round}-hanzi`);const meaningWords=seededShuffle(roundWords,`${chapter.id}-${round}-meaning`);
-  function toggleStage(id:string){setStageIds(current=>{const next=current.includes(id)?current.filter(item=>item!==id):[...current,id].slice(-2);return next.length?next:[id]});resetRound(0)}
-  function resetRound(nextRound:number){setRound(nextRound);setSelected(null);setMatched([]);setAwarded(false);setFeedback('')}
-  function chooseEnglish(id:string){if(!selected)return;if(selected===id&&!matched.includes(id)){const next=[...matched,id];setMatched(next);setSelected(null);setFeedback('✓ Match found');if(next.length===roundWords.length&&!awarded){setAwarded(true);award()}}else{setSelected(null);setFeedback('Not quite — compare sound and meaning, then try again.')}}
-  const complete=matched.length===roundWords.length;
-  return <div className="page-wrap subpage word-match-page"><div className="subpage-title"><p className="eyebrow">ACTIVE RECALL · MULTI-ROUND</p><h1>Word Match <span>配对</span></h1><p>Choose one stage or combine two. Every round reshuffles both columns.</p></div><section className="word-match-setup"><div><small>VOCABULARY SOURCE</small><strong>{chapter.title} · choose up to 2 stages</strong></div><div className="word-match-stage-picker">{stages.map(stage=><button className={stageIds.includes(stage.id)?'active':''} onClick={()=>toggleStage(stage.id)} key={stage.id}><span>{stage.stage}</span><b>{stage.title}</b><small>{stage.words.length} words</small></button>)}</div><button className={`voice-choice ${voiceOn?'active':''}`} onClick={()=>setVoiceOn(value=>!value)} aria-pressed={voiceOn}><span>{voiceOn?'◖))':'×'}</span><b>Auto voice {voiceOn?'on':'off'}</b><small>{voiceOn?'Hear Hanzi when selected':'Practice silently'}</small></button></section><section className="game-panel"><div className="game-status"><span>Round {round+1} · {matched.length} / {roundWords.length} matched</span><div><i style={{width:`${matched.length/Math.max(1,roundWords.length)*100}%`}}/></div><b>{stageIds.length===2?'Combined stages':'Single stage'}</b></div><div className="match-grid"><div>{hanziWords.map(word=><button key={word.id} disabled={matched.includes(word.id)} className={selected===word.id?'selected':''} onClick={()=>{setSelected(word.id);setFeedback('');if(voiceOn)speak(word.hanzi)}}><strong>{word.hanzi}</strong><small>{word.pinyin}</small></button>)}</div><div>{meaningWords.map(word=><button key={word.id} disabled={matched.includes(word.id)} onClick={()=>chooseEnglish(word.id)}>{word.english}</button>)}</div></div>{feedback&&<p className={`match-feedback ${feedback.startsWith('✓')?'good':'try'}`}>{feedback}</p>}{complete&&<div className="game-complete"><span>✓</span><h2>Round {round+1} cleared!</h2><p>Next round brings a fresh set and new positions from your selected stage level.</p><div><button onClick={()=>resetRound(round)}>Replay this round</button><button className="primary" onClick={()=>resetRound(round+1)}>Next word set →</button></div></div>}</section></div>
-}
-
-function LearnCenter({profile,chapter,specialization,favorites,personalWords,flashcardStats,toggleFavorite,addPersonalWord,removePersonalWord,rateFlashcard,speak,award,updateHsk,updateCareer}:{profile:Profile|null;chapter:Chapter;specialization:(typeof specializationContent)[keyof typeof specializationContent];favorites:string[];personalWords:PersonalWord[];flashcardStats:Record<string,FlashcardStat>;toggleFavorite:(id:string)=>void;addPersonalWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void;removePersonalWord:(id:string)=>void;rateFlashcard:(wordId:string,rating:FlashcardRating)=>void;speak:(v:string,speed?:number)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean,gameResult?:{score:number;total:number;mistakes?:GameMistake[]})=>void;updateHsk:(level:number)=>void;updateCareer:(career:string)=>void}) {
-  type LearnTab='vocabulary'|'dictionary'|'library'|'image'|'flashcards'|'grammar'|'listening'|'dictation'|'speaking'|'hanzi'|'pinyin'|'reading'|'hsk'|'exam'|'adaptive'|'offline'|'specialization'|'roleplay'|'resources';
-  const [tab,setTab]=useState<LearnTab>('hsk'); const [placementOpen,setPlacementOpen]=useState(false);
-  const learnSections:{id:string;icon:string;title:string;copy:string;tabs:[LearnTab,string][]}[]=[
-    {id:'guided',icon:'路',title:'Guided learning',copy:'Start here for an HSK plan, adaptive session, exam, or textbook lesson.',tabs:[['hsk','HSK Center'],['adaptive','Adaptive Study'],['exam','Mock Exam'],['resources','Workbook & Culture'],['offline','Downloads']]},
-    {id:'words',icon:'词',title:'Words & reading',copy:'Discover vocabulary, save words, read, and build long-term recall.',tabs:[['vocabulary','Vocabulary Network'],['dictionary','Dictionary'],['library',`My Library (${favorites.length+personalWords.length})`],['image','Image Lookup'],['flashcards','Flashcards'],['reading','Reading']]},
-    {id:'sound',icon:'声',title:'Listen & speak',copy:'Train real audio, tones, dictation, pronunciation, and conversation.',tabs:[['listening','Listening'],['dictation','Dictation'],['speaking','Speaking'],['pinyin','Pinyin']]},
-    {id:'use',icon:'用',title:'Use Chinese',copy:'Practice grammar, writing, roleplay, and vocabulary for your future field.',tabs:[['grammar','Grammar'],['hanzi','Hanzi'],['roleplay','Roleplay'],['specialization','My Path']]}
-  ];
-  const activeSection=learnSections.find(section=>section.tabs.some(([id])=>id===tab))??learnSections[0];
-  const grammarQuestions:DrillQuestion[]=[{prompt:'“The station is ahead.” · 车站 ___ 前面。',choices:['有','在','是'],answer:'在',explanation:'在 connects the subject to its location.'},{prompt:'“I have a reservation.” · 我 ___ 预订。',choices:['在','有','去'],answer:'有',explanation:'有 means “to have.”'},{prompt:'“Can I pay by card?” · ___ 刷卡吗？',choices:['可以','哪里','多少'],answer:'可以',explanation:'可以 asks whether something is possible or allowed.'},{prompt:'Complete the sequence: 我 ___ 写作业，然后休息。',choices:['先','已经','虽然'],answer:'先',explanation:'先 marks the first action before 然后 introduces the next one.'},{prompt:'Choose the natural comparison.',choices:['今天比昨天冷。','今天昨天比冷。','比今天冷昨天。'],answer:'今天比昨天冷。',explanation:'A + 比 + B + adjective is the standard comparison pattern.'},{prompt:'Complete: 因为下雨，___ 比赛取消了。',choices:['所以','除了','一边'],answer:'所以',explanation:'因为 introduces the reason and 所以 introduces the result.'},{prompt:'Choose “He speaks Chinese fluently.”',choices:['他中文说得很流利。','他得中文流利说。','他中文很说得流利。'],answer:'他中文说得很流利。',explanation:'得 links the verb 说 to the degree complement 很流利.'},{prompt:'Complete: ___ 努力，就会进步。',choices:['只要','尽管','与其'],answer:'只要',explanation:'只要…就… expresses a sufficient condition.'},{prompt:'Choose the measured contrast.',choices:['尽管成本较高，但是长期效果更好。','成本尽管但是长期。','但是尽管效果成本。'],answer:'尽管成本较高，但是长期效果更好。',explanation:'尽管 acknowledges one fact before 但是 presents the contrasting point.'}];
-  const roleQuestions:DrillQuestion[]=[{prompt:'店员问：“您好，请问几位？”',choices:['两位，谢谢。','我要买一张票。','我的护照在这里。'],answer:'两位，谢谢。',explanation:'两位 politely tells the host there are two people.'},{prompt:'前台问：“请问您有预订吗？”',choices:['有，我姓李。','两张票。','不太贵。'],answer:'有，我姓李。',explanation:'Confirm the reservation and give the name it is under.'},{prompt:'售票员问：“您要去哪儿？”',choices:['我要去大学。','我有菜单。','这个很贵。'],answer:'我要去大学。',explanation:'Answer with 要去 plus your destination.'}];
-  const hskQuestions:DrillQuestion[]=hskStyleBanks[profile?.hsk??3];
-  return <div className="page-wrap learn-page"><div className="subpage-title"><p className="eyebrow">STRUCTURED LEARNING</p><h1>Learn Center <span>学习中心</span></h1><p>Choose one learning route first, then pick the exact activity you need.</p></div><section className="learn-route-board" aria-label="Learning routes"><header><div><small>RECOMMENDED START</small><strong>Continue HSK {profile?.hsk??1}</strong><p>Build your foundation in order, then mix in review and real-world practice.</p></div><button onClick={()=>setTab('hsk')}>Open my HSK path →</button></header><div>{learnSections.map(section=><button className={activeSection.id===section.id?'active':''} onClick={()=>setTab(section.tabs[0][0])} key={section.id}><span>{section.icon}</span><p><strong>{section.title}</strong><small>{section.copy}</small></p><b>→</b></button>)}</div></section><div className="learn-section-heading"><span>{activeSection.icon}</span><p><small>CURRENT AREA</small><strong>{activeSection.title}</strong></p></div><div className="learn-tabs">{activeSection.tabs.map(([id,label])=><button className={tab===id?'active':''} onClick={()=>setTab(id)} key={id}>{label}</button>)}</div>
-    {tab==='vocabulary'&&<VocabularyNetwork currentChapterId={chapter.id} speak={speak} award={award}/>}
-    {tab==='dictionary'&&<Dictionary favorites={favorites} personalWords={personalWords} toggleFavorite={toggleFavorite} addPersonalWord={addPersonalWord} removePersonalWord={removePersonalWord} speak={speak} award={award}/>}
-    {tab==='library'&&<LibraryBank favorites={favorites} personalWords={personalWords} flashcardStats={flashcardStats} toggleFavorite={toggleFavorite} removePersonalWord={removePersonalWord} speak={speak} award={award}/>}
-    {tab==='image'&&<ImageDictionary favorites={favorites} toggleFavorite={toggleFavorite} speak={speak} openLibrary={()=>setTab('library')}/>}
-    {tab==='flashcards'&&<HskFlashcards favorites={favorites} personalWords={personalWords} stats={flashcardStats} toggleFavorite={toggleFavorite} rate={rateFlashcard} speak={speak}/>}
-    {tab==='grammar'&&<section className="learning-panel"><PanelTitle eyebrow="GRAMMAR · HSK 1–6 PRACTICE" title="Build useful sentence patterns" copy="Study nine examples from core word order through comparison, complements, cause, condition, and concession."/><div className="grammar-example-grid">{[{pattern:'Subject + 在 + Place',example:'出口在前面。',meaning:'The exit is ahead.'},{pattern:'Subject + 有 + Object',example:'我有预订。',meaning:'I have a reservation.'},{pattern:'先…，然后…',example:'我先复习，然后休息。',meaning:'I review first, then rest.'},{pattern:'A + 比 + B + Adjective',example:'今天比昨天冷。',meaning:'Today is colder than yesterday.'},{pattern:'Verb + 得 + Complement',example:'她中文说得很流利。',meaning:'She speaks Chinese fluently.'},{pattern:'因为…，所以…',example:'因为下雨，所以比赛取消了。',meaning:'Because it rained, the match was canceled.'}].map(item=><article key={item.pattern}><strong>{item.pattern}</strong><button onClick={()=>speak(item.example)}>▶ {item.example}</button><small>{item.meaning}</small></article>)}</div><div className="grammar-practice-head"><span>练</span><div><strong>Practice your grammar</strong><small>9 questions · explanations · next-question flow</small></div></div><ChoiceDrill label="Grammar practice" questions={grammarQuestions} award={award} skill="Grammar" saveWord={addPersonalWord}/></section>}
-    {tab==='listening'&&<ListeningPractice chapter={chapter} speak={speak} award={award} saveWord={addPersonalWord}/>}
-    {tab==='dictation'&&<Dictation chapter={chapter} speak={speak} award={award}/>}
-    {tab==='speaking'&&<SpeakingCoach targets={adventureChapters.map(item=>item.question.chinesePrompt)} speak={speak} onResult={(correct,index)=>award(`Speaking practice ${index+1}`,15,'Speaking',correct)}/>}
-    {tab==='hanzi'&&<HanziCenter speak={speak} award={award} addPersonalWord={addPersonalWord}/>} {tab==='pinyin'&&<PinyinCenter speak={speak} award={award}/>} {tab==='reading'&&<ReadingCenter award={award} speak={speak} favorites={favorites} toggleFavorite={toggleFavorite}/>} {tab==='resources'&&<WorkbookResources award={award}/>} 
-    {tab==='hsk'&&<ComprehensiveHskCenter key={profile?.hsk??3} level={profile?.hsk??3} diagnosticQuestions={hskQuestions} speak={speak} award={award} openPlacement={()=>setPlacementOpen(true)}/>} 
-    {tab==='exam'&&<HskMockExam level={profile?.hsk??3} speak={speak} onFinish={(score,total,weak)=>award(`HSK ${profile?.hsk??3} mock · ${weak[0]??'mixed'}`,Math.max(10,score*8),weak[0]==='Listening'?'Listening':weak[0]==='Writing'?'Grammar':'Reading',score/total>=.6,{score,total})}/>} 
-    {tab==='adaptive'&&<AdaptiveStudyPlanner hsk={profile?.hsk??3} onStart={focus=>setTab(focus==='Listening'?'listening':focus==='Grammar'?'grammar':focus==='Hanzi'?'hanzi':focus==='Speaking'?'speaking':focus==='Reading'?'reading':'flashcards')}/>} 
-    {tab==='offline'&&<OfflineLibrary/>}
-    {tab==='specialization'&&<SpecializedPath profile={profile} specialization={specialization} updateCareer={updateCareer} speak={speak} award={award}/>}
-    {tab==='roleplay'&&<section className="learning-panel"><PanelTitle eyebrow="GUIDED ROLEPLAY · NON-AI FALLBACK" title="Respond in context" copy="Answer correctly, then continue into the next situation."/><ChoiceDrill label="Guided roleplay" questions={roleQuestions} award={award} skill="Speaking" saveWord={addPersonalWord}/></section>}
-    {placementOpen&&<PlacementTest current={profile?.hsk??3} close={()=>setPlacementOpen(false)} apply={level=>{updateHsk(level);setPlacementOpen(false)}}/>}
-  </div>;
-}
-
-function SpecializedPath({profile,specialization,updateCareer,speak,award}:{profile:Profile|null;specialization:(typeof specializationContent)[keyof typeof specializationContent];updateCareer:(career:string)=>void;speak:(value:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){
-  const initial=Math.max(0,specializedTracks.findIndex(track=>track.title===profile?.career));const [selected,setSelected]=useState(initial);const track=specializedTracks[selected];
-  return <section className="learning-panel specialized-path"><PanelTitle eyebrow="PERSONALIZED STUDY & CAREER CHINESE" title="Chinese for your exact next chapter" copy="Choose a focused situation: a CS master’s in China, AI research, software engineering, or data and cybersecurity."/><div className="specialized-track-picker">{specializedTracks.map((item,index)=><button className={selected===index?'active':''} onClick={()=>{setSelected(index);updateCareer(item.title)}} key={item.id}><span>{index===0?'硕':index===1?'智':index===2?'软':'安'}</span><div><strong>{item.title}</strong><small>{item.chinese}</small></div></button>)}</div><div className="specialized-track-hero"><span>{selected===0?'硕':selected===1?'智':selected===2?'码':'盾'}</span><div><small>SELECTED FOCUS · {specialization.chinese}</small><h3>{track.chinese} · {track.title}</h3><p>{track.goal}</p></div></div><div className="special-words expanded">{track.words.map(word=><article key={word.hanzi}><span>{word.hanzi}</span><div><strong>{word.english}</strong><small>{word.pinyin}</small><p>{word.example}</p></div><button onClick={()=>speak(word.hanzi)}>◖))</button></article>)}</div><div className="specialized-practice"><div><p className="eyebrow">SITUATION PRACTICE</p><h3>Use this vocabulary in real decisions</h3><p>Questions cover campus, labs, research, and technical teamwork—not just isolated translation.</p></div><ChoiceDrill key={track.id} label={`${track.title} practice`} questions={track.questions} award={award} skill="Vocabulary"/></div><footer className="specialized-general-note"><b>General Chinese remains active.</b> This focus adds terminology and situations; it does not replace HSK grammar, listening, speaking, or daily conversation.</footer></section>
-}
-
-function ComprehensiveHskCenter({level,diagnosticQuestions,speak,award,openPlacement}:{level:number;diagnosticQuestions:DrillQuestion[];speak:(value:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean,gameResult?:{score:number;total:number;mistakes?:GameMistake[]})=>void;openPlacement:()=>void}){
-  return <>
-    <HskCourseCenter level={level} diagnosticQuestions={diagnosticQuestions} speak={speak} award={award} openPlacement={openPlacement}/>
-    <CourseWorkbookPractice initialLevel={level} speak={speak} award={award}/>
-  </>;
-}
-
-function CourseWorkbookPractice({initialLevel,speak,award}:{initialLevel:number;speak:(value:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean,gameResult?:{score:number;total:number;mistakes?:GameMistake[]})=>void}){
-  const kinds:('All'|CourseExerciseKind)[]=['All','Vocabulary','Listening','Grammar','Sentence order','Reading','Context'];
-  const coverage=courseExerciseCoverage();
-  const [level,setLevel]=useState(Math.max(1,Math.min(6,initialLevel)));
-  const [volume,setVolume]=useState<'all'|'上'|'下'>('all');
-  const [lessonIndex,setLessonIndex]=useState(0);
-  const [kind,setKind]=useState<'All'|CourseExerciseKind>('All');
-  const [questionIndex,setQuestionIndex]=useState(0);
-  const [selected,setSelected]=useState('');
-  const [graded,setGraded]=useState(false);
-  const [answers,setAnswers]=useState<{prompt:string;selected:string;answer:string;explanation:string;correct:boolean;skill:LearningEvent['skill']}[]>([]);
-  const [complete,setComplete]=useState(false);
-  const levelLessons=courseExerciseLessons.filter(item=>item.level===level&&(volume==='all'||item.volume===volume));
-  const lesson=levelLessons[Math.min(lessonIndex,Math.max(0,levelLessons.length-1))]??courseExerciseLessons[0];
-  const questions=lesson.questions.filter(question=>kind==='All'||question.kind===kind);
-  const question=questions[Math.min(questionIndex,Math.max(0,questions.length-1))]??lesson.questions[0];
-  const correct=selected===question.answer;
-  const score=answers.filter(answer=>answer.correct).length;
-
-  function resetSession(){setQuestionIndex(0);setSelected('');setGraded(false);setAnswers([]);setComplete(false)}
-  function chooseLevel(next:number){setLevel(next);setVolume('all');setLessonIndex(0);resetSession()}
-  function chooseVolume(next:'all'|'上'|'下'){setVolume(next);setLessonIndex(0);resetSession()}
-  function chooseLesson(index:number){setLessonIndex(index);resetSession()}
-  function chooseKind(next:'All'|CourseExerciseKind){setKind(next);resetSession()}
-  function check(){if(!selected)return;setGraded(true)}
-  function moveQuestion(direction:number){const next=Math.max(0,Math.min(questions.length-1,questionIndex+direction));setQuestionIndex(next);setSelected(answers[next]?.selected??'');setGraded(Boolean(answers[next]))}
-  function continueQuestion(){
-    const result={prompt:question.prompt,selected,answer:question.answer,explanation:question.explanation,correct,skill:question.skill as LearningEvent['skill']};
-    const nextAnswers=[...answers.filter((_,index)=>index!==questionIndex)];nextAnswers.splice(questionIndex,0,result);setAnswers(nextAnswers);
-    if(questionIndex===questions.length-1){
-      const finalScore=nextAnswers.filter(answer=>answer.correct).length;
-      const mistakes=nextAnswers.filter(answer=>!answer.correct).map(answer=>({prompt:answer.prompt,answer:answer.selected,correction:answer.answer,explanation:answer.explanation}));
-      award(`HSK ${level} ${lesson.volume} lesson ${lesson.lesson} workbook`,30,question.skill,finalScore===questions.length,{score:finalScore,total:questions.length,mistakes});
-      setComplete(true);return;
+function LegacySettingsCenter({
+  profile,
+  learning,
+  syncStatus,
+  cloudAccount,
+  syncError,
+  connectEmailAccount,
+  connectGoogleAccount,
+  signOutAccount,
+  close,
+  editProfile,
+  exportBackup,
+  importBackup,
+  setColorMode,
+}: SettingsCenterProps) {
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
+  const [restoring, setRestoring] = useState(false);
+  const [email, setEmail] = useState("");
+  const evidence = calculateSkillEvidence(
+    learning.events,
+    learning.lastActiveDate || undefined,
+  );
+  const evidenceValues = Object.values(evidence);
+  const average = Math.round(
+    evidenceValues.reduce((sum, item) => sum + item.score, 0) /
+      evidenceValues.length,
+  );
+  const breadth = Math.min(
+    100,
+    Math.round((learning.events.length / 100) * 100),
+  );
+  const consistency = Math.min(
+    100,
+    Math.round((new Set(learning.activityDates).size / 30) * 100),
+  );
+  const targetProgress = Math.round(
+    average * 0.5 + breadth * 0.3 + consistency * 0.2,
+  );
+  async function restore(file?: File) {
+    if (!file) return;
+    setError("");
+    setRestoring(true);
+    try {
+      await importBackup(file);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The backup could not be restored.",
+      );
+      setRestoring(false);
     }
-    setQuestionIndex(questionIndex+1);setSelected('');setGraded(false);
   }
-  function nextLesson(){const next=(lessonIndex+1)%levelLessons.length;chooseLesson(next)}
-
-  return <section className="learning-panel course-workbook-center">
-    <PanelTitle eyebrow="SUPPLIED TEXTBOOK + WORKBOOK PRACTICE" title="Practice every HSK course lesson" copy="Original interactive exercises mapped to all 146 supplied course topics, including HSK 4–6 上 and 下. Wrong answers are sent to Review & mistakes."/>
-    <div className="course-bank-total"><span>题</span><div><small>COMPLETE INTERACTIVE BANK</small><strong>{completeCourseExerciseBank.length} questions</strong><p>Vocabulary · listening · grammar · sentence order · reading · context</p></div><b>{courseExerciseLessons.length}<small>LESSONS COVERED</small></b></div>
-    <div className="course-coverage-grid">{coverage.map(item=><button className={item.level===level?'active':''} onClick={()=>chooseLevel(item.level)} key={item.level}><span>HSK {item.level}</span><strong>{item.lessons} lessons</strong><small>{item.questions} questions</small></button>)}</div>
-    {level>=4&&<div className="course-volume-switch"><button className={volume==='all'?'active':''} onClick={()=>chooseVolume('all')}>All lessons <small>{courseExerciseLessons.filter(item=>item.level===level).length}</small></button><button className={volume==='上'?'active':''} onClick={()=>chooseVolume('上')}>HSK {level} 上 <small>{courseExerciseLessons.filter(item=>item.level===level&&item.volume==='上').length}</small></button><button className={volume==='下'?'active':''} onClick={()=>chooseVolume('下')}>HSK {level} 下 <small>{courseExerciseLessons.filter(item=>item.level===level&&item.volume==='下').length}</small></button></div>}
-    <div className="course-workbook-layout">
-      <aside className="course-lesson-list"><header><small>CHOOSE A LESSON</small><strong>HSK {level}{volume==='all'?'':` ${volume}`}</strong></header><div>{levelLessons.map((item,index)=><button className={index===lessonIndex?'active':''} onClick={()=>chooseLesson(index)} key={item.id}><span>{item.lesson}</span><p><strong>{item.chinese}</strong><small>{item.english}</small></p><b>{item.questions.length}题</b></button>)}</div></aside>
-      <div className="course-practice-stage">
-        <header className="course-practice-title"><div><p className="eyebrow">HSK {level}{lesson.volume==='全'?'':` ${lesson.volume}`} · LESSON {lesson.lesson}</p><h3>{lesson.chinese}</h3><span>{lesson.english}</span></div><b>{lesson.questions.length} exercises</b></header>
-        <div className="course-kind-filter">{kinds.map(item=><button className={kind===item?'active':''} onClick={()=>chooseKind(item)} key={item}>{item}</button>)}</div>
-        {!complete?<article className="course-question-card"><div className="course-question-meta"><span>{question.kind}</span><small>QUESTION {questionIndex+1} OF {questions.length}</small></div><div className="course-question-progress"><i style={{width:`${((questionIndex+(graded?1:0))/questions.length)*100}%`}}/></div>{question.audio&&<button className="course-audio-button" onClick={()=>speak(question.audio!)}>◖)) Play workbook audio</button>}<h3>{question.prompt}</h3><div className="course-answer-list">{question.choices.map(choice=><button disabled={graded} className={`${selected===choice?'selected ':''}${graded&&choice===question.answer?'correct ':''}${graded&&selected===choice&&!correct?'wrong':''}`} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{graded&&<div className={`course-answer-feedback ${correct?'good':'try'}`}><strong>{correct?'✓ Correct':`Correct answer: ${question.answer}`}</strong><p>{question.explanation}</p></div>}<footer><button disabled={questionIndex===0} onClick={()=>moveQuestion(-1)}>← Previous question</button>{!graded?<button className="primary" disabled={!selected} onClick={check}>Check answer</button>:<button className="primary" onClick={continueQuestion}>{questionIndex===questions.length-1?'Finish lesson':'Next question →'}</button>}</footer></article>:<article className="course-session-result"><span>{score===questions.length?'冠':'进'}</span><p className="eyebrow">LESSON PRACTICE COMPLETE</p><h3>{score}/{questions.length} correct</h3><p>{score===questions.length?'Excellent. You connected this course topic with sound, grammar, word order, and meaning.':'Your incorrect answers are now available in Review & mistakes for repeated practice.'}</p><div><button onClick={resetSession}>Practice again</button><button className="primary" onClick={nextLesson}>Next lesson →</button></div></article>}
-      </div>
+  const statusCopy =
+    syncStatus === "unavailable"
+      ? "Waiting for Supabase project keys"
+      : syncStatus === "guest"
+        ? "Guest mode · saved only on this device"
+        : syncStatus === "connecting"
+          ? "Connecting securely…"
+          : syncStatus === "syncing"
+            ? "Saving latest progress…"
+            : syncStatus === "synced"
+              ? "Progress safely synchronized"
+              : "Local progress safe · sync needs attention";
+  return (
+    <div
+      className="modal-backdrop settings-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Account, Mandarin skill profile, and cloud sync settings"
+    >
+      <section className="settings-modal account-modal">
+        <header>
+          <div>
+            <p className="eyebrow">ACCOUNT & SKILL PROFILE · 我的资料</p>
+            <h2>{profile?.name ?? "Learner"}’s Mandarin profile</h2>
+            <p>
+              Scores reflect durable in-app evidence, not an official HSK
+              certificate.
+            </p>
+          </div>
+          <button onClick={close} aria-label="Close settings">
+            ×
+          </button>
+        </header>
+        <div className="settings-profile">
+          <span>{profile?.name?.[0] ?? "你"}</span>
+          <div>
+            <strong>{profile?.name ?? "Learner"}</strong>
+            <small>
+              Target HSK {profile?.hsk ?? 1} · {profile?.path ?? "General"} ·{" "}
+              {profile?.dailyMinutes ?? 10} min/day
+            </small>
+          </div>
+          <button onClick={editProfile}>Edit learning profile</button>
+        </div>
+        <section className="appearance-settings">
+          <div>
+            <span>{learning.inventory.colorMode === "dark" ? "月" : "日"}</span>
+            <p>
+              <small>APPEARANCE · 外观</small>
+              <strong>Choose light or dark mode</strong>
+              <b>
+                The complete interface changes while keeping text contrast
+                readable.
+              </b>
+            </p>
+          </div>
+          <div role="group" aria-label="Color mode">
+            <button
+              className={
+                learning.inventory.colorMode === "light" ? "active" : ""
+              }
+              onClick={() => setColorMode("light")}
+            >
+              <i>☀</i>
+              <span>
+                Light<small>Warm paper</small>
+              </span>
+            </button>
+            <button
+              className={
+                learning.inventory.colorMode === "dark" ? "active" : ""
+              }
+              onClick={() => setColorMode("dark")}
+            >
+              <i>☾</i>
+              <span>
+                Dark<small>Midnight jade</small>
+              </span>
+            </button>
+          </div>
+        </section>
+        <section className={`cloud-account ${syncStatus}`}>
+          <div className="cloud-account-head">
+            <span>云</span>
+            <div>
+              <small>SUPABASE CLOUD SYNC</small>
+              <strong>{statusCopy}</strong>
+              <p>
+                {cloudAccount?.email ??
+                  (cloudAccount?.anonymous
+                    ? "Anonymous account · no login required"
+                    : "Your local data remains available offline.")}
+              </p>
+            </div>
+            <b>
+              {syncStatus === "synced"
+                ? "✓"
+                : syncStatus === "syncing" || syncStatus === "connecting"
+                  ? "↻"
+                  : "!"}
+            </b>
+          </div>
+          {cloudAccount?.anonymous && (
+            <>
+              <p className="cloud-explainer">
+                This device already syncs anonymously. Connect a Google or email
+                account if you want to restore the same progress on another
+                device.
+              </p>
+              <div className="cloud-auth-options">
+                <button
+                  className="google-connect"
+                  disabled={syncStatus === "connecting"}
+                  onClick={() => connectGoogleAccount()}
+                >
+                  <span>G</span>
+                  <p>
+                    <strong>Continue with Google</strong>
+                    <small>
+                      Use one account across phone, tablet, and desktop
+                    </small>
+                  </p>
+                  <b>→</b>
+                </button>
+                <div className="cloud-divider">
+                  <span>or use email</span>
+                </div>
+                <div className="cloud-connect">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="Email for cross-device access"
+                    aria-label="Email for cloud account"
+                  />
+                  <button
+                    disabled={
+                      !email.includes("@") || syncStatus === "connecting"
+                    }
+                    onClick={() => connectEmailAccount(email)}
+                  >
+                    Send secure link
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+          {syncStatus === "unavailable" && (
+            <p className="cloud-setup-note">
+              <strong>Setup needed:</strong> add Supabase URL and publishable
+              key, enable Anonymous + Google providers, then run the included
+              database schema.
+            </p>
+          )}
+          {syncError && (
+            <p className="cloud-error" role="alert">
+              {syncError}
+            </p>
+          )}
+        </section>
+        <section className="account-target">
+          <div>
+            <span>目</span>
+            <p>
+              <small>HSK {profile?.hsk ?? 1} TARGET · EVIDENCE-BASED</small>
+              <strong>{targetProgress}% learning readiness</strong>
+              <b>
+                {learning.events.length} scored events ·{" "}
+                {new Set(learning.activityDates).size} active days
+              </b>
+            </p>
+          </div>
+          <i>
+            <em style={{ width: `${targetProgress}%` }} />
+          </i>
+          <p>
+            Readiness combines skill evidence (50%), practice breadth (30%), and
+            consistency (20%). It deliberately grows slowly.
+          </p>
+        </section>
+        <div className="account-skills">
+          {Object.entries(evidence).map(([skill, item]) => (
+            <article key={skill}>
+              <header>
+                <span>{skill}</span>
+                <strong>{item.score}%</strong>
+              </header>
+              <i>
+                <em style={{ width: `${item.score}%` }} />
+              </i>
+              <footer>
+                <b>{item.status}</b>
+                <small>
+                  {item.attempts} attempts · {item.activeDays} days
+                </small>
+              </footer>
+            </article>
+          ))}
+        </div>
+        <div className="settings-data-summary">
+          <article>
+            <small>LIFETIME XP</small>
+            <strong>{learning.xp.toLocaleString()}</strong>
+          </article>
+          <article>
+            <small>SAVED WORDS</small>
+            <strong>
+              {learning.favorites.length + learning.personalWords.length}
+            </strong>
+          </article>
+          <article>
+            <small>CHECK-IN DAYS</small>
+            <strong>{consecutiveCheckInDays(learning.checkInDates)}</strong>
+          </article>
+          <article>
+            <small>MISTAKES</small>
+            <strong>{learning.mistakes.length}</strong>
+          </article>
+        </div>
+        <section className="local-backup">
+          <div>
+            <span>↓</span>
+            <p>
+              <strong>Download private backup</strong>
+              <small>
+                Keep a personal offline copy of profile, XP, streak, library,
+                reviews, and mistakes.
+              </small>
+            </p>
+          </div>
+          <button onClick={exportBackup}>Download backup</button>
+        </section>
+        <section className="local-backup restore">
+          <div>
+            <span>↑</span>
+            <p>
+              <strong>Restore from backup</strong>
+              <small>
+                The restored data is saved locally and synchronized when cloud
+                sync is active.
+              </small>
+            </p>
+          </div>
+          <input
+            ref={input}
+            type="file"
+            accept="application/json,.json"
+            onChange={(event) => restore(event.target.files?.[0])}
+          />
+          <button disabled={restoring} onClick={() => input.current?.click()}>
+            {restoring ? "Validating…" : "Choose backup file"}
+          </button>
+        </section>
+        {error && (
+          <p className="settings-error" role="alert">
+            ! {error}
+          </p>
+        )}
+        <div className="settings-privacy">
+          <span>盾</span>
+          <p>
+            <strong>Private by default</strong>
+            <small>
+              Row-level security keeps each learning snapshot limited to its
+              owner. No service-role secret is shipped to the browser.
+            </small>
+          </p>
+        </div>
+      </section>
     </div>
-    <footer className="course-source-note"><b>How this material was made</b><p>Lesson order and learning targets follow the supplied HSK Standard Course textbooks and workbooks. Questions and answer wording are original web adaptations, not copied official exam items.</p></footer>
-  </section>;
+  );
 }
 
-function PanelTitle({eyebrow,title,copy}:{eyebrow:string;title:string;copy:string}){return <div className="panel-title"><p className="eyebrow">{eyebrow}</p><h2>{title}</h2><p>{copy}</p></div>}
-
-function HskCourseCenter({level,diagnosticQuestions,speak,award,openPlacement}:{level:number;diagnosticQuestions:DrillQuestion[];speak:(value:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void;openPlacement:()=>void}){const units=hskCourseUnits[level]??hskCourseUnits[1];const [unitIndex,setUnitIndex]=useState(0);const [mode,setMode]=useState<'lesson'|'practice'|'diagnostic'>('lesson');const unit=units[unitIndex%units.length];const words=units.flatMap(item=>item.vocabulary);const questionCount=diagnosticQuestions.length+units.reduce((sum,item)=>sum+item.questions.length,0);function move(direction:number){setUnitIndex((unitIndex+direction+units.length)%units.length);setMode('lesson')}return <section className="learning-panel hsk-course-panel"><PanelTitle eyebrow={`HSK ${level} · GRADED COURSE`} title="A complete track, not a single quiz" copy="Move through themed units with vocabulary, grammar, a graded story, and active-recall questions."/><div className="hsk-course-stats"><article><span>课</span><p><small>COURSE UNITS</small><strong>{units.length}</strong><b>at HSK {level}</b></p></article><article><span>词</span><p><small>FOCUS WORDS</small><strong>{words.length}</strong><b>in contextual lessons</b></p></article><article><span>问</span><p><small>ACTIVE QUESTIONS</small><strong>{questionCount}</strong><b>course + track bank</b></p></article><article><span>文</span><p><small>GRADED STORIES</small><strong>{units.length}</strong><b>for this level</b></p></article></div><div className="hsk-unit-picker">{units.map((item,index)=><button className={index===unitIndex?'active':''} onClick={()=>{setUnitIndex(index);setMode('lesson')}} key={item.id}><span>{index+1}</span><p><small>UNIT {index+1}</small><strong>{item.title}</strong><b>{item.chinese}</b></p></button>)}</div><div className="hsk-course-tabs"><button className={mode==='lesson'?'active':''} onClick={()=>setMode('lesson')}>Lesson & story</button><button className={mode==='practice'?'active':''} onClick={()=>setMode('practice')}>Unit questions ({unit.questions.length})</button><button className={mode==='diagnostic'?'active':''} onClick={()=>setMode('diagnostic')}>HSK track bank ({diagnosticQuestions.length})</button></div>{mode==='lesson'&&<div className="hsk-unit-content"><header><div><p className="eyebrow">UNIT {unitIndex+1} · {unit.theme.toUpperCase()}</p><h3>{unit.title} <span>{unit.chinese}</span></h3></div><b>HSK {level}</b></header><div className="hsk-course-words">{unit.vocabulary.map(word=><article key={word.hanzi}><button onClick={()=>speak(word.hanzi)} aria-label={`Play ${word.hanzi}`}>▶</button><strong>{word.hanzi}</strong><span>{word.pinyin}</span><p>{word.english}</p></article>)}</div><div className="hsk-grammar-story"><article className="hsk-course-grammar"><small>GRAMMAR PATTERN</small><h4>{unit.grammar.pattern}</h4><p>{unit.grammar.explanation}</p><button onClick={()=>speak(unit.grammar.example)}>▶ <strong>{unit.grammar.example}</strong><span>{unit.grammar.pinyin}<br/>{unit.grammar.translation}</span></button></article><article className="hsk-course-story"><small>GRADED READER · {unit.story.title.toUpperCase()}</small><h4>{unit.story.chinese}</h4><p>{unit.story.summary}</p>{unit.story.scenes.map((scene,index)=><div key={scene.zh}><span>0{index+1}</span><p><strong>{scene.zh}</strong><small>{scene.py}<br/>{scene.en}</small></p><button onClick={()=>speak(scene.zh)}>▶</button></div>)}</article></div><div className="hsk-unit-footer"><button onClick={()=>move(-1)}>← Previous unit</button><button className="primary" onClick={()=>setMode('practice')}>Practice this unit →</button><button onClick={()=>move(1)}>Next unit →</button></div></div>}{mode==='practice'&&<div className="hsk-course-practice"><div><p className="eyebrow">UNIT {unitIndex+1} ACTIVE RECALL</p><h3>{unit.title}</h3><p>Each correct answer moves forward. Incorrect answers keep the explanation visible before you retry.</p></div><ChoiceDrill key={unit.id} label={`HSK ${level} ${unit.title}`} questions={unit.questions} award={award} skill="Reading" onNext={()=>undefined}/></div>}{mode==='diagnostic'&&<div className="hsk-course-practice"><div><p className="eyebrow">EXPANDED HSK {level} QUESTION BANK</p><h3>{diagnosticQuestions.length} rotating questions</h3><p>Vocabulary, grammar, meaning, and sentence-pattern decisions across the full track.</p></div><ChoiceDrill key={`diagnostic-${level}`} label={`HSK ${level} track`} questions={diagnosticQuestions} award={award} skill="Reading"/><button className="placement-button" onClick={openPlacement}>Not sure about your track? Take the placement test →</button><div className="disclaimer">HSK-style learning material and diagnostic guidance—not an official exam result.</div></div>}</section>}
-
-function VocabularyNetwork({currentChapterId,speak,award}:{currentChapterId:string;speak:(text:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){
-  const [topic,setTopic]=useState(currentChapterId);const [page,setPage]=useState(0);const [group,setGroup]=useState('all');const [search,setSearch]=useState('');const [wordSearch,setWordSearch]=useState('');const pageSize=6;
-  const groupOf=(id:string)=>['arrival','hotel','restaurant','transport','shopping','health','coffee'].includes(id)?'essentials':['campus','social','sightseeing','payments','apartment','delivery','rail','emergency','public-services','festivals'].includes(id)?'city':['workplace','technology'].includes(id)?'work':'sports';
-  const groupLabels=[['all','All worlds'],['essentials','Daily essentials'],['city','City & social'],['work','Work & technology'],['sports','Fitness & sport']];
-  const visibleCategories=vocabularyNetworkCategories.filter(category=>(group==='all'||groupOf(category.id)===group)&&`${category.title} ${category.chinese}`.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>a.title.localeCompare(b.title));
-  const selected=topic==='all'?{id:'all',icon:'全',title:'All Adventure Topics',chinese:'全部主题',words:allNetworkVocabulary}:vocabularyNetworkCategories.find(category=>category.id===topic)??vocabularyNetworkCategories[0];const filteredWords=selected.words.filter(word=>`${word.hanzi} ${word.pinyin} ${word.english}`.toLowerCase().includes(wordSearch.toLowerCase()));const pages=Math.max(1,Math.ceil(filteredWords.length/pageSize));const safePage=Math.min(page,pages-1);const pageWords=filteredWords.slice(safePage*pageSize,(safePage+1)*pageSize);const questions:DrillQuestion[]=selected.words.map((word,index)=>{const candidates=[word,...[1,3,5].map(offset=>selected.words[(index+offset)%selected.words.length])];const choices=candidates.filter((item,itemIndex,items)=>items.findIndex(candidate=>candidate.id===item.id)===itemIndex).slice(0,4).map(item=>item.hanzi);return{prompt:`Which word means “${word.english}”?`,choices,answer:word.hanzi,explanation:`${word.hanzi} · ${word.pinyin} means “${word.english}.”`}});
-  function chooseTopic(id:string){setTopic(id);setPage(0);setWordSearch('')}
-  function surprise(){const choices=visibleCategories.length?visibleCategories:vocabularyNetworkCategories;const target=choices[Math.floor(Math.random()*choices.length)];chooseTopic(target.id)}
-  return <section className="learning-panel vocabulary-network-panel"><PanelTitle eyebrow={`${selected.chinese} · ${selected.title}`} title="Vocabulary network" copy="Move from a learning world to its words, examples, sound, and an active-recall loop."/><div className="network-control-deck"><div className="network-group-tabs">{groupLabels.map(([id,label])=><button className={group===id?'active':''} onClick={()=>{setGroup(id);setSearch('')}} key={id}>{label}</button>)}</div><label><span>⌕</span><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Find a topic…"/></label><button onClick={surprise}>✦ Surprise topic</button></div><div className="network-summary"><span>{selected.icon}</span><div><small>CURRENT COLLECTION</small><strong>{selected.words.length} useful words</strong><p>{filteredWords.length?`Showing ${safePage*pageSize+1}–${Math.min((safePage+1)*pageSize,filteredWords.length)} of ${filteredWords.length}`:'No matching words yet'}</p></div><b>{allNetworkVocabulary.length}<small>WORDS ACROSS ALL TOPICS</small></b></div><div className="network-topic-picker organized" aria-label="Vocabulary topic"><button className={topic==='all'?'active':''} onClick={()=>chooseTopic('all')}><span>全</span><strong>All topics</strong><small>{allNetworkVocabulary.length} words</small></button>{visibleCategories.map(category=><button className={topic===category.id?'active':''} onClick={()=>chooseTopic(category.id)} key={category.id}><span>{category.icon}</span><strong>{category.title}</strong><small>{category.words.length} words · {category.chinese}</small><i>Explore →</i></button>)}</div><div className="network-word-toolbar"><div><small>EXPLORE THIS COLLECTION</small><strong>See, hear, then recall</strong></div><label><span>⌕</span><input value={wordSearch} onChange={event=>{setWordSearch(event.target.value);setPage(0)}} placeholder="Search Hanzi, pinyin, or meaning…"/></label></div><div className="vocab-cards expanded-network">{pageWords.map((word,index)=><article style={{'--word-order':index} as React.CSSProperties} key={word.id}><button onClick={()=>speak(word.hanzi)} aria-label={`Play ${word.hanzi}`}>◖))</button><strong>{word.hanzi}</strong><span>{word.pinyin}</span><b>{word.english}</b><p>{word.example.hanzi}<small>{word.example.pinyin}</small></p><em>Tap sound · remember the context</em></article>)}</div>{!pageWords.length&&<div className="network-empty"><span>寻</span><strong>No word matched that search</strong><button onClick={()=>setWordSearch('')}>Clear search</button></div>}{pages>1&&<div className="network-pagination"><button disabled={safePage===0} onClick={()=>setPage(safePage-1)}>← Previous words</button><div>{Array.from({length:pages},(_,index)=><button aria-label={`Page ${index+1}`} className={safePage===index?'active':''} onClick={()=>setPage(index)} key={index}>{index+1}</button>)}</div><button disabled={safePage===pages-1} onClick={()=>setPage(safePage+1)}>Next words →</button></div>}<div className="network-practice-head"><div><p className="eyebrow">ACTIVE RECALL · {selected.words.length} QUESTIONS</p><h3>Practice this collection</h3></div><span>Correct-answer positions rotate so memory—not button position—wins.</span></div><ChoiceDrill key={selected.id} label={`Vocabulary network ${selected.id}`} questions={questions} award={award} skill="Vocabulary"/></section>
+function StreakCalendar({
+  learning,
+  close,
+}: {
+  learning: LearningState;
+  close: () => void;
+}) {
+  const now = new Date();
+  const [month, setMonth] = useState(now.getMonth());
+  const [year, setYear] = useState(now.getFullYear());
+  const today = localDateKey(now);
+  const inferred = learning.activityDates.length
+    ? learning.activityDates
+    : Array.from({ length: learning.streak }, (_, index) => {
+        const date = new Date();
+        date.setDate(date.getDate() - index);
+        return localDateKey(date);
+      });
+  const active = new Set(inferred);
+  const protectedDays = new Set(learning.protectedDates);
+  const firstOffset = (new Date(year, month, 1).getDay() + 6) % 7;
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const cells = Array.from({ length: firstOffset + totalDays }, (_, index) =>
+    index < firstOffset ? null : index - firstOffset + 1,
+  );
+  function move(direction: number) {
+    const next = new Date(year, month + direction, 1);
+    setYear(next.getFullYear());
+    setMonth(next.getMonth());
+  }
+  return (
+    <div
+      className="modal-backdrop streak-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Streak calendar"
+    >
+      <section className="streak-modal">
+        <header>
+          <div>
+            <p className="eyebrow">LEARNING RHYTHM · 连续学习</p>
+            <h2>{learning.streak}-day streak</h2>
+            <p>One or two missed days are protected automatically.</p>
+          </div>
+          <button onClick={close}>×</button>
+        </header>
+        <div className="calendar-head">
+          <button onClick={() => move(-1)}>←</button>
+          <strong>
+            {new Intl.DateTimeFormat("en", {
+              month: "long",
+              year: "numeric",
+            }).format(new Date(year, month, 1))}
+          </strong>
+          <button onClick={() => move(1)}>→</button>
+        </div>
+        <div className="calendar-week">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+            <span key={day}>{day}</span>
+          ))}
+        </div>
+        <div className="calendar-grid">
+          {cells.map((day, index) => {
+            if (!day) return <i key={`empty-${index}`} />;
+            const key = localDateKey(new Date(year, month, day));
+            const isActive = active.has(key);
+            const isProtected = protectedDays.has(key);
+            return (
+              <div
+                className={`${key === today ? "today " : ""}${isActive ? "active " : ""}${isProtected ? "protected" : ""}`}
+                key={key}
+              >
+                <span>{day}</span>
+                {isProtected ? <b>◆</b> : isActive ? <b>🔥</b> : null}
+              </div>
+            );
+          })}
+        </div>
+        <footer>
+          <span>
+            <b>🔥</b> Learning day
+          </span>
+          <span>
+            <b>◆</b> Grace/rescue day
+          </span>
+          <small>Three consecutive missed days trigger streak rescue.</small>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
-type DrillQuestion={prompt:string;choices:string[];answer:string;explanation:string};
-type PracticeGuideWord={id:string;hanzi:string;pinyin:string;english:string};
-function PracticeAnswerGuide({answer,explanation,saveWord}:{answer:string;explanation:string;saveWord?:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}){const [words,setWords]=useState<PracticeGuideWord[]>([]);const [saved,setSaved]=useState<string[]>([]);useEffect(()=>{let active=true;import('./hsk-vocabulary.json').then(module=>{if(!active)return;const data=module.default as HskDictionaryData;const matches=imageDictionaryMatches(answer,data.levels.flatMap(group=>group.words),8);setWords(matches.map(word=>({id:word.id,hanzi:word.h,pinyin:word.py,english:word.m}))) }).catch(()=>setWords([]));return()=>{active=false}},[answer]);return <aside className="practice-answer-guide"><header><span>解</span><div><small>ANSWER BREAKDOWN</small><strong>Why this answer works</strong></div></header><p>{explanation}</p>{words.length>0?<div className="practice-answer-words">{words.map(word=><article key={word.id}><div><strong>{word.hanzi}</strong><span>{word.pinyin}</span><small>{word.english}</small></div>{saveWord&&<button className={saved.includes(word.id)?'saved':''} disabled={saved.includes(word.id)} onClick={()=>{saveWord({hanzi:word.hanzi,pinyin:word.pinyin,english:word.english});setSaved([...saved,word.id])}}>{saved.includes(word.id)?'★ Saved':'☆ Library'}</button>}</article>)}</div>:<small className="practice-guide-loading">Pinyin and word meanings appear when this answer matches the HSK library.</small>}</aside>}
-function ChoiceDrill({questions,label,award,skill,onNext,saveWord}:{questions:DrillQuestion[];label:string;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void;skill:LearningEvent['skill'];onNext?:()=>void;saveWord?:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}){const [index,setIndex]=useState(0);const [selected,setSelected]=useState('');const [graded,setGraded]=useState(false);const question=questions[index%questions.length];const correct=selected===question.answer;const choices=balancedShuffle(question.choices,question.answer,`${localDateKey()}-${label}-${question.prompt}-${index}`,index);function check(){if(!selected)return;setGraded(true);award(`${label} ${index+1}`,10,skill,correct)}function next(){setIndex((index+1)%questions.length);setSelected('');setGraded(false);onNext?.()}return <div className="mini-exercise question-flow"><small>QUESTION {index+1} OF {questions.length}</small><h3>{question.prompt}</h3><div>{choices.map(choice=><button disabled={graded} className={selected===choice?'selected':''} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!graded?<button className="check" disabled={!selected} onClick={check}>Check answer</button>:<><div className={correct?'flow-feedback good':'flow-feedback try'}><p><strong>{correct?'✓ Correct':`Not yet · ${question.answer}`}</strong><span>{question.explanation}</span></p><button onClick={correct?next:()=>{setSelected('');setGraded(false)}}>{correct?'Next question →':'Try again'}</button></div><PracticeAnswerGuide answer={question.answer} explanation={question.explanation} saveWord={saveWord}/></>}</div>}
+function XpProgress({
+  learning,
+  progress,
+  close,
+}: {
+  learning: LearningState;
+  progress: ReturnType<typeof getLevelProgress>;
+  close: () => void;
+}) {
+  const title = playerTitle(progress.level);
+  const nextTitle = playerTitle(progress.level + 1);
+  return (
+    <div
+      className="modal-backdrop xp-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="XP and player level"
+    >
+      <section className="xp-modal">
+        <header>
+          <div>
+            <p className="eyebrow">PLAYER PROGRESS · {title.toUpperCase()}</p>
+            <h2>
+              Level {progress.level} · {title}
+            </h2>
+            <p>
+              Your player title celebrates engagement; it never represents
+              official Chinese proficiency.
+            </p>
+          </div>
+          <button onClick={close}>×</button>
+        </header>
+        <div className="xp-hero">
+          <span>◆</span>
+          <div>
+            <small>LIFETIME XP</small>
+            <strong>{learning.xp.toLocaleString()} XP</strong>
+            <p>
+              {progress.remainingXp.toLocaleString()} XP more to reach Level{" "}
+              {progress.level + 1}
+              {nextTitle !== title ? ` and become ${nextTitle}` : ""}
+            </p>
+          </div>
+        </div>
+        <div className="xp-level-bar">
+          <div>
+            <span>Level {progress.level}</span>
+            <b>
+              {progress.earnedThisLevel.toLocaleString()} /{" "}
+              {progress.requiredThisLevel.toLocaleString()} XP
+            </b>
+          </div>
+          <i>
+            <em style={{ width: `${progress.progress}%` }} />
+          </i>
+          <small>
+            Next level unlocks at {progress.nextLevelXp.toLocaleString()}{" "}
+            lifetime XP.
+          </small>
+        </div>
+        <div className="xp-details">
+          <article>
+            <span>◆</span>
+            <div>
+              <small>DIAMONDS</small>
+              <strong>{learning.diamonds}</strong>
+              <p>
+                Earned from first-time learning, quest rewards, and boss wins.
+              </p>
+            </div>
+          </article>
+          <article>
+            <span>🔥</span>
+            <div>
+              <small>STREAK</small>
+              <strong>{learning.streak} days</strong>
+              <p>
+                Two grace days, then rescue with diamonds or a hard challenge.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  );
+}
 
-function ListeningPractice({chapter,speak,award,saveWord}:{chapter:Chapter;speak:(text:string,speed?:number)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void;saveWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}){const [topic,setTopic]=useState('auto');const ordered=topic==='auto'?[chapter,...adventureChapters.filter(item=>item.id!==chapter.id)]:adventureChapters.filter(item=>item.id===topic);const [index,setIndex]=useState(0);const [selected,setSelected]=useState('');const [graded,setGraded]=useState(false);const [transcript,setTranscript]=useState(false);const [speed,setSpeed]=useState(.75);const item=ordered[index%ordered.length]??chapter;const answerChoice=item.question.choices.find(choice=>choice.id===item.question.answer);const answer=answerChoice?.text??'';const correct=selected===answer;const choices=answerChoice?balancedShuffle(item.question.choices,answerChoice,`${localDateKey()}-listening-${item.id}-${index}`,index):seededShuffle(item.question.choices,`${localDateKey()}-listening-${item.id}-${index}`);function play(){speak(item.question.chinesePrompt,speed)}function check(){setGraded(true);award(`Listening question ${item.id}`,12,'Listening',correct)}function next(){setIndex((index+1)%ordered.length);setSelected('');setGraded(false);setTranscript(false)}function changeTopic(value:string){setTopic(value);setIndex(0);setSelected('');setGraded(false);setTranscript(false)}return <section className="learning-panel listening-panel"><PanelTitle eyebrow="LISTENING · QUESTION FLOW" title={`Hear Chinese in ${item.title}`} copy="Choose one situation or let Auto Mix rotate across every Adventure topic."/><div className="listening-topic-picker"><label htmlFor="listening-topic">Listening topic</label><select id="listening-topic" value={topic} onChange={event=>changeTopic(event.target.value)}><option value="auto">Auto Mix · all Adventure topics</option>{adventureChapters.map(option=><option value={option.id} key={option.id}>{option.title} · {option.chinese}</option>)}</select><small>Answer positions are reshuffled for every question and study day.</small></div><div className="listening-player"><button className="big-audio" onClick={play}><span>▶</span><div><b>Play conversation clip</b><small>{speed}× Mandarin · Question {index+1} of {ordered.length}</small></div></button><div className="listening-speeds" aria-label="Listening playback speed">{[.5,.75,1].map(value=><button className={speed===value?'active':''} onClick={()=>setSpeed(value)} key={value}>{value}×</button>)}</div></div><h3 className="listening-question">{item.question.prompt}</h3><div className="listening-choices">{choices.map(choice=><button disabled={graded} className={selected===choice.text?'selected':''} onClick={()=>setSelected(choice.text)} key={choice.id}>{choice.text}</button>)}</div>{!graded?<button className="primary listening-check" disabled={!selected} onClick={check}>Check answer</button>:<><div className={correct?'flow-feedback good':'flow-feedback try'}><p><strong>{correct?'✓ Correct':'Listen once more'}</strong><span>{item.question.explanation}</span></p><button onClick={correct?next:()=>{setSelected('');setGraded(false);play()}}>{correct?'Next question →':'Try again'}</button></div><PracticeAnswerGuide answer={answer} explanation={item.question.explanation} saveWord={saveWord}/></>}<button className="transcript-toggle" onClick={()=>setTranscript(!transcript)}>{transcript?'Hide':'Show'} transcript</button>{transcript&&<div className="transcript"><strong>{item.question.chinesePrompt}</strong><span>{answerChoice?.pinyin}</span><p>{answer}</p></div>}</section>}
+function StreakRecovery({
+  diamonds,
+  missedDays,
+  resolve,
+}: {
+  diamonds: number;
+  missedDays: number;
+  resolve: (method: "diamonds" | "challenge" | "reset") => void;
+}) {
+  const [mode, setMode] = useState<"choice" | "challenge">("choice");
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [score, setScore] = useState(0);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const questions = allVocabulary.slice(0, 15).map((word, wordIndex) => {
+    const choices = [
+      word.hanzi,
+      allVocabulary[(wordIndex + 5) % allVocabulary.length].hanzi,
+      allVocabulary[(wordIndex + 9) % allVocabulary.length].hanzi,
+    ];
+    return {
+      prompt: word.example.hanzi.replace(word.hanzi, "＿＿"),
+      meaning: word.english,
+      answer: word.hanzi,
+      choices,
+    };
+  });
+  function check() {
+    if (!selected) return;
+    const correct = selected === questions[index].answer;
+    setFeedback(
+      correct ? "Correct" : `Correct answer: ${questions[index].answer}`,
+    );
+    if (correct) setScore(score + 1);
+  }
+  function next() {
+    if (index === questions.length - 1) resolve("challenge");
+    else {
+      setIndex(index + 1);
+      setSelected("");
+      setFeedback("");
+    }
+  }
+  if (mode === "challenge")
+    return (
+      <div
+        className="modal-backdrop rescue-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-label="15 question streak rescue"
+      >
+        <section className="rescue-modal challenge">
+          <header>
+            <div>
+              <p className="eyebrow">STREAK RESCUE · HARD MODE</p>
+              <h2>
+                Question {index + 1} of {questions.length}
+              </h2>
+            </div>
+            <span>{score} correct</span>
+          </header>
+          <div className="rescue-progress">
+            <i
+              style={{ width: `${((index + 1) / questions.length) * 100}%` }}
+            />
+          </div>
+          <div className="rescue-question">
+            <small>
+              CHOOSE THE WORD · {questions[index].meaning.toUpperCase()}
+            </small>
+            <h3>{questions[index].prompt}</h3>
+            <div>
+              {questions[index].choices.map((choice) => (
+                <button
+                  disabled={!!feedback}
+                  className={selected === choice ? "selected" : ""}
+                  onClick={() => setSelected(choice)}
+                  key={choice}
+                >
+                  {choice}
+                </button>
+              ))}
+            </div>
+            {!feedback ? (
+              <button className="primary" disabled={!selected} onClick={check}>
+                Check answer
+              </button>
+            ) : (
+              <div
+                className={
+                  feedback === "Correct"
+                    ? "rescue-feedback good"
+                    : "rescue-feedback try"
+                }
+              >
+                <strong>
+                  {feedback === "Correct" ? "✓ Correct" : feedback}
+                </strong>
+                <button onClick={next}>
+                  {index === questions.length - 1
+                    ? "Save my streak"
+                    : "Next hard question →"}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    );
+  return (
+    <div
+      className="modal-backdrop rescue-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Streak rescue"
+    >
+      <section className="rescue-modal">
+        <header>
+          <div>
+            <p className="eyebrow">STREAK AT RISK</p>
+            <h2>Rescue your {missedDays}-day gap</h2>
+          </div>
+          <span className="rescue-fire">🔥</span>
+        </header>
+        <p className="rescue-copy">
+          Your first two missed days were protected. Choose how to save your
+          streak now—there is no shame in starting fresh.
+        </p>
+        <div className="rescue-options">
+          <button disabled={diamonds < 80} onClick={() => resolve("diamonds")}>
+            <span>◆</span>
+            <div>
+              <strong>Use 80 diamonds</strong>
+              <small>You have {diamonds} diamonds</small>
+            </div>
+            <b>{diamonds >= 80 ? "Rescue →" : "Need more"}</b>
+          </button>
+          <button onClick={() => setMode("challenge")}>
+            <span>难</span>
+            <div>
+              <strong>Complete 15 hard questions</strong>
+              <small>No diamond cost · active recall</small>
+            </div>
+            <b>Start →</b>
+          </button>
+          <button
+            className="reset-option"
+            onClick={() => setConfirmReset(true)}
+          >
+            <span>新</span>
+            <div>
+              <strong>Start a fresh streak</strong>
+              <small>Keep all XP, words, and progress</small>
+            </div>
+            <b>Reset →</b>
+          </button>
+        </div>
+        {confirmReset && (
+          <div className="reset-confirm">
+            <p>
+              Reset only the streak counter? All learning progress stays safe.
+            </p>
+            <button onClick={() => setConfirmReset(false)}>Keep streak</button>
+            <button onClick={() => resolve("reset")}>Yes, start fresh</button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
 
-function ImageDictionary({favorites,toggleFavorite,speak,openLibrary}:{favorites:string[];toggleFavorite:(id:string)=>void;speak:(text:string)=>void;openLibrary:()=>void}){
-  const [data,setData]=useState<HskDictionaryData|null>(null);const [loadError,setLoadError]=useState('');const [loadKey,setLoadKey]=useState(0);const [file,setFile]=useState<File|null>(null);const [preview,setPreview]=useState('');const [recognizedText,setRecognizedText]=useState('');const [scanning,setScanning]=useState(false);const [progress,setProgress]=useState(0);const [progressLabel,setProgressLabel]=useState('');const [confidence,setConfidence]=useState<number|null>(null);const [scanError,setScanError]=useState('');const [dragging,setDragging]=useState(false);
-  useEffect(()=>{let active=true;import('./hsk-vocabulary.json').then(module=>{if(active)setData(module.default as HskDictionaryData)}).catch(()=>{if(active)setLoadError('The HSK dictionary could not be loaded. Please retry.')});return()=>{active=false}},[loadKey]);
-  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview)},[preview]);
-  const allWords=data?data.levels.flatMap(group=>group.words):[];const matches=data?imageDictionaryMatches(recognizedText,allWords):[];
-  function chooseFile(next:File|null){setDragging(false);setScanError('');setConfidence(null);setProgress(0);setProgressLabel('');setRecognizedText('');if(!next){setFile(null);setPreview('');return}if(!next.type.startsWith('image/'))return setScanError('Choose an image file such as JPG, PNG, HEIC, or WebP.');if(next.size>12*1024*1024)return setScanError('That image is larger than 12 MB. Crop or compress it, then try again.');setFile(next);setPreview(URL.createObjectURL(next))}
-  async function scan(){if(!file||!data||scanning)return;setScanning(true);setScanError('');setConfidence(null);setProgress(0);setProgressLabel('Preparing OCR');try{const Tesseract=await import('tesseract.js');const worker=await Tesseract.createWorker(['chi_sim','eng'],Tesseract.OEM.LSTM_ONLY,{logger:message=>{setProgress(Math.round((message.progress??0)*100));setProgressLabel(message.status.replace(/_/g,' '))}});try{await worker.setParameters({tessedit_pageseg_mode:Tesseract.PSM.SPARSE_TEXT,preserve_interword_spaces:'1'});const result=await worker.recognize(file,{rotateAuto:true});const text=result.data.text.trim();setRecognizedText(text);setConfidence(Math.round(result.data.confidence));if(!imageDictionaryMatches(text,allWords,1).length)setScanError('No matching HSK word was found. Try a tighter crop, clearer lighting, or edit the detected text below.')}finally{await worker.terminate()}}catch{setScanError('The image could not be read. Check your connection for the first OCR model download, then try a sharper crop.')}finally{setScanning(false)}}
+function ComebackSession({
+  learning,
+  speak,
+  close,
+  finish,
+}: {
+  learning: LearningState;
+  speak: (text: string) => void;
+  close: () => void;
+  finish: () => void;
+}) {
+  const due = dueReviewIds(learning.reviewCards)
+    .map((id) => allVocabulary.find((word) => word.id === id))
+    .filter(Boolean)
+    .slice(0, 5);
+  const words = (
+    due.length >= 5 ? due : allVocabulary.slice(0, 5)
+  ) as typeof allVocabulary;
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const word = words[index];
+  const choices = [
+    word.english,
+    words[(index + 2) % words.length].english,
+    words[(index + 3) % words.length].english,
+  ];
+  function check() {
+    setFeedback(
+      selected === word.english ? "Correct" : `Answer: ${word.english}`,
+    );
+  }
+  function next() {
+    if (index === 4) finish();
+    else {
+      setIndex(index + 1);
+      setSelected("");
+      setFeedback("");
+    }
+  }
+  return (
+    <div
+      className="modal-backdrop comeback-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Five minute comeback session"
+    >
+      <section className="comeback-modal">
+        <header>
+          <div>
+            <p className="eyebrow">5-MINUTE COMEBACK · {index + 1}/5</p>
+            <h2>Welcome back</h2>
+          </div>
+          <button onClick={close}>×</button>
+        </header>
+        <div className="comeback-track">
+          <i style={{ width: `${(index + 1) * 20}%` }} />
+        </div>
+        <div className="comeback-question">
+          <button onClick={() => speak(word.hanzi)}>▶ Hear word</button>
+          <strong>{word.hanzi}</strong>
+          <span>{word.pinyin}</span>
+          <h3>What does this word mean?</h3>
+          <div>
+            {choices.map((choice) => (
+              <button
+                disabled={!!feedback}
+                className={selected === choice ? "selected" : ""}
+                onClick={() => setSelected(choice)}
+                key={choice}
+              >
+                {choice}
+              </button>
+            ))}
+          </div>
+          {!feedback ? (
+            <button className="primary" disabled={!selected} onClick={check}>
+              Check
+            </button>
+          ) : (
+            <div
+              className={
+                feedback === "Correct"
+                  ? "flow-feedback good"
+                  : "flow-feedback try"
+              }
+            >
+              <p>
+                <strong>
+                  {feedback === "Correct" ? "✓ Correct" : feedback}
+                </strong>
+                <span>
+                  {word.example.hanzi} · {word.example.english}
+                </span>
+              </p>
+              <button onClick={next}>
+                {index === 4 ? "Finish refresh" : "Next word →"}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function DailySession({
+  profile,
+  learning,
+  chapter,
+  speak,
+  close,
+  finish,
+  saveWord,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+  chapter: Chapter;
+  speak: (text: string) => void;
+  close: () => void;
+  finish: (plan: DailySessionPlan, results: DailySessionAnswer[]) => void;
+  saveWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  const scores = calculateSkillScores(
+    learning.events,
+    learning.lastActiveDate || undefined,
+  );
+  const weakest = (
+    Object.entries(scores) as [LearningEvent["skill"], number][]
+  ).sort((a, b) => a[1] - b[1])[0][0];
+  const path = (profile?.path ?? "General") as PathId;
+  const pack = pathPacks[path];
+  const plan = buildDailySession({
+    dayKey: localDateKey(),
+    dailyMinutes: Math.max(5, Math.min(10, profile?.dailyMinutes ?? 10)),
+    hsk: profile?.hsk ?? 3,
+    path,
+    career: profile?.career ?? pack.careers[0],
+    weakestSkill: weakest,
+    chapter,
+    hskQuestions: hskStyleBanks[profile?.hsk ?? 3],
+    specializationQuestions: pack.gameQuestions,
+  });
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [graded, setGraded] = useState(false);
+  const [results, setResults] = useState<DailySessionAnswer[]>([]);
+  const [done, setDone] = useState(false);
+  const question = plan.questions[index];
+  const journeyIndex = dailyJourneyStageIndex(index, plan.questions.length);
+  const correct = selected === question.answer;
+  function next() {
+    const updated = [...results, { question, selected, correct }];
+    setResults(updated);
+    if (index === plan.questions.length - 1) {
+      setDone(true);
+      return;
+    }
+    setIndex(index + 1);
+    setSelected("");
+    setGraded(false);
+  }
+  const correctCount = results.filter((result) => result.correct).length;
+  const dailyChoices = question
+    ? balancedShuffle(
+        question.choices,
+        question.answer,
+        `${localDateKey()}-${question.prompt}-${index}`,
+        index,
+      )
+    : [];
+  return (
+    <div
+      className="modal-backdrop daily-session-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Personalized daily Chinese session"
+    >
+      <section className="daily-session-modal">
+        <header>
+          <div>
+            <p className="eyebrow">
+              DAILY JOURNEY · {plan.estimatedMinutes} MINUTES · 5 ACTIVITIES
+            </p>
+            <h2>{done ? "Session complete" : plan.title}</h2>
+            <p>
+              {done
+                ? "Save the evidence, then continue whenever you are ready."
+                : plan.subtitle}
+            </p>
+          </div>
+          <button onClick={close} aria-label="Close daily session">
+            ×
+          </button>
+        </header>
+        {!done ? (
+          <>
+            <div className="daily-journey-stepper">
+              <header>
+                <span>
+                  Activity {journeyIndex + 1} of {dailyJourneyStages.length}
+                </span>
+                <b>{dailyJourneyStages[journeyIndex].title}</b>
+                <small>{dailyJourneyStages[journeyIndex].copy}</small>
+              </header>
+              <div>
+                {dailyJourneyStages.map((stage, stageIndex) => (
+                  <span
+                    className={
+                      stageIndex < journeyIndex
+                        ? "done"
+                        : stageIndex === journeyIndex
+                          ? "current"
+                          : ""
+                    }
+                    title={stage.title}
+                    key={stage.id}
+                  >
+                    <b>{stageIndex < journeyIndex ? "✓" : stage.icon}</b>
+                    <small>{stageIndex + 1}</small>
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="daily-session-progress">
+              <div>
+                <span>
+                  Question {index + 1} of {plan.questions.length}
+                </span>
+                <b>
+                  {question.skill} · focus on {plan.weakestSkill}
+                </b>
+              </div>
+              <i>
+                <em
+                  style={{
+                    width: `${((index + 1) / plan.questions.length) * 100}%`,
+                  }}
+                />
+              </i>
+              <footer>
+                {plan.skillMix.map((skill) => (
+                  <span
+                    className={skill === question.skill ? "active" : ""}
+                    key={skill}
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </footer>
+            </div>
+            <div className="daily-session-question">
+              <p className="eyebrow">{question.eyebrow}</p>
+              {question.audio && (
+                <button
+                  className="daily-session-audio"
+                  onClick={() => speak(question.audio!)}
+                >
+                  <span>▶</span>
+                  <div>
+                    <strong>Play Chinese clue</strong>
+                    <small>Listen before choosing an answer</small>
+                  </div>
+                </button>
+              )}
+              <h3>{question.prompt}</h3>
+              <div className="daily-session-choices">
+                {dailyChoices.map((choice) => (
+                  <button
+                    disabled={graded}
+                    className={`${selected === choice ? "selected " : ""}${graded && choice === question.answer ? "correct " : ""}${graded && selected === choice && choice !== question.answer ? "wrong" : ""}`}
+                    onClick={() => setSelected(choice)}
+                    key={choice}
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
+              {!graded ? (
+                <button
+                  className="primary daily-session-check"
+                  disabled={!selected}
+                  onClick={() => setGraded(true)}
+                >
+                  Check answer
+                </button>
+              ) : (
+                <>
+                  <div
+                    className={`daily-session-feedback ${correct ? "good" : "try"}`}
+                  >
+                    <span>{correct ? "✓" : "学"}</span>
+                    <div>
+                      <strong>
+                        {correct
+                          ? "Correct — evidence recorded after the session"
+                          : `Not yet · ${question.answer}`}
+                      </strong>
+                      <p>{question.explanation}</p>
+                    </div>
+                    <button onClick={next}>
+                      {index === plan.questions.length - 1
+                        ? "See session report"
+                        : "Next question →"}
+                    </button>
+                  </div>
+                  <PracticeAnswerGuide
+                    answer={question.answer}
+                    explanation={question.explanation}
+                    saveWord={saveWord}
+                  />
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="daily-session-result">
+            <span className="daily-result-seal">成</span>
+            <p className="eyebrow">ACTIVE RECALL COMPLETE</p>
+            <h3>
+              {correctCount}/{results.length} correct
+            </h3>
+            <p>
+              You completed five connected activities across HSK, Adventure,
+              and your personal path.
+            </p>
+            <div className="daily-result-grid">
+              <article>
+                <small>ACCURACY</small>
+                <strong>
+                  {Math.round(
+                    (correctCount / Math.max(1, results.length)) * 100,
+                  )}
+                  %
+                </strong>
+              </article>
+              <article>
+                <small>DAILY JOURNEY</small>
+                <strong>5/5 activities</strong>
+              </article>
+              <article>
+                <small>FOCUSED REVIEWS</small>
+                <strong>
+                  {
+                    results.filter(
+                      (result) =>
+                        !result.correct && result.question.reviewWordId,
+                    ).length
+                  }{" "}
+                  added
+                </strong>
+              </article>
+            </div>
+            <div className="daily-result-skills">
+              {plan.skillMix.map((skill) => (
+                <span key={skill}>
+                  <b>{skill}</b>
+                  <small>
+                    {
+                      results.filter(
+                        (result) =>
+                          result.question.skill === skill && result.correct,
+                      ).length
+                    }
+                    /
+                    {
+                      results.filter(
+                        (result) => result.question.skill === skill,
+                      ).length
+                    }{" "}
+                    correct
+                  </small>
+                </span>
+              ))}
+            </div>
+            <button className="primary" onClick={() => finish(plan, results)}>
+              Save today’s progress →
+            </button>
+            <small>
+              Replaying later is always allowed, but daily XP can only be
+              claimed once.
+            </small>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function JourneyCarousel({
+  learning,
+  openChapter,
+  setActive,
+}: {
+  learning: LearningState;
+  openChapter: (id: string) => void;
+  setActive: (value: string) => void;
+}) {
+  const firstUncleared = Math.max(
+    0,
+    adventureChapters.findIndex((item) => !learning.bossWins.includes(item.id)),
+  );
+  const initial = Math.min(
+    learning.completed.length,
+    adventureChapters.length - 1,
+  );
+  const [index, setIndex] = useState(initial);
+  const rail = useRef<HTMLDivElement>(null);
+  const chapter = adventureChapters[index];
+  const unlocked = index <= learning.completed.length;
+  const image =
+    chapterScenes[chapter.id]?.[0]?.image ?? chapterScenes.arrival[0].image;
+  function move(direction: number) {
+    const next =
+      (index + direction + adventureChapters.length) % adventureChapters.length;
+    setIndex(next);
+    rail.current?.children[next]?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }
+  function openRequiredChapter() {
+    const target = adventureChapters[firstUncleared] ?? adventureChapters[0];
+    setIndex(firstUncleared);
+    setActive("Adventure");
+    window.setTimeout(
+      () =>
+        document
+          .getElementById(`adventure-${target.id}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      120,
+    );
+  }
+  return (
+    <section className="card journey-card journey-carousel">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">YOUR JOURNEY · CONTINUE LAST SESSION</p>
+          <h3>
+            {learning.completed.length} of {adventureChapters.length} chapters
+            complete
+          </h3>
+        </div>
+        <button onClick={() => setActive("Adventure")}>Full map →</button>
+      </div>
+      <div
+        className="journey-feature"
+        style={{
+          backgroundImage: `linear-gradient(90deg,rgba(13,56,47,.94),rgba(13,56,47,.58)),url(${image})`,
+        }}
+      >
+        <button onClick={() => move(-1)} aria-label="Previous chapter">
+          ←
+        </button>
+        <div key={chapter.id}>
+          <small>
+            CHAPTER {index + 1} · {chapter.chinese}
+          </small>
+          <strong>{chapter.title}</strong>
+          <p>{chapter.description}</p>
+          <button
+            onClick={() =>
+              unlocked ? openChapter(chapter.id) : openRequiredChapter()
+            }
+          >
+            {unlocked
+              ? (learning.chapterProgress[chapter.id] ?? 0) > 0
+                ? "Continue last session →"
+                : "Start this chapter →"
+              : `Open Chapter ${firstUncleared + 1} first →`}
+          </button>
+        </div>
+        <button onClick={() => move(1)} aria-label="Next chapter">
+          →
+        </button>
+      </div>
+      <div className="journey-swipe-rail" ref={rail}>
+        {adventureChapters.map((item, itemIndex) => {
+          const done = learning.completed.includes(item.id);
+          const available = itemIndex <= learning.completed.length;
+          return (
+            <button
+              className={`${itemIndex === index ? "selected " : ""}${done ? "done " : available ? "current" : "locked"}`}
+              onClick={() => setIndex(itemIndex)}
+              key={item.id}
+            >
+              <i>{done ? "✓" : available ? item.icon : "·"}</i>
+              <span>{itemIndex + 1}</span>
+              <small>{item.title}</small>
+            </button>
+          );
+        })}
+      </div>
+      <small className="journey-swipe-hint">
+        Swipe left or right · tap a chapter to preview it
+      </small>
+    </section>
+  );
+}
+
+function DashboardQuickReview({
+  learning,
+  current,
+  profile,
+  setActive,
+  speak,
+}: {
+  learning: LearningState;
+  current: Chapter;
+  profile: Profile | null;
+  setActive: (value: string) => void;
+  speak: (text: string) => void;
+}) {
+  const unlockedHsk = Array.from(
+    { length: profile?.hsk ?? 1 },
+    (_, item) => item + 1,
+  );
+  const unlockedAdventure = adventureChapters.slice(
+    0,
+    Math.min(adventureChapters.length, learning.completed.length + 1),
+  );
+  const [index, setIndex] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [focusOpen, setFocusOpen] = useState(false);
+  const [changing, setChanging] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [seed, setSeed] = useState(0);
+  const [hskLevels, setHskLevels] = useState<number[]>(unlockedHsk);
+  const [chapterIds, setChapterIds] = useState<string[]>(
+    unlockedAdventure.map((item) => item.id),
+  );
+  const words = useMemo(() => {
+    const hsk = textbookReviewWords.filter((word) =>
+      hskLevels.includes(word.hsk),
+    );
+    const adventure = vocabularyNetworkCategories
+      .filter((category) => chapterIds.includes(category.id))
+      .flatMap((category) => category.words);
+    const key = `quick-recall-${seed}-${hskLevels.join(".")}-${chapterIds.join(".")}`;
+    if (!customOpen && hsk.length && adventure.length)
+      return [
+        ...seededShuffle(hsk, `${key}-hsk`).slice(0, 12),
+        ...seededShuffle(adventure, `${key}-adventure`).slice(0, 3),
+      ];
+    return seededShuffle(
+      [...hsk, ...adventure].filter(
+        (word, item, items) =>
+          items.findIndex((candidate) => candidate.id === word.id) === item,
+      ),
+      key,
+    ).slice(0, 15);
+  }, [chapterIds, customOpen, hskLevels, seed]);
+  const safeWords = words.length ? words : [...current.vocabulary];
+  const word = safeWords[index % safeWords.length];
+  function next() {
+    setChanging(true);
+    window.setTimeout(() => {
+      setIndex((value) => (value + 1) % safeWords.length);
+      setRevealed(false);
+      setChanging(false);
+    }, 180);
+  }
+  function freshDeck() {
+    setSeed((value) => value + 1);
+    setIndex(0);
+    setRevealed(false);
+  }
+  function replayDeck() {
+    setIndex(0);
+    setRevealed(false);
+  }
+  function toggleHsk(level: number) {
+    setHskLevels((currentLevels) =>
+      currentLevels.includes(level)
+        ? currentLevels.filter((item) => item !== level)
+        : [...currentLevels, level].sort(),
+    );
+  }
+  function toggleChapter(id: string) {
+    setChapterIds((currentIds) =>
+      currentIds.includes(id)
+        ? currentIds.filter((item) => item !== id)
+        : [...currentIds, id],
+    );
+  }
+  const recallCard = (
+    <div
+      key={word.id}
+      className={`quick-recall-word ${revealed ? "revealed" : ""} ${changing ? "changing" : ""}`}
+      onClick={() => setRevealed(true)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") setRevealed(true);
+      }}
+      role="button"
+      tabIndex={0}
+    >
+      <small>What does this word mean?</small>
+      <strong>{word.hanzi}</strong>
+      <button
+        onClick={(event) => {
+          event.stopPropagation();
+          speak(word.hanzi);
+        }}
+      >
+        ◖)) Listen
+      </button>
+      {revealed ? (
+        <div>
+          <b>{word.pinyin}</b>
+          <span>{word.english}</span>
+          <p>
+            {word.example.hanzi}
+            <small>{word.example.english}</small>
+          </p>
+        </div>
+      ) : (
+        <em>Tap to reveal the answer</em>
+      )}
+    </div>
+  );
+  const actions = (
+    <div className="quick-recall-actions">
+      {revealed ? (
+        <>
+          <button onClick={next}>Again later</button>
+          <button className="primary" onClick={next}>
+            I remembered →
+          </button>
+        </>
+      ) : (
+        <button className="secondary" onClick={() => setRevealed(true)}>
+          Reveal answer
+        </button>
+      )}
+      <button onClick={() => setFocusOpen(true)}>⛶ Focus mode</button>
+      <button onClick={() => setActive("Review")}>Open full review</button>
+    </div>
+  );
+  return (
+    <>
+      <section className="card review-card dashboard-quick-review">
+        <div className="review-top">
+          <div className="review-icon">复</div>
+          <div>
+            <p className="eyebrow">QUICK RECALL · 15-WORD DECK</p>
+            <h3>
+              {learning.reviews + dueMistakes(learning.mistakes).length} reviews
+              are due
+            </h3>
+          </div>
+          <span>
+            {index + 1}/{safeWords.length}
+          </span>
+        </div>
+        <div className="quick-recall-deck-tools">
+          <button onClick={replayDeck}>↺ Same 15</button>
+          <button onClick={freshDeck}>✦ New 15</button>
+          <button
+            className={customOpen ? "active" : ""}
+            onClick={() => setCustomOpen((value) => !value)}
+          >
+            ☰ Customize
+          </button>
+        </div>
+        {customOpen && (
+          <div className="quick-recall-custom">
+            <header>
+              <strong>Choose at least one source</strong>
+              <small>Default mix: 80% HSK · 20% Adventure</small>
+            </header>
+            <div>
+              <p>
+                <b>Unlocked HSK</b>
+                {unlockedHsk.map((level) => (
+                  <button
+                    className={hskLevels.includes(level) ? "active" : ""}
+                    onClick={() => toggleHsk(level)}
+                    disabled={
+                      hskLevels.length + chapterIds.length === 1 &&
+                      hskLevels.includes(level)
+                    }
+                    key={level}
+                  >
+                    HSK {level}
+                  </button>
+                ))}
+              </p>
+              <p>
+                <b>Adventure chapters</b>
+                {unlockedAdventure.map((chapter) => (
+                  <button
+                    className={chapterIds.includes(chapter.id) ? "active" : ""}
+                    onClick={() => toggleChapter(chapter.id)}
+                    disabled={
+                      hskLevels.length + chapterIds.length === 1 &&
+                      chapterIds.includes(chapter.id)
+                    }
+                    key={chapter.id}
+                  >
+                    {chapter.icon} {chapter.title}
+                  </button>
+                ))}
+              </p>
+            </div>
+            <button onClick={freshDeck}>Build my 15-word deck →</button>
+          </div>
+        )}
+        {recallCard}
+        {actions}
+      </section>
+      {focusOpen && (
+        <div
+          className="quick-recall-focus"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Focused quick recall"
+        >
+          <section>
+            <header>
+              <div>
+                <p className="eyebrow">
+                  FOCUS RECALL · {index + 1}/{safeWords.length}
+                </p>
+                <h2>One word. No distractions.</h2>
+              </div>
+              <button
+                onClick={() => setFocusOpen(false)}
+                aria-label="Close focus mode"
+              >
+                ×
+              </button>
+            </header>
+            {recallCard}
+            {actions}
+            <small>
+              Press the card to reveal, then choose how well you remembered it.
+            </small>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
+
+function MasteryMap({
+  profile,
+  learning,
+  setActive,
+  speak,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+  setActive: (value: string) => void;
+  speak: (value: string) => void;
+}) {
+  const statuses: { status: MasteryStatus; icon: string; copy: string }[] = [
+    { status: "New", icon: "新", copy: "Not practiced yet" },
+    { status: "Learning", icon: "学", copy: "Building first memories" },
+    { status: "Familiar", icon: "熟", copy: "Recognized consistently" },
+    { status: "Mastered", icon: "成", copy: "Strong spaced recall" },
+    { status: "Needs review", icon: "复", copy: "Ready to refresh" },
+  ];
+  const [selected, setSelected] = useState<MasteryStatus>("New");
+  const [visibleCount, setVisibleCount] = useState(8);
+  const [detailId, setDetailId] = useState("");
+  const availableWords = useMemo(
+    () =>
+      reviewVocabulary.filter(
+        (word) => !word.hsk || word.hsk <= (profile?.hsk ?? 3),
+      ),
+    [profile?.hsk],
+  );
+  const summary = useMemo(
+    () =>
+      masterySummary(
+        availableWords.map((word) => word.id),
+        learning.reviewCards,
+      ),
+    [availableWords, learning.reviewCards],
+  );
+  const selectedWords = useMemo(
+    () =>
+      availableWords.filter(
+        (word) => masteryStatus(learning.reviewCards[word.id]) === selected,
+      ),
+    [availableWords, learning.reviewCards, selected],
+  );
+  const detailWord = availableWords.find((word) => word.id === detailId);
+  const detail = detailWord
+    ? masteryDetail(learning.reviewCards[detailWord.id])
+    : null;
+  return (
+    <section className="mastery-map">
+      <header>
+        <div>
+          <p className="eyebrow">MASTERY MAP · 词汇掌握</p>
+          <h2>See where every word stands</h2>
+          <p>
+            Status changes from real recall and spaced review—not from XP.
+          </p>
+        </div>
+        <button onClick={() => setActive("Review")}>Practice due words →</button>
+      </header>
+      <div className="mastery-status-grid" role="tablist" aria-label="Word mastery status">
+        {statuses.map((item) => (
+          <button
+            className={selected === item.status ? "active" : ""}
+            onClick={() => {
+              setSelected(item.status);
+              setVisibleCount(8);
+            }}
+            role="tab"
+            aria-selected={selected === item.status}
+            key={item.status}
+          >
+            <span>{item.icon}</span>
+            <p>
+              <strong>{item.status}</strong>
+              <small>{item.copy}</small>
+            </p>
+            <b>{summary[item.status]}</b>
+          </button>
+        ))}
+      </div>
+      <div className="mastery-word-list" role="tabpanel">
+        {selectedWords.slice(0, visibleCount).map((word) => {
+          const card = learning.reviewCards[word.id];
+          return (
+            <button onClick={() => setDetailId(word.id)} key={word.id}>
+              <span>{word.hanzi}</span>
+              <p>
+                <strong>{word.pinyin || "HSK course word"}</strong>
+                <small>{word.english}</small>
+              </p>
+              <b>{card?.repetitions ? `${card.mastery}%` : "New"}</b>
+            </button>
+          );
+        })}
+        {!selectedWords.length && (
+          <p className="mastery-empty">
+            Nothing here yet. Keep practicing and this group will update
+            automatically.
+          </p>
+        )}
+      </div>
+      {visibleCount < selectedWords.length && (
+        <button
+          className="mastery-more"
+          onClick={() => setVisibleCount((count) => count + 8)}
+        >
+          Show 8 more · {selectedWords.length - visibleCount} remaining
+        </button>
+      )}
+      {detailWord && detail && (
+        <div
+          className="mastery-detail-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Mastery details for ${detailWord.hanzi}`}
+        >
+          <section className="mastery-detail-card">
+            <header>
+              <div>
+                <p className="eyebrow">WORD MASTERY · 学习记录</p>
+                <h3>{detailWord.hanzi}</h3>
+                <span>{detailWord.pinyin} · {detailWord.english}</span>
+              </div>
+              <button onClick={() => setDetailId("")} aria-label="Close word details">×</button>
+            </header>
+            <div className="mastery-detail-stats">
+              <article><small>STATUS</small><strong>{detail.status}</strong></article>
+              <article><small>MASTERY</small><strong>{detail.mastery}%</strong></article>
+              <article><small>REVIEWS</small><strong>{detail.repetitions}</strong></article>
+              <article><small>NEXT REVIEW</small><strong>{detail.nextReview}</strong></article>
+            </div>
+            <div className="mastery-context-card">
+              <span>例</span>
+              <p>
+                <small>{detailWord.hsk ? `HSK ${detailWord.hsk} · STANDARD LEARNING CONTEXT` : "ADVENTURE · EVERYDAY SPOKEN CONTEXT"}</small>
+                <strong>{detailWord.example?.hanzi || `请用“${detailWord.hanzi}”说一句话。`}</strong>
+                {detailWord.example?.pinyin && <b>{detailWord.example.pinyin}</b>}
+                <em>{detailWord.example?.english || `Make a natural sentence using “${detailWord.english}.”`}</em>
+              </p>
+            </div>
+            <div className="mastery-detail-actions">
+              <button onClick={() => speak(detailWord.hanzi)}>▶ Hear word</button>
+              <button onClick={() => { setDetailId(""); setActive("Review"); }}>Practice this word →</button>
+            </div>
+            <small className="mastery-quality-note">
+              Usage labels distinguish everyday Adventure language from standardized HSK material. Review intervals are based on your real recall history.
+            </small>
+          </section>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Dashboard({
+  profile,
+  learning,
+  current,
+  specialization,
+  openChapter,
+  setActive,
+  openComeback,
+  openDailySession,
+  openFocusMode,
+  claimQuest,
+  openGemShop,
+  buyReward,
+  speak,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+  current: Chapter;
+  specialization: (typeof specializationContent)[keyof typeof specializationContent];
+  openChapter: (id: string) => void;
+  setActive: (v: string) => void;
+  openComeback: () => void;
+  openDailySession: () => void;
+  openFocusMode: () => void;
+  claimQuest: (id: string, xp: number, diamonds: number) => void;
+  openGemShop: () => void;
+  buyReward: (kind: string, cost: number) => void;
+  speak: (text: string) => void;
+}) {
+  const progress = learning.chapterProgress[current.id] ?? 0;
+  const today = localDateKey();
+  const todayEvents = learning.events.filter(
+    (event) => localDateKey(new Date(event.createdAt)) === today,
+  );
+  const todayMinutes = Math.min(
+    profile?.dailyMinutes ?? 10,
+    todayEvents.length * 4,
+  );
+  const questBoard = buildQuestBoard({
+    events: learning.events,
+    xpKeys: learning.xpKeys,
+    activityDates: learning.activityDates,
+    dailyMinutes: profile?.dailyMinutes ?? 10,
+  });
+  const scores = calculateSkillScores(
+    learning.events,
+    learning.lastActiveDate || undefined,
+  );
+  const weakest = Object.entries(scores).sort((a, b) => a[1] - b[1])[0];
+  const recommendation = smartLearningRecommendation({
+    dueReviews: dueReviewIds(learning.reviewCards).length,
+    dueMistakes: dueMistakes(learning.mistakes).length,
+    weakestSkill: weakest[0] as LearningEvent["skill"],
+    currentChapterTitle: current.title,
+    chapterProgress: progress,
+  });
+  const pack = pathPacks[(profile?.path ?? "General") as PathId];
+  const gap = streakGapStatus(learning.lastActiveDate).missedDays;
+  function openQuest(action: "daily" | "review" | "games" | "stories") {
+    if (action === "daily") openDailySession();
+    else
+      setActive(
+        action === "review"
+          ? "Review"
+          : action === "games"
+            ? "Games"
+            : "Stories",
+      );
+  }
+  function openWeeklyMission(label: string) {
+    if (label.includes("review")) setActive("Review");
+    else if (label.includes("game")) setActive("Games");
+    else if (label.includes("story")) setActive("Stories");
+    else openDailySession();
+  }
+  function openRecommendation() {
+    if (recommendation.destination === "Adventure") openChapter(current.id);
+    else setActive(recommendation.destination);
+  }
+  return (
+    <div className="page-wrap">
+      <section className="welcome">
+        <div>
+          <p className="eyebrow">YOUR PERSONAL CHINESE WORLD</p>
+          <h1>
+            你好, {profile?.name ?? "Learner"} <span>✦</span>
+          </h1>
+          <p>
+            HSK {profile?.hsk ?? 3} · {profile?.dailyMinutes ?? 10}-minute daily
+            goal · {profile?.career ?? pack.careers[0]}
+          </p>
+        </div>
+        <button
+          className="daily-ring"
+          onClick={openFocusMode}
+          aria-label={`Daily goal: ${todayMinutes} of ${profile?.dailyMinutes ?? 10} minutes. Open focus timer.`}
+        >
+          <svg viewBox="0 0 80 80" aria-hidden="true">
+            <circle cx="40" cy="40" r="32" />
+            <circle
+              className="ring-value"
+              cx="40"
+              cy="40"
+              r="32"
+              style={{
+                strokeDashoffset:
+                  201 -
+                  Math.min(1, todayMinutes / (profile?.dailyMinutes ?? 10)) *
+                    201,
+              }}
+            />
+          </svg>
+          <div>
+            <b>{todayMinutes}</b>
+            <span>/ {profile?.dailyMinutes ?? 10} min</span>
+            <small>Focus mode</small>
+          </div>
+        </button>
+      </section>
+      {gap > 0 && gap < 3 && (
+        <section className="comeback-banner">
+          <span>回</span>
+          <div>
+            <p className="eyebrow">WELCOME BACK · NO PRESSURE</p>
+            <h2>Your short refresh is ready</h2>
+            <p>
+              Review five likely-forgotten words and continue with confidence.
+            </p>
+          </div>
+          <button onClick={openComeback}>Start 5-minute comeback →</button>
+        </section>
+      )}
+      <section className="smart-learning-path">
+        <span>{recommendation.icon}</span>
+        <div>
+          <p className="eyebrow">SMART LEARNING PATH · BEST NEXT STEP</p>
+          <h2>{recommendation.title}</h2>
+          <p>{recommendation.reason}</p>
+          <div>
+            <small>Based on</small>
+            <b>{dueReviewIds(learning.reviewCards).length} due words</b>
+            <b>{dueMistakes(learning.mistakes).length} recent mistakes</b>
+            <b>Weakest: {weakest[0]}</b>
+          </div>
+        </div>
+        <button onClick={openRecommendation}>
+          {recommendation.action} <span>→</span>
+        </button>
+      </section>
+      <section
+        className={`daily-plan-card ${learning.xpKeys.includes(`${today}:daily-session`) ? "complete" : ""}`}
+      >
+        <div className="daily-plan-seal">
+          {learning.xpKeys.includes(`${today}:daily-session`) ? "✓" : "今"}
+        </div>
+        <div className="daily-plan-copy">
+          <p className="eyebrow">
+            DAILY JOURNEY · 5 ACTIVITIES ·{" "}
+            {learning.xpKeys.includes(`${today}:daily-session`)
+              ? "COMPLETED"
+              : "READY"}
+          </p>
+          <h2>
+            {learning.xpKeys.includes(`${today}:daily-session`)
+              ? "Today’s journey is complete"
+              : "Your 5–10 minute learning journey"}
+          </h2>
+          <p>
+            Vocabulary, listening, sentence building, a mini-game, and focused
+            review flow together without menu hopping.
+          </p>
+          <div>
+            <span>{dailySessionQuestionCount(Math.min(10, profile?.dailyMinutes ?? 10))} questions</span>
+            <span>5–10 minute journey</span>
+            <span>{learning.reviews} reviews considered</span>
+          </div>
+          <div className="daily-journey-preview" aria-label="Daily journey activities">
+            {dailyJourneyStages.map((stage, index) => (
+              <span
+                className={
+                  learning.xpKeys.includes(`${today}:daily-session`)
+                    ? "done"
+                    : index === 0
+                      ? "current"
+                      : ""
+                }
+                key={stage.id}
+              >
+                <b>{learning.xpKeys.includes(`${today}:daily-session`) ? "✓" : index + 1}</b>
+                <small>{stage.title}</small>
+              </span>
+            ))}
+          </div>
+        </div>
+        <button onClick={openDailySession}>
+          {learning.xpKeys.includes(`${today}:daily-session`)
+            ? "Repeat journey"
+            : "Start daily journey"}{" "}
+          →
+        </button>
+      </section>
+      <section className="dashboard-live-strip">
+        <article className="live-now">
+          <i />
+          <div>
+            <small>YOUR WORLD IS ACTIVE</small>
+            <strong>
+              {todayEvents.length
+                ? `${todayEvents.length} learning moments today`
+                : "A fresh session is waiting"}
+            </strong>
+          </div>
+          <button onClick={openDailySession}>Continue →</button>
+        </article>
+        <article>
+          <span>词</span>
+          <div>
+            <small>WORD OF THE MOMENT</small>
+            <strong>
+              {current.vocabulary[0]?.hanzi} · {current.vocabulary[0]?.pinyin}
+            </strong>
+            <p>{current.vocabulary[0]?.english}</p>
+          </div>
+        </article>
+        <article>
+          <span>向</span>
+          <div>
+            <small>ADAPTIVE DIRECTION</small>
+            <strong>Strengthen {weakest[0]}</strong>
+            <p>Current evidence score: {weakest[1]}</p>
+          </div>
+          <button onClick={() => setActive("Learn")}>Practice</button>
+        </article>
+      </section>
+      <MasteryMap profile={profile} learning={learning} setActive={setActive} speak={speak} />
+      <section
+        className="mission-card mission-focus-card"
+        style={
+          {
+            "--mission-image": `url(${chapterScenes[current.id]?.[0]?.image ?? chapterScenes.arrival[0].image})`,
+          } as React.CSSProperties
+        }
+      >
+        <div className="mission-copy">
+          <span className="pill">CONTINUE YOUR JOURNEY</span>
+          <p className="chapter-label">
+            {current.chinese} · CHAPTER{" "}
+            {adventureChapters.findIndex((c) => c.id === current.id) + 1}
+          </p>
+          <h2>{current.mission}</h2>
+          <p>
+            {current.description} Learn useful phrases, see the situation in
+            China, and apply them in context.
+          </p>
+          <div className="mission-meta">
+            <span>◷ 5 stages</span>
+            <span>
+              ▤{" "}
+              {adventureVocabularyStages(current.id).reduce(
+                (sum, stage) => sum + stage.words.length,
+                0,
+              )}{" "}
+              words
+            </span>
+            <span>▧ 5 scenes</span>
+            <span>♧ 1 challenge</span>
+          </div>
+          <div className="progress-row">
+            <div className="progress">
+              <i style={{ width: `${progress}%` }} />
+            </div>
+            <b>{progress}%</b>
+          </div>
+          <button className="primary" onClick={() => openChapter(current.id)}>
+            Continue lesson <span>→</span>
+          </button>
+        </div>
+      </section>
+      <section
+        className="explore-china-card"
+        aria-label="Explore places in China"
+      >
+        <LandmarkArt speak={speak} />
+      </section>
+      <div className="grid">
+        <JourneyCarousel
+          learning={learning}
+          openChapter={openChapter}
+          setActive={setActive}
+        />
+        <DashboardQuickReview
+          learning={learning}
+          current={current}
+          profile={profile}
+          setActive={setActive}
+          speak={speak}
+        />
+      </div>
+      <section className="dashboard-gem-market">
+        <header>
+          <div>
+            <p className="eyebrow">GEM MARKET · 宝石用途</p>
+            <h2>Turn gems into useful learning advantages</h2>
+            <p>
+              Boosters support practice; they never replace learning or lock the
+              core course.
+            </p>
+          </div>
+          <button onClick={openGemShop}>
+            <span>◆ {learning.diamonds}</span> Open full shop →
+          </button>
+        </header>
+        <div className="dashboard-gem-grid">
+          <article>
+            <span>倍</span>
+            <div>
+              <strong>Double XP</strong>
+              <small>
+                {learning.inventory.doubleXpCredits} ready · next scored session
+              </small>
+            </div>
+            <button
+              disabled={
+                learning.diamonds < 35 ||
+                learning.inventory.doubleXpDate === today
+              }
+              onClick={() => buyReward("xp", 35)}
+            >
+              {learning.inventory.doubleXpDate === today
+                ? "Daily limit"
+                : "35 ◆"}
+            </button>
+          </article>
+          <article>
+            <span>复</span>
+            <div>
+              <strong>Mistake Recovery</strong>
+              <small>
+                {learning.inventory.mistakeBoosters} ready · weakest errors
+                first
+              </small>
+            </div>
+            <button
+              disabled={learning.diamonds < 10}
+              onClick={() => buyReward("mistake", 10)}
+            >
+              10 ◆
+            </button>
+          </article>
+          <article>
+            <span>票</span>
+            <div>
+              <strong>Adventure Energy</strong>
+              <small>
+                {learning.inventory.adventureTickets} tickets · elite boss
+                replay
+              </small>
+            </div>
+            <button
+              disabled={learning.diamonds < 15}
+              onClick={() => buyReward("ticket", 15)}
+            >
+              15 ◆
+            </button>
+          </article>
+          <article>
+            <span>冰</span>
+            <div>
+              <strong>Streak Freeze</strong>
+              <small>
+                {learning.inventory.freezeTokens}/2 stored · automatic
+                protection
+              </small>
+            </div>
+            <button
+              disabled={
+                learning.diamonds < 50 || learning.inventory.freezeTokens >= 2
+              }
+              onClick={() => buyReward("freeze", 50)}
+            >
+              50 ◆
+            </button>
+          </article>
+        </div>
+        <footer>
+          <span className={learning.inventory.doubleXpCredits ? "active" : ""}>
+            倍 {learning.inventory.doubleXpCredits} XP boosts
+          </span>
+          <span className={learning.inventory.mistakeBoosters ? "active" : ""}>
+            复 {learning.inventory.mistakeBoosters} recovery
+          </span>
+          <span className={learning.inventory.adventureTickets ? "active" : ""}>
+            票 {learning.inventory.adventureTickets} tickets
+          </span>
+          <span className={learning.inventory.freezeTokens ? "active" : ""}>
+            冰 {learning.inventory.freezeTokens} freezes
+          </span>
+        </footer>
+      </section>
+      <section className="focus-section">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">YOUR PERSONAL PATH</p>
+            <h3>
+              {specialization.chinese} ·{" "}
+              {profile?.career ?? specialization.label}
+            </h3>
+          </div>
+          <span className="skill-tag">Adaptive focus: {weakest[0]}</span>
+        </div>
+        <div className="focus-grid">
+          <button
+            className="focus-card coral"
+            onClick={() => setActive("Games")}
+          >
+            <span>专</span>
+            <div>
+              <small>{pack.gameTitle.toUpperCase()} · PERSONALIZED</small>
+              <b>{pack.mission}</b>
+              <p>
+                Uses your {specialization.label} vocabulary and learning
+                history.
+              </p>
+            </div>
+            <i>→</i>
+          </button>
+          <button
+            className="focus-card cream"
+            onClick={() => setActive("Learn")}
+          >
+            <span>强</span>
+            <div>
+              <small>SMART RECOMMENDATION</small>
+              <b>Strengthen {weakest[0]}</b>
+              <p>Your current event-based score is {weakest[1]}.</p>
+            </div>
+            <i>→</i>
+          </button>
+        </div>
+      </section>
+      <section className="quest-board quest-system">
+        <div className="quest-summary">
+          <p className="eyebrow">DAILY QUESTS · HEALTHY HABITS</p>
+          <h3>
+            {questBoard.daily.filter((quest) => quest.done).length} of{" "}
+            {questBoard.daily.length} complete
+          </h3>
+          <span>
+            Targets adapt to your {profile?.dailyMinutes ?? 10}-minute goal. Tap
+            any mission to jump directly to the right practice.
+          </span>
+          <div className="weekly-challenge expanded">
+            <header>
+              <div>
+                <strong>Weekly learning challenge</strong>
+                <span>
+                  {questBoard.weekly.progress}% complete ·{" "}
+                  {questBoard.weekly.startDate.slice(5).replace("-", "/")}–
+                  {questBoard.weekly.endDate.slice(5).replace("-", "/")}
+                </span>
+              </div>
+              <b>
+                +{questBoard.weekly.rewardXp} XP · +
+                {questBoard.weekly.rewardDiamonds} ◆
+              </b>
+            </header>
+            <div className="weekly-track">
+              <i style={{ width: `${questBoard.weekly.progress}%` }} />
+            </div>
+            <div className="weekly-task-list">
+              {questBoard.weekly.tasks.map((task) => (
+                <button
+                  className={task.done ? "done" : ""}
+                  onClick={() => openWeeklyMission(task.label)}
+                  key={task.label}
+                >
+                  <i>{task.done ? "✓" : "○"}</i>
+                  <b>{task.label}</b>
+                  <small>
+                    {task.current}/{task.target}
+                  </small>
+                  <em>Go →</em>
+                </button>
+              ))}
+            </div>
+            {questBoard.weekly.done && (
+              <button
+                disabled={learning.questClaims.includes(questBoard.weekly.id)}
+                onClick={() =>
+                  claimQuest(
+                    questBoard.weekly.id,
+                    questBoard.weekly.rewardXp,
+                    questBoard.weekly.rewardDiamonds,
+                  )
+                }
+              >
+                {learning.questClaims.includes(questBoard.weekly.id)
+                  ? "Weekly reward claimed"
+                  : "Claim weekly reward"}
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="daily-quest-column">
+          <div className="daily-quest-list">
+            {questBoard.daily.map((quest) => {
+              const claimed = learning.questClaims.includes(quest.id);
+              return (
+                <article
+                  className={`${quest.done ? "done " : ""}${claimed ? "claimed" : ""}`}
+                  key={quest.id}
+                >
+                  <i>{claimed ? "◆" : quest.done ? "✓" : "○"}</i>
+                  <div>
+                    <strong>{quest.label}</strong>
+                    <small>{quest.detail}</small>
+                    <span>
+                      <em
+                        style={{
+                          width: `${(quest.current / quest.target) * 100}%`,
+                        }}
+                      />
+                    </span>
+                    <b>
+                      {quest.current}/{quest.target}
+                    </b>
+                  </div>
+                  {quest.done ? (
+                    <button
+                      disabled={claimed}
+                      onClick={() =>
+                        claimQuest(
+                          quest.id,
+                          quest.rewardXp,
+                          quest.rewardDiamonds,
+                        )
+                      }
+                    >
+                      {claimed ? "Claimed" : `Claim +${quest.rewardXp} XP`}
+                    </button>
+                  ) : (
+                    <button onClick={() => openQuest(quest.action)}>
+                      Go →
+                    </button>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+          <div className="quest-next-actions">
+            <small>AFTER THE THREE DAILY QUESTS</small>
+            <strong>Keep learning without grinding XP</strong>
+            <div>
+              <button onClick={() => setActive("Review")}>
+                复 Review weak words
+              </button>
+              <button onClick={() => setActive("Learn")}>
+                法 Practice grammar
+              </button>
+              <button onClick={() => setActive("Stories")}>
+                故 Read a graded story
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function LandmarkArt({ speak }: { speak: (text: string) => void }) {
+  const [index, setIndex] = useState(0);
+  const [practiceOpen, setPracticeOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const touchStart = useRef<number | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setIndex(Math.floor(Math.random() * chinaPlaces.length)),
+      0,
+    );
+    return () => window.clearTimeout(timer);
+  }, []);
+  const landmark = chinaPlaces[index];
+  const details = landmark.details ??
+    chinaPlaceDetails[landmark.id] ?? {
+      district: landmark.city,
+      province: landmark.city,
+      period: "A landmark shaped across several periods",
+      history: landmark.fact,
+      significance: "This place connects Chinese language practice with geography, culture, architecture, and daily travel.",
+    };
+  useEffect(() => {
+    [1, -1].forEach((direction) => {
+      const next =
+        chinaPlaces[
+          (index + direction + chinaPlaces.length) % chinaPlaces.length
+        ];
+      const image = new window.Image();
+      image.src = next.image;
+    });
+  }, [index]);
+  function move(direction: number) {
+    setLoading(true);
+    setIndex(
+      (current) =>
+        (current + direction + chinaPlaces.length) % chinaPlaces.length,
+    );
+    setPracticeOpen(false);
+    setDetailsOpen(false);
+  }
+  function endSwipe(clientX: number) {
+    if (touchStart.current === null) return;
+    const distance = clientX - touchStart.current;
+    if (Math.abs(distance) > 45) move(distance < 0 ? 1 : -1);
+    touchStart.current = null;
+  }
+  return (
+    <div
+      className={`mission-art landmark-art ${practiceOpen ? "words-open" : ""} ${loading ? "is-loading" : ""}`}
+      onTouchStart={(event) => {
+        touchStart.current = event.touches[0].clientX;
+      }}
+      onTouchEnd={(event) => endSwipe(event.changedTouches[0].clientX)}
+    >
+      <Image
+        key={landmark.image}
+        className="landmark-photo"
+        src={landmark.image}
+        alt={`${landmark.english}, ${landmark.city}`}
+        fill
+        sizes="(max-width: 760px) 100vw, 1100px"
+        unoptimized
+        onLoad={() => setLoading(false)}
+      />
+      {loading && (
+        <div className="landmark-loader">
+          <i />
+          <span>Opening the next place…</span>
+        </div>
+      )}
+      <div className="landmark-shade" />
+      <div className="landmark-top">
+        <span>EXPLORE CHINA · 看中国</span>
+        <div>
+          <button onClick={() => move(-1)} aria-label="Previous place in China">
+            ←
+          </button>
+          <button
+            onClick={() => move(1)}
+            aria-label="Show another place in China"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+      <div className="landmark-caption">
+        <span>{landmark.city}</span>
+        <h3>{landmark.name}</h3>
+        <p>
+          <b>{landmark.pinyin}</b> · {landmark.english}
+        </p>
+        <small>{landmark.fact}</small>
+        <div className="landmark-actions">
+          <button onClick={() => setPracticeOpen(!practiceOpen)}>
+            词 {practiceOpen ? "Hide" : "Practice"} words
+          </button>
+          <button onClick={() => speak(landmark.name)}>▶ Hear name</button>
+          <button onClick={() => setDetailsOpen(true)}>
+            ⓘ Place & history
+          </button>
+        </div>
+        <a
+          href={landmark.source}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Photo credit: ${landmark.credit}`}
+        >
+          {landmark.credit}
+        </a>
+      </div>
+      {practiceOpen && (
+        <div className="landmark-word-drawer">
+          <header>
+            <div>
+              <small>USE THESE HERE</small>
+              <strong>{landmark.english} word pack</strong>
+            </div>
+            <button onClick={() => setPracticeOpen(false)}>×</button>
+          </header>
+          <div>
+            {landmark.words.map((word) => (
+              <button onClick={() => speak(word.hanzi)} key={word.hanzi}>
+                <b>{word.hanzi}</b>
+                <span>{word.pinyin}</span>
+                <small>{word.english}</small>
+                <i>▶</i>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <div
+        className="landmark-dots"
+        aria-label={`${index + 1} of ${chinaPlaces.length} places`}
+      >
+        <span>{index + 1} / {chinaPlaces.length}</span>
+        {Array.from(
+          { length: Math.min(7, chinaPlaces.length) },
+          (_, offset) =>
+            (index - 3 + offset + chinaPlaces.length) % chinaPlaces.length,
+        ).map((itemIndex) => {
+          const item = chinaPlaces[itemIndex];
+          return (
+          <button
+            className={itemIndex === index ? "active" : ""}
+            onClick={() => {
+              setLoading(true);
+              setIndex(itemIndex);
+              setPracticeOpen(false);
+              setDetailsOpen(false);
+            }}
+            aria-label={`Show ${item.english}`}
+            key={item.id}
+          />
+          );
+        })}
+      </div>
+      {detailsOpen && (
+        <div
+          className="landmark-details"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${landmark.english} location and history`}
+        >
+          <section>
+            <header>
+              <div>
+                <p className="eyebrow">PLACE NOTES · 地点与历史</p>
+                <h3>
+                  {landmark.name} · {landmark.english}
+                </h3>
+              </div>
+              <button
+                onClick={() => setDetailsOpen(false)}
+                aria-label="Close place details"
+              >
+                ×
+              </button>
+            </header>
+            <div className="landmark-location-grid">
+              <p>
+                <small>DISTRICT / AREA</small>
+                <strong>{details.district}</strong>
+              </p>
+              <p>
+                <small>CITY / PROVINCE</small>
+                <strong>{details.province}</strong>
+              </p>
+              <p>
+                <small>PERIOD</small>
+                <strong>{details.period}</strong>
+              </p>
+            </div>
+            <article>
+              <h4>What happened here?</h4>
+              <p>{details.history}</p>
+              <h4>Why it matters</h4>
+              <p>{details.significance}</p>
+            </article>
+            <footer>
+              <button onClick={() => speak(landmark.name)}>
+                ▶ Hear the Chinese name
+              </button>
+              <a href={landmark.source} target="_blank" rel="noreferrer">
+                Photo source & credit ↗
+              </a>
+            </footer>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Adventure({
+  learning,
+  openChapter,
+  openBoss,
+  setDifficulty,
+  speak,
+  markStageSeen,
+  award,
+}: {
+  learning: LearningState;
+  openChapter: (id: string) => void;
+  openBoss: (id: string) => void;
+  setDifficulty: (id: string, difficulty: AdventureDifficulty) => void;
+  speak: (text: string) => void;
+  markStageSeen: (id: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const [openWords, setOpenWords] = useState<string[]>([]);
+  const [openStages, setOpenStages] = useState<string[]>([]);
+  const [selectedStages, setSelectedStages] = useState<
+    Record<string, string[]>
+  >({});
+  const [practice, setPractice] = useState<{
+    chapter: Chapter;
+    stageIds: string[];
+  } | null>(null);
+  function toggleWords(id: string) {
+    setOpenWords((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    );
+  }
+  function toggleStage(id: string) {
+    setOpenStages((current) => {
+      const opening = !current.includes(id);
+      if (opening) markStageSeen(id);
+      return opening ? [...current, id] : current.filter((item) => item !== id);
+    });
+  }
+  function selectStage(chapterId: string, stageId: string) {
+    setSelectedStages((current) => {
+      const existing = current[chapterId] ?? [];
+      const next = existing.includes(stageId)
+        ? existing.filter((id) => id !== stageId)
+        : [...existing, stageId].slice(-2);
+      return { ...current, [chapterId]: next };
+    });
+  }
+  const resumeChapter =
+    adventureChapters.find((chapter) => {
+      const step = learning.chapterSteps[chapter.id] ?? 0;
+      return step > 0 && step < 5;
+    }) ??
+    adventureChapters.find(
+      (chapter) => !learning.completed.includes(chapter.id),
+    ) ??
+    adventureChapters.at(-1)!;
+  const resumeStep = Math.min(5, (learning.chapterSteps[resumeChapter.id] ?? 0) + 1);
+  const resumeProgress = learning.chapterProgress[resumeChapter.id] ?? 0;
+  return (
+    <>
+      <div className="page-wrap subpage">
+        <div className="subpage-title">
+          <p className="eyebrow">YOUR CHINESE WORLD</p>
+          <h1>
+            Adventure map <span>冒险地图</span>
+          </h1>
+          <p>
+            Each chapter contains five vocabulary stages, visual scenes, three
+            difficulty modes, playable practice, and a final boss challenge.
+          </p>
+        </div>
+        <div className="adventure-map-summary">
+          <span>境</span>
+          <div>
+            <small>VISUAL SITUATION LEARNING</small>
+            <strong>{adventureChapters.length} chapters · 5 stages each</strong>
+            <p>
+              Keep every chapter photo gallery, learn 10 words per stage, then
+              choose Easy, Normal, or Hard.
+            </p>
+          </div>
+        </div>
+        <section className="adventure-resume">
+          <span>{resumeChapter.icon}</span>
+          <div>
+            <small>CONTINUE LAST STAGE</small>
+            <strong>{resumeChapter.title} · Stage {resumeStep} of 5</strong>
+            <p>Your saved progress is {resumeProgress}%. Continue exactly where you stopped.</p>
+            <i><em style={{ width: `${resumeProgress}%` }} /></i>
+          </div>
+          <button onClick={() => openChapter(resumeChapter.id)}>Continue Stage {resumeStep} →</button>
+        </section>
+        <div className="map-list visual-map-list">
+          {adventureChapters.map((chapter, index) => {
+            const done = learning.completed.includes(chapter.id);
+            const bossWon = learning.bossWins.includes(chapter.id);
+            const unlocked = index <= learning.completed.length;
+            const state = done ? "done" : unlocked ? "current" : "locked";
+            const stages = adventureVocabularyStages(chapter.id);
+            const showing = openWords.includes(chapter.id);
+            const totalWords = stages.reduce(
+              (sum, stage) => sum + stage.words.length,
+              0,
+            );
+            const newStages = stages.filter(
+              (stage) => !learning.seenAdventureStages.includes(stage.id),
+            ).length;
+            const chosen = selectedStages[chapter.id] ?? [];
+            const difficulty =
+              learning.chapterDifficulties[chapter.id] ?? "normal";
+            const config = adventureDifficultyConfig[difficulty];
+            return (
+              <article
+                id={`adventure-${chapter.id}`}
+                className={`map-card visual-map-card ${state}`}
+                key={chapter.id}
+              >
+                <div className="map-status-rail">
+                  <div className="map-number">
+                    {bossWon ? "冠" : done ? "✓" : index + 1}
+                  </div>
+                  <div className="map-icon">{chapter.icon}</div>
+                  <small>CHAPTER {index + 1}</small>
+                </div>
+                <ChapterSceneGallery chapterId={chapter.id} />
+                <div className="map-copy">
+                  <small>
+                    {chapter.chinese}
+                    {bossWon ? " · BOSS CLEARED" : ""}
+                  </small>
+                  <h2>{chapter.title}</h2>
+                  <p>{chapter.description}</p>
+                  <div className="map-progress">
+                    <i
+                      style={{
+                        width: `${learning.chapterProgress[chapter.id] ?? 0}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="adventure-difficulty">
+                    <header>
+                      <span>
+                        <small>CHOOSE DIFFICULTY</small>
+                        <strong>
+                          {config.label} · {config.chinese}
+                        </strong>
+                      </span>
+                      <b>
+                        {config.questions} boss questions ·{" "}
+                        {Math.round(config.pass * 100)}% to pass
+                      </b>
+                    </header>
+                    <div>
+                      {(
+                        Object.keys(
+                          adventureDifficultyConfig,
+                        ) as AdventureDifficulty[]
+                      ).map((mode) => {
+                        const item = adventureDifficultyConfig[mode];
+                        const cleared = learning.difficultyWins.includes(
+                          `${chapter.id}:${mode}`,
+                        );
+                        return (
+                          <button
+                            className={difficulty === mode ? "active" : ""}
+                            onClick={() => setDifficulty(chapter.id, mode)}
+                            key={mode}
+                          >
+                            <span>
+                              {mode === "easy"
+                                ? "芽"
+                                : mode === "normal"
+                                  ? "衡"
+                                  : "峰"}
+                            </span>
+                            <p>
+                              <strong>
+                                {item.label}
+                                {cleared ? " ✓" : ""}
+                              </strong>
+                              <small>{item.description}</small>
+                            </p>
+                            <b>
+                              +{item.firstXp} XP · +{item.gems} ◆
+                            </b>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <button
+                    className="map-word-toggle"
+                    aria-expanded={showing}
+                    onClick={() => toggleWords(chapter.id)}
+                  >
+                    <b>词</b>
+                    <span>
+                      <strong>5 vocabulary stages · {totalWords} words</strong>
+                      <small>
+                        {showing
+                          ? "Choose up to two stages to practice"
+                          : newStages
+                            ? `${newStages} stages still marked New`
+                            : "All stage word lists viewed"}
+                      </small>
+                    </span>
+                    {newStages > 0 && <em>{newStages} NEW</em>}
+                    <i>{showing ? "−" : "+"}</i>
+                  </button>
+                  {showing && (
+                    <div className="adventure-stage-list">
+                      <div className="stage-practice-toolbar">
+                        <div>
+                          <small>BUILD A PRACTICE SET</small>
+                          <strong>
+                            {chosen.length
+                              ? `${chosen.length} stage${chosen.length > 1 ? "s" : ""} selected`
+                              : "Choose one or two stages"}
+                          </strong>
+                        </div>
+                        <button
+                          disabled={!chosen.length}
+                          onClick={() =>
+                            setPractice({ chapter, stageIds: chosen })
+                          }
+                        >
+                          Practice{" "}
+                          {chosen.length === 2
+                            ? "combined stages"
+                            : "selected stage"}{" "}
+                          →
+                        </button>
+                      </div>
+                      {stages.map((stage) => {
+                        const stageOpen = openStages.includes(stage.id);
+                        const isNew = !learning.seenAdventureStages.includes(
+                          stage.id,
+                        );
+                        const selected = chosen.includes(stage.id);
+                        return (
+                          <section
+                            className={`adventure-word-stage ${stageOpen ? "open" : ""} ${selected ? "selected" : ""}`}
+                            key={stage.id}
+                          >
+                            <div className="adventure-stage-head">
+                              <button
+                                className="stage-select"
+                                onClick={() =>
+                                  selectStage(chapter.id, stage.id)
+                                }
+                                aria-pressed={selected}
+                              >
+                                {selected ? "✓" : "+"}
+                                <small>
+                                  {selected ? "Selected" : "Add to practice"}
+                                </small>
+                              </button>
+                              <button
+                                className="stage-expand"
+                                onClick={() => toggleStage(stage.id)}
+                                aria-expanded={stageOpen}
+                              >
+                                <span>{stage.stage}</span>
+                                <div>
+                                  <small>
+                                    STAGE {stage.stage} ·{" "}
+                                    {stage.sourceTitle.toUpperCase()}
+                                  </small>
+                                  <strong>{stage.title}</strong>
+                                  <p>{stage.focus}</p>
+                                </div>
+                                {isNew && <em>NEW</em>}
+                                <b>{stage.words.length} words</b>
+                                <i>{stageOpen ? "−" : "+"}</i>
+                              </button>
+                            </div>
+                            {stageOpen && (
+                              <>
+                                <div className="map-word-list interactive stage-words">
+                                  {stage.words.map((word) => (
+                                    <button
+                                      onClick={() => speak(word.hanzi)}
+                                      key={`${stage.id}-${word.id}`}
+                                    >
+                                      <strong>{word.hanzi}</strong>
+                                      <span>{word.pinyin}</span>
+                                      <small>{word.english}</small>
+                                      <i>▶</i>
+                                    </button>
+                                  ))}
+                                </div>
+                                <button
+                                  className="practice-stage-now"
+                                  onClick={() =>
+                                    setPractice({
+                                      chapter,
+                                      stageIds: [stage.id],
+                                    })
+                                  }
+                                >
+                                  Practice only Stage {stage.stage} →
+                                </button>
+                              </>
+                            )}
+                          </section>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="map-actions">
+                    <button
+                      disabled={!unlocked}
+                      onClick={() => openChapter(chapter.id)}
+                    >
+                      {done
+                        ? `Revisit · ${config.label}`
+                        : `Start ${config.label} chapter →`}
+                    </button>
+                    {done && (
+                      <button
+                        className={bossWon ? "boss-won" : "boss-button"}
+                        onClick={() => openBoss(chapter.id)}
+                      >
+                        {bossWon
+                          ? `Replay ${config.label} boss`
+                          : `${config.label} boss challenge`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+      {practice && (
+        <AdventureStagePractice
+          chapter={practice.chapter}
+          stageIds={practice.stageIds}
+          close={() => setPractice(null)}
+          award={award}
+        />
+      )}
+    </>
+  );
+}
+
+function AdventureStagePractice({
+  chapter,
+  stageIds,
+  close,
+  award,
+}: {
+  chapter: Chapter;
+  stageIds: string[];
+  close: () => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const stages = adventureVocabularyStages(chapter.id).filter((stage) =>
+    stageIds.includes(stage.id),
+  );
+  const words = stages.flatMap((stage) => stage.words);
+  const questions: DrillQuestion[] = words.map((word, index) => {
+    const distractors = [1, 4, 7]
+      .map((offset) => words[(index + offset) % words.length])
+      .filter((candidate) => candidate.id !== word.id);
+    return {
+      prompt:
+        index % 2 === 0
+          ? `Which word means “${word.english}”?`
+          : `Choose the meaning of ${word.hanzi} (${word.pinyin}).`,
+      choices:
+        index % 2 === 0
+          ? [word.hanzi, ...distractors.map((item) => item.hanzi)]
+          : [word.english, ...distractors.map((item) => item.english)],
+      answer: index % 2 === 0 ? word.hanzi : word.english,
+      explanation: `${word.hanzi} · ${word.pinyin} means “${word.english}.” ${word.example.hanzi} · ${word.example.english}`,
+    };
+  });
+  return (
+    <div
+      className="modal-backdrop adventure-practice-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${chapter.title} stage practice`}
+    >
+      <section className="adventure-practice-modal">
+        <header>
+          <div>
+            <p className="eyebrow">
+              ADVENTURE PRACTICE ·{" "}
+              {stages.map((stage) => `STAGE ${stage.stage}`).join(" + ")}
+            </p>
+            <h2>{chapter.title} recall lab</h2>
+            <p>
+              {words.length} words · choices rotate positions every question.
+            </p>
+          </div>
+          <button onClick={close} aria-label="Close stage practice">
+            ×
+          </button>
+        </header>
+        <ChoiceDrill
+          label={`Adventure ${chapter.id} ${stageIds.join("-")}`}
+          questions={questions}
+          award={award}
+          skill="Vocabulary"
+        />
+      </section>
+    </div>
+  );
+}
+
+function ChapterSceneGallery({ chapterId }: { chapterId: string }) {
+  const scenes = chapterScenes[chapterId] ?? chapterScenes.arrival;
+  const [index, setIndex] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const scene = scenes[index];
+  useEffect(() => {
+    const connection = (
+      window.navigator as Navigator & {
+        connection?: { saveData?: boolean; effectiveType?: string };
+      }
+    ).connection;
+    if (connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType ?? ""))
+      return;
+    [1, -1].forEach((direction) => {
+      const next = scenes[(index + direction + scenes.length) % scenes.length];
+      const image = new window.Image();
+      image.src = next.image;
+    });
+  }, [index, scenes]);
+  function move(direction: number) {
+    setLoading(true);
+    setIndex(
+      (current) => (current + direction + scenes.length) % scenes.length,
+    );
+    setZoom(1);
+    setTilt({ x: 0, y: 0 });
+  }
+  function perspective(event: React.PointerEvent<HTMLDivElement>) {
+    const box = event.currentTarget.getBoundingClientRect();
+    setTilt({
+      x: ((event.clientY - box.top) / box.height - 0.5) * -5,
+      y: ((event.clientX - box.left) / box.width - 0.5) * 7,
+    });
+  }
+  return (
+    <>
+      <div className={`chapter-scene-gallery ${loading ? "is-loading" : ""}`}>
+        <Image
+          key={scene.image}
+          className="chapter-scene-photo"
+          src={scene.image}
+          alt={scene.label}
+          fill
+          sizes="(max-width: 620px) 100vw, (max-width: 1100px) 42vw, 360px"
+          unoptimized
+          onLoad={() => setLoading(false)}
+        />
+        {loading && <div className="chapter-scene-loader"><i /><span>Loading scene…</span></div>}
+        <div className="chapter-scene-shade" />
+        <div className="chapter-scene-top">
+          <span>{scene.chinese}</span>
+          <div>
+            <button
+              onClick={() => setExpanded(true)}
+              aria-label="Open immersive full image"
+            >
+              ⛶ Full view
+            </button>
+            <small>
+              {index + 1}/{scenes.length}
+            </small>
+          </div>
+        </div>
+        <div className="chapter-scene-caption">
+          <strong>{scene.label}</strong>
+          <p>{scene.prompt}</p>
+          <small>{scene.credit}</small>
+        </div>
+        <div className="chapter-scene-controls">
+          <button onClick={() => move(-1)} aria-label="Previous scene">
+            ←
+          </button>
+          <div>
+            {scenes.map((item, itemIndex) => (
+              <button
+                className={itemIndex === index ? "active" : ""}
+                onClick={() => setIndex(itemIndex)}
+                aria-label={`Show ${item.label}`}
+                key={`${item.image}-${itemIndex}`}
+              />
+            ))}
+          </div>
+          <button onClick={() => move(1)} aria-label="Next scene">
+            →
+          </button>
+        </div>
+      </div>
+      {expanded && (
+        <div
+          className="scene-immersive-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Immersive view of ${scene.label}`}
+        >
+          <section>
+            <header>
+              <div>
+                <small>IMMERSIVE FULL VIEW · DRAG TO TILT</small>
+                <strong>
+                  {scene.chinese} · {scene.label}
+                </strong>
+              </div>
+              <button onClick={() => setExpanded(false)}>×</button>
+            </header>
+            <div
+              className="scene-immersive-stage"
+              onPointerMove={perspective}
+              onPointerLeave={() => setTilt({ x: 0, y: 0 })}
+            >
+              <Image
+                src={scene.image}
+                alt={scene.label}
+                width={1600}
+                height={1000}
+                unoptimized
+                style={{
+                  transform: `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${zoom})`,
+                }}
+              />
+            </div>
+            <footer>
+              <button onClick={() => move(-1)}>← Previous</button>
+              <div>
+                <button
+                  disabled={zoom <= 1}
+                  onClick={() => setZoom((value) => Math.max(1, value - 0.2))}
+                >
+                  −
+                </button>
+                <span>{Math.round(zoom * 100)}%</span>
+                <button
+                  disabled={zoom >= 2}
+                  onClick={() => setZoom((value) => Math.min(2, value + 0.2))}
+                >
+                  ＋
+                </button>
+              </div>
+              <button onClick={() => move(1)}>Next →</button>
+            </footer>
+            <p>
+              {scene.prompt}
+              <small>{scene.credit}</small>
+              {scene.source && (
+                <a href={scene.source} target="_blank" rel="noreferrer">
+                  View licensed source ↗
+                </a>
+              )}
+            </p>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
+
+function BossChallenge({
+  chapter,
+  difficulty,
+  close,
+  finish,
+  speak,
+}: {
+  chapter: Chapter;
+  difficulty: AdventureDifficulty;
+  close: () => void;
+  finish: (
+    chapter: Chapter,
+    score: number,
+    total: number,
+    difficulty: AdventureDifficulty,
+  ) => void;
+  speak: (text: string) => void;
+}) {
+  const config = adventureDifficultyConfig[difficulty];
+  const wordBank = adventureVocabularyStages(chapter.id).flatMap(
+    (stage) => stage.words,
+  );
+  const questions = Array.from(
+    { length: config.questions },
+    (_, questionIndex) => {
+      const word = wordBank[(questionIndex * 7) % wordBank.length];
+      const distractorOffsets =
+        difficulty === "easy"
+          ? [1, 5]
+          : difficulty === "normal"
+            ? [1, 5, 11]
+            : [1, 3, 5, 11];
+      const distractors = distractorOffsets
+        .map(
+          (offset) => wordBank[(questionIndex * 7 + offset) % wordBank.length],
+        )
+        .filter((item) => item.id !== word.id);
+      const modeCount =
+        difficulty === "easy" ? 3 : difficulty === "normal" ? 5 : 7;
+      const mode = questionIndex % modeCount;
+      if (mode === 0)
+        return {
+          prompt: `What does ${word.hanzi}${difficulty === "easy" ? ` (${word.pinyin})` : ""} mean?`,
+          audio: word.hanzi,
+          choices: [word.english, ...distractors.map((item) => item.english)],
+          answer: word.english,
+          explanation: `${word.hanzi} · ${word.pinyin} means “${word.english}.”`,
+        };
+      if (mode === 1)
+        return {
+          prompt: `Choose the Hanzi for “${word.english}”.`,
+          audio: word.hanzi,
+          choices: [word.hanzi, ...distractors.map((item) => item.hanzi)],
+          answer: word.hanzi,
+          explanation: `${word.hanzi} · ${word.pinyin} is “${word.english}.”`,
+        };
+      if (mode === 2)
+        return {
+          prompt:
+            difficulty === "easy"
+              ? `Choose the pinyin for ${word.hanzi}.`
+              : `Listen, then choose the correct pinyin.`,
+          audio: word.hanzi,
+          choices: [word.pinyin, ...distractors.map((item) => item.pinyin)],
+          answer: word.pinyin,
+          explanation: `The correct pronunciation is ${word.pinyin}.`,
+        };
+      if (mode === 3)
+        return {
+          prompt: `Complete the situation: ${word.example.hanzi.replace(word.hanzi, "＿＿")}`,
+          audio: word.example.hanzi,
+          choices: [word.hanzi, ...distractors.map((item) => item.hanzi)],
+          answer: word.hanzi,
+          explanation: `${word.example.hanzi} · ${word.example.pinyin} · ${word.example.english}`,
+        };
+      if (mode === 4)
+        return {
+          prompt: `Listen and choose the meaning of the key word.`,
+          audio: word.hanzi,
+          choices: [word.english, ...distractors.map((item) => item.english)],
+          answer: word.english,
+          explanation: `You heard ${word.hanzi} (${word.pinyin}), meaning “${word.english}.”`,
+        };
+      if (mode === 5)
+        return {
+          prompt: `Which word best completes this real-life sentence? ${word.example.hanzi.replace(word.hanzi, "＿＿")}`,
+          audio: word.example.hanzi,
+          choices: [word.hanzi, ...distractors.map((item) => item.hanzi)],
+          answer: word.hanzi,
+          explanation: `In context: ${word.example.hanzi} · ${word.example.english}`,
+        };
+      return {
+        prompt: `Infer the key idea from the full sentence: ${word.example.hanzi}`,
+        audio: word.example.hanzi,
+        choices: [word.english, ...distractors.map((item) => item.english)],
+        answer: word.english,
+        explanation: `${word.hanzi} (${word.pinyin}) carries the meaning “${word.english}” in this sentence.`,
+      };
+    },
+  );
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+  const [graded, setGraded] = useState(false);
+  const question = questions[index];
+  const choices = seededShuffle(
+    question.choices,
+    `${localDateKey()}-boss-${chapter.id}-${difficulty}-${index}`,
+  );
+  const correct = selected === question.answer;
+  function submit() {
+    if (!selected) return;
+    if (!graded) {
+      setScore((value) => value + (correct ? 1 : 0));
+      setGraded(true);
+      return;
+    }
+    if (index === questions.length - 1) setDone(true);
+    else {
+      setIndex(index + 1);
+      setSelected("");
+      setGraded(false);
+    }
+  }
+  function retry() {
+    setIndex(0);
+    setSelected("");
+    setScore(0);
+    setDone(false);
+    setGraded(false);
+  }
+  const passed = score / questions.length >= config.pass;
+  return (
+    <div
+      className="modal-backdrop boss-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${chapter.title} ${config.label} boss challenge`}
+    >
+      <section className={`boss-modal boss-${difficulty}`}>
+        <header>
+          <div>
+            <p className="eyebrow">
+              {config.label.toUpperCase()} BOSS · {config.chinese} ·{" "}
+              {chapter.chinese}
+            </p>
+            <h2>
+              {done
+                ? "Challenge result"
+                : `${chapter.title} · ${questions.length}-question exam`}
+            </h2>
+            <small>{config.description}</small>
+          </div>
+          <button onClick={close}>×</button>
+        </header>
+        {!done ? (
+          <div className="boss-body">
+            <div className="boss-score-live">
+              <span>
+                QUESTION {index + 1}/{questions.length}
+              </span>
+              <b>{score} correct so far</b>
+              <small>
+                {Math.round(config.pass * 100)}% required · +{config.firstXp} XP
+                · +{config.gems} ◆
+              </small>
+            </div>
+            <div className="boss-track">
+              <i
+                style={{ width: `${((index + 1) / questions.length) * 100}%` }}
+              />
+            </div>
+            <span className="boss-seal">
+              {difficulty === "easy"
+                ? "芽"
+                : difficulty === "normal"
+                  ? chapter.icon
+                  : "峰"}
+            </span>
+            <button
+              className="boss-audio"
+              onClick={() => speak(question.audio)}
+            >
+              ▶ Hear clue
+            </button>
+            <h3>{question.prompt}</h3>
+            <div className="boss-choices">
+              {choices.map((choice) => (
+                <button
+                  disabled={graded}
+                  className={`${selected === choice ? "selected " : ""}${graded && choice === question.answer ? "correct " : ""}${graded && selected === choice && !correct ? "wrong" : ""}`}
+                  onClick={() => setSelected(choice)}
+                  key={choice}
+                >
+                  {choice}
+                </button>
+              ))}
+            </div>
+            {graded && (
+              <div
+                className={`boss-answer-feedback ${correct ? "good" : "try"}`}
+              >
+                <strong>
+                  {correct ? "✓ Correct" : `Correct answer: ${question.answer}`}
+                </strong>
+                <p>{question.explanation}</p>
+              </div>
+            )}
+            <button className="primary" disabled={!selected} onClick={submit}>
+              {graded
+                ? index === questions.length - 1
+                  ? "See result →"
+                  : "Next question →"
+                : "Check answer →"}
+            </button>
+          </div>
+        ) : (
+          <div className="boss-result">
+            <span>{passed ? "冠" : "再"}</span>
+            <p className="eyebrow">
+              {passed
+                ? `${config.label.toUpperCase()} BOSS CLEARED`
+                : "REVIEW REQUIRED"}
+            </p>
+            <h3>
+              {score}/{questions.length} ·{" "}
+              {Math.round((score / questions.length) * 100)}%
+            </h3>
+            <p>
+              {passed
+                ? `Passed the ${config.label} threshold. First clears receive +${config.firstXp} XP and +${config.gems} gems; replays receive a smaller reward.`
+                : `Below ${Math.round(config.pass * 100)}%: ${config.failPenalty} XP is deducted when this result is saved. Review the chapter before another attempt.`}
+            </p>
+            <button onClick={retry}>Retry {config.label}</button>
+            <button
+              className="primary"
+              onClick={() =>
+                finish(chapter, score, questions.length, difficulty)
+              }
+            >
+              {passed ? "Save score & claim reward →" : "Save score & leave →"}
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function Practice({
+  chapter,
+  award,
+  speak,
+}: {
+  chapter: Chapter;
+  award: () => void;
+  speak: (v: string) => void;
+}) {
+  const stages = adventureVocabularyStages(chapter.id);
+  const [stageIds, setStageIds] = useState([stages[0].id]);
+  const [round, setRound] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [matched, setMatched] = useState<string[]>([]);
+  const [awarded, setAwarded] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [feedback, setFeedback] = useState("");
+  const source = stages
+    .filter((stage) => stageIds.includes(stage.id))
+    .flatMap((stage) => stage.words);
+  const roundWords = seededShuffle(
+    source,
+    `${chapter.id}-${stageIds.join("-")}-round-${round}`,
+  ).slice(0, Math.min(6, source.length));
+  const hanziWords = seededShuffle(roundWords, `${chapter.id}-${round}-hanzi`);
+  const meaningWords = seededShuffle(
+    roundWords,
+    `${chapter.id}-${round}-meaning`,
+  );
+  function toggleStage(id: string) {
+    setStageIds((current) => {
+      const next = current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id].slice(-2);
+      return next.length ? next : [id];
+    });
+    resetRound(0);
+  }
+  function resetRound(nextRound: number) {
+    setRound(nextRound);
+    setSelected(null);
+    setMatched([]);
+    setAwarded(false);
+    setFeedback("");
+  }
+  function chooseEnglish(id: string) {
+    if (!selected) return;
+    if (selected === id && !matched.includes(id)) {
+      const next = [...matched, id];
+      setMatched(next);
+      setSelected(null);
+      setFeedback("✓ Match found");
+      if (next.length === roundWords.length && !awarded) {
+        setAwarded(true);
+        award();
+      }
+    } else {
+      setSelected(null);
+      setFeedback("Not quite — compare sound and meaning, then try again.");
+    }
+  }
+  const complete = matched.length === roundWords.length;
+  return (
+    <div className="page-wrap subpage word-match-page">
+      <div className="subpage-title">
+        <p className="eyebrow">ACTIVE RECALL · MULTI-ROUND</p>
+        <h1>
+          Word Match <span>配对</span>
+        </h1>
+        <p>
+          Choose one stage or combine two. Every round reshuffles both columns.
+        </p>
+      </div>
+      <section className="word-match-setup">
+        <div>
+          <small>VOCABULARY SOURCE</small>
+          <strong>{chapter.title} · choose up to 2 stages</strong>
+        </div>
+        <div className="word-match-stage-picker">
+          {stages.map((stage) => (
+            <button
+              className={stageIds.includes(stage.id) ? "active" : ""}
+              onClick={() => toggleStage(stage.id)}
+              key={stage.id}
+            >
+              <span>{stage.stage}</span>
+              <b>{stage.title}</b>
+              <small>{stage.words.length} words</small>
+            </button>
+          ))}
+        </div>
+        <button
+          className={`voice-choice ${voiceOn ? "active" : ""}`}
+          onClick={() => setVoiceOn((value) => !value)}
+          aria-pressed={voiceOn}
+        >
+          <span>{voiceOn ? "◖))" : "×"}</span>
+          <b>Auto voice {voiceOn ? "on" : "off"}</b>
+          <small>
+            {voiceOn ? "Hear Hanzi when selected" : "Practice silently"}
+          </small>
+        </button>
+      </section>
+      <section className="game-panel">
+        <div className="game-status">
+          <span>
+            Round {round + 1} · {matched.length} / {roundWords.length} matched
+          </span>
+          <div>
+            <i
+              style={{
+                width: `${(matched.length / Math.max(1, roundWords.length)) * 100}%`,
+              }}
+            />
+          </div>
+          <b>{stageIds.length === 2 ? "Combined stages" : "Single stage"}</b>
+        </div>
+        <div className="match-grid">
+          <div>
+            {hanziWords.map((word) => (
+              <button
+                key={word.id}
+                disabled={matched.includes(word.id)}
+                className={selected === word.id ? "selected" : ""}
+                onClick={() => {
+                  setSelected(word.id);
+                  setFeedback("");
+                  if (voiceOn) speak(word.hanzi);
+                }}
+              >
+                <strong>{word.hanzi}</strong>
+                <small>{word.pinyin}</small>
+              </button>
+            ))}
+          </div>
+          <div>
+            {meaningWords.map((word) => (
+              <button
+                key={word.id}
+                disabled={matched.includes(word.id)}
+                onClick={() => chooseEnglish(word.id)}
+              >
+                {word.english}
+              </button>
+            ))}
+          </div>
+        </div>
+        {feedback && (
+          <p
+            className={`match-feedback ${feedback.startsWith("✓") ? "good" : "try"}`}
+          >
+            {feedback}
+          </p>
+        )}
+        {complete && (
+          <div className="game-complete">
+            <span>✓</span>
+            <h2>Round {round + 1} cleared!</h2>
+            <p>
+              Next round brings a fresh set and new positions from your selected
+              stage level.
+            </p>
+            <div>
+              <button onClick={() => resetRound(round)}>
+                Replay this round
+              </button>
+              <button className="primary" onClick={() => resetRound(round + 1)}>
+                Next word set →
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function LearnCenter({
+  profile,
+  chapter,
+  specialization,
+  favorites,
+  personalWords,
+  flashcardStats,
+  toggleFavorite,
+  addPersonalWord,
+  removePersonalWord,
+  rateFlashcard,
+  speak,
+  award,
+  updateHsk,
+  updateCareer,
+}: {
+  profile: Profile | null;
+  chapter: Chapter;
+  specialization: (typeof specializationContent)[keyof typeof specializationContent];
+  favorites: string[];
+  personalWords: PersonalWord[];
+  flashcardStats: Record<string, FlashcardStat>;
+  toggleFavorite: (id: string) => void;
+  addPersonalWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+  removePersonalWord: (id: string) => void;
+  rateFlashcard: (wordId: string, rating: FlashcardRating) => void;
+  speak: (v: string, speed?: number) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+    gameResult?: { score: number; total: number; mistakes?: GameMistake[] },
+  ) => void;
+  updateHsk: (level: number) => void;
+  updateCareer: (career: string) => void;
+}) {
+  type LearnTab =
+    | "vocabulary"
+    | "dictionary"
+    | "library"
+    | "image"
+    | "flashcards"
+    | "grammar"
+    | "listening"
+    | "dictation"
+    | "speaking"
+    | "hanzi"
+    | "pinyin"
+    | "reading"
+    | "hsk"
+    | "exam"
+    | "adaptive"
+    | "offline"
+    | "specialization"
+    | "roleplay"
+    | "resources";
+  const [tab, setTab] = useState<LearnTab>("hsk");
+  const [placementOpen, setPlacementOpen] = useState(false);
+  const learnSections: {
+    id: string;
+    icon: string;
+    title: string;
+    copy: string;
+    tabs: [LearnTab, string][];
+  }[] = [
+    {
+      id: "guided",
+      icon: "路",
+      title: "Guided learning",
+      copy: "Start here for an HSK plan, adaptive session, exam, or textbook lesson.",
+      tabs: [
+        ["hsk", "HSK Center"],
+        ["adaptive", "Adaptive Study"],
+        ["exam", "Mock Exam"],
+        ["resources", "Workbook & Culture"],
+        ["offline", "Downloads"],
+      ],
+    },
+    {
+      id: "words",
+      icon: "词",
+      title: "Words & reading",
+      copy: "Discover vocabulary, save words, read, and build long-term recall.",
+      tabs: [
+        ["vocabulary", "Vocabulary Network"],
+        ["dictionary", "Dictionary"],
+        ["library", `My Library (${favorites.length + personalWords.length})`],
+        ["image", "Image Lookup"],
+        ["flashcards", "Flashcards"],
+        ["reading", "Reading"],
+      ],
+    },
+    {
+      id: "sound",
+      icon: "声",
+      title: "Listen & speak",
+      copy: "Train real audio, tones, dictation, pronunciation, and conversation.",
+      tabs: [
+        ["listening", "Listening"],
+        ["dictation", "Dictation"],
+        ["speaking", "Speaking"],
+        ["pinyin", "Pinyin"],
+      ],
+    },
+    {
+      id: "use",
+      icon: "用",
+      title: "Use Chinese",
+      copy: "Practice grammar, writing, roleplay, and vocabulary for your future field.",
+      tabs: [
+        ["grammar", "Grammar"],
+        ["hanzi", "Hanzi"],
+        ["roleplay", "Roleplay"],
+        ["specialization", "My Path"],
+      ],
+    },
+  ];
+  const activeSection =
+    learnSections.find((section) => section.tabs.some(([id]) => id === tab)) ??
+    learnSections[0];
+  const grammarQuestions: DrillQuestion[] = [
+    {
+      prompt: "“The station is ahead.” · 车站 ___ 前面。",
+      choices: ["有", "在", "是"],
+      answer: "在",
+      explanation: "在 connects the subject to its location.",
+    },
+    {
+      prompt: "“I have a reservation.” · 我 ___ 预订。",
+      choices: ["在", "有", "去"],
+      answer: "有",
+      explanation: "有 means “to have.”",
+    },
+    {
+      prompt: "“Can I pay by card?” · ___ 刷卡吗？",
+      choices: ["可以", "哪里", "多少"],
+      answer: "可以",
+      explanation: "可以 asks whether something is possible or allowed.",
+    },
+    {
+      prompt: "Complete the sequence: 我 ___ 写作业，然后休息。",
+      choices: ["先", "已经", "虽然"],
+      answer: "先",
+      explanation:
+        "先 marks the first action before 然后 introduces the next one.",
+    },
+    {
+      prompt: "Choose the natural comparison.",
+      choices: ["今天比昨天冷。", "今天昨天比冷。", "比今天冷昨天。"],
+      answer: "今天比昨天冷。",
+      explanation: "A + 比 + B + adjective is the standard comparison pattern.",
+    },
+    {
+      prompt: "Complete: 因为下雨，___ 比赛取消了。",
+      choices: ["所以", "除了", "一边"],
+      answer: "所以",
+      explanation: "因为 introduces the reason and 所以 introduces the result.",
+    },
+    {
+      prompt: "Choose “He speaks Chinese fluently.”",
+      choices: ["他中文说得很流利。", "他得中文流利说。", "他中文很说得流利。"],
+      answer: "他中文说得很流利。",
+      explanation: "得 links the verb 说 to the degree complement 很流利.",
+    },
+    {
+      prompt: "Complete: ___ 努力，就会进步。",
+      choices: ["只要", "尽管", "与其"],
+      answer: "只要",
+      explanation: "只要…就… expresses a sufficient condition.",
+    },
+    {
+      prompt: "Choose the measured contrast.",
+      choices: [
+        "尽管成本较高，但是长期效果更好。",
+        "成本尽管但是长期。",
+        "但是尽管效果成本。",
+      ],
+      answer: "尽管成本较高，但是长期效果更好。",
+      explanation:
+        "尽管 acknowledges one fact before 但是 presents the contrasting point.",
+    },
+  ];
+  const roleQuestions: DrillQuestion[] = [
+    {
+      prompt: "店员问：“您好，请问几位？”",
+      choices: ["两位，谢谢。", "我要买一张票。", "我的护照在这里。"],
+      answer: "两位，谢谢。",
+      explanation: "两位 politely tells the host there are two people.",
+    },
+    {
+      prompt: "前台问：“请问您有预订吗？”",
+      choices: ["有，我姓李。", "两张票。", "不太贵。"],
+      answer: "有，我姓李。",
+      explanation: "Confirm the reservation and give the name it is under.",
+    },
+    {
+      prompt: "售票员问：“您要去哪儿？”",
+      choices: ["我要去大学。", "我有菜单。", "这个很贵。"],
+      answer: "我要去大学。",
+      explanation: "Answer with 要去 plus your destination.",
+    },
+  ];
+  const hskQuestions: DrillQuestion[] = hskStyleBanks[profile?.hsk ?? 3];
+  return (
+    <div className="page-wrap learn-page">
+      <div className="subpage-title">
+        <p className="eyebrow">STRUCTURED LEARNING</p>
+        <h1>
+          Learn Center <span>学习中心</span>
+        </h1>
+        <p>
+          Choose one learning route first, then pick the exact activity you
+          need.
+        </p>
+      </div>
+      <section className="learn-route-board" aria-label="Learning routes">
+        <header>
+          <div>
+            <small>RECOMMENDED START</small>
+            <strong>Continue HSK {profile?.hsk ?? 1}</strong>
+            <p>
+              Build your foundation in order, then mix in review and real-world
+              practice.
+            </p>
+          </div>
+          <button onClick={() => setTab("hsk")}>Open my HSK path →</button>
+        </header>
+        <div>
+          {learnSections.map((section) => (
+            <button
+              className={activeSection.id === section.id ? "active" : ""}
+              onClick={() => setTab(section.tabs[0][0])}
+              key={section.id}
+            >
+              <span>{section.icon}</span>
+              <p>
+                <strong>{section.title}</strong>
+                <small>{section.copy}</small>
+              </p>
+              <b>→</b>
+            </button>
+          ))}
+        </div>
+      </section>
+      <label className="learn-mobile-navigator">
+        <span>
+          <small>LEARN CENTER</small>
+          <strong>{activeSection.title}</strong>
+        </span>
+        <select
+          value={tab}
+          onChange={(event) => setTab(event.target.value as LearnTab)}
+          aria-label="Choose a Learn Center activity"
+        >
+          {learnSections.map((section) => (
+            <optgroup label={section.title} key={section.id}>
+              {section.tabs.map(([id, label]) => (
+                <option value={id} key={id}>{label}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+      <div className="learn-section-heading">
+        <span>{activeSection.icon}</span>
+        <p>
+          <small>CURRENT AREA</small>
+          <strong>{activeSection.title}</strong>
+        </p>
+      </div>
+      <div className="learn-tabs">
+        {activeSection.tabs.map(([id, label]) => (
+          <button
+            className={tab === id ? "active" : ""}
+            onClick={() => setTab(id)}
+            key={id}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === "vocabulary" && (
+        <VocabularyNetwork
+          currentChapterId={chapter.id}
+          speak={speak}
+          award={award}
+        />
+      )}
+      {tab === "dictionary" && (
+        <Dictionary
+          favorites={favorites}
+          personalWords={personalWords}
+          toggleFavorite={toggleFavorite}
+          addPersonalWord={addPersonalWord}
+          removePersonalWord={removePersonalWord}
+          speak={speak}
+          award={award}
+        />
+      )}
+      {tab === "library" && (
+        <LibraryBank
+          favorites={favorites}
+          personalWords={personalWords}
+          flashcardStats={flashcardStats}
+          toggleFavorite={toggleFavorite}
+          removePersonalWord={removePersonalWord}
+          speak={speak}
+          award={award}
+        />
+      )}
+      {tab === "image" && (
+        <ImageDictionary
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+          speak={speak}
+          openLibrary={() => setTab("library")}
+        />
+      )}
+      {tab === "flashcards" && (
+        <HskFlashcards
+          favorites={favorites}
+          personalWords={personalWords}
+          stats={flashcardStats}
+          toggleFavorite={toggleFavorite}
+          rate={rateFlashcard}
+          speak={speak}
+        />
+      )}
+      {tab === "grammar" && (
+        <section className="learning-panel">
+          <PanelTitle
+            eyebrow="GRAMMAR · HSK 1–6 PRACTICE"
+            title="Build useful sentence patterns"
+            copy="Study nine examples from core word order through comparison, complements, cause, condition, and concession."
+          />
+          <div className="grammar-example-grid">
+            {[
+              {
+                pattern: "Subject + 在 + Place",
+                example: "出口在前面。",
+                meaning: "The exit is ahead.",
+              },
+              {
+                pattern: "Subject + 有 + Object",
+                example: "我有预订。",
+                meaning: "I have a reservation.",
+              },
+              {
+                pattern: "先…，然后…",
+                example: "我先复习，然后休息。",
+                meaning: "I review first, then rest.",
+              },
+              {
+                pattern: "A + 比 + B + Adjective",
+                example: "今天比昨天冷。",
+                meaning: "Today is colder than yesterday.",
+              },
+              {
+                pattern: "Verb + 得 + Complement",
+                example: "她中文说得很流利。",
+                meaning: "She speaks Chinese fluently.",
+              },
+              {
+                pattern: "因为…，所以…",
+                example: "因为下雨，所以比赛取消了。",
+                meaning: "Because it rained, the match was canceled.",
+              },
+            ].map((item) => (
+              <article key={item.pattern}>
+                <strong>{item.pattern}</strong>
+                <button onClick={() => speak(item.example)}>
+                  ▶ {item.example}
+                </button>
+                <small>{item.meaning}</small>
+              </article>
+            ))}
+          </div>
+          <div className="grammar-practice-head">
+            <span>练</span>
+            <div>
+              <strong>Practice your grammar</strong>
+              <small>9 questions · explanations · next-question flow</small>
+            </div>
+          </div>
+          <ChoiceDrill
+            label="Grammar practice"
+            questions={grammarQuestions}
+            award={award}
+            skill="Grammar"
+            saveWord={addPersonalWord}
+          />
+        </section>
+      )}
+      {tab === "listening" && (
+        <ListeningPractice
+          chapter={chapter}
+          speak={speak}
+          award={award}
+          saveWord={addPersonalWord}
+        />
+      )}
+      {tab === "dictation" && (
+        <Dictation chapter={chapter} speak={speak} award={award} />
+      )}
+      {tab === "speaking" && (
+        <SpeakingCoach
+          targets={adventureChapters.map((item) => item.question.chinesePrompt)}
+          speak={speak}
+          onResult={(correct, index) =>
+            award(`Speaking practice ${index + 1}`, 15, "Speaking", correct)
+          }
+        />
+      )}
+      {tab === "hanzi" && (
+        <HanziCenter
+          speak={speak}
+          award={award}
+          addPersonalWord={addPersonalWord}
+        />
+      )}{" "}
+      {tab === "pinyin" && <PinyinCenter speak={speak} award={award} />}{" "}
+      {tab === "reading" && (
+        <ReadingCenter
+          award={award}
+          speak={speak}
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+        />
+      )}{" "}
+      {tab === "resources" && <WorkbookResources award={award} />}
+      {tab === "hsk" && (
+        <ComprehensiveHskCenter
+          key={profile?.hsk ?? 3}
+          level={profile?.hsk ?? 3}
+          diagnosticQuestions={hskQuestions}
+          speak={speak}
+          award={award}
+          openPlacement={() => setPlacementOpen(true)}
+        />
+      )}
+      {tab === "exam" && (
+        <HskMockExam
+          level={profile?.hsk ?? 3}
+          speak={speak}
+          onFinish={(score, total, weak) =>
+            award(
+              `HSK ${profile?.hsk ?? 3} mock · ${weak[0] ?? "mixed"}`,
+              Math.max(10, score * 8),
+              weak[0] === "Listening"
+                ? "Listening"
+                : weak[0] === "Writing"
+                  ? "Grammar"
+                  : "Reading",
+              score / total >= 0.6,
+              { score, total },
+            )
+          }
+        />
+      )}
+      {tab === "adaptive" && (
+        <AdaptiveStudyPlanner
+          hsk={profile?.hsk ?? 3}
+          onStart={(focus) =>
+            setTab(
+              focus === "Listening"
+                ? "listening"
+                : focus === "Grammar"
+                  ? "grammar"
+                  : focus === "Hanzi"
+                    ? "hanzi"
+                    : focus === "Speaking"
+                      ? "speaking"
+                      : focus === "Reading"
+                        ? "reading"
+                        : "flashcards",
+            )
+          }
+        />
+      )}
+      {tab === "offline" && <OfflineLibrary />}
+      {tab === "specialization" && (
+        <SpecializedPath
+          profile={profile}
+          specialization={specialization}
+          updateCareer={updateCareer}
+          speak={speak}
+          award={award}
+        />
+      )}
+      {tab === "roleplay" && (
+        <section className="learning-panel">
+          <PanelTitle
+            eyebrow="GUIDED ROLEPLAY · NON-AI FALLBACK"
+            title="Respond in context"
+            copy="Answer correctly, then continue into the next situation."
+          />
+          <ChoiceDrill
+            label="Guided roleplay"
+            questions={roleQuestions}
+            award={award}
+            skill="Speaking"
+            saveWord={addPersonalWord}
+          />
+        </section>
+      )}
+      {placementOpen && (
+        <PlacementTest
+          current={profile?.hsk ?? 3}
+          close={() => setPlacementOpen(false)}
+          apply={(level) => {
+            updateHsk(level);
+            setPlacementOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function SpecializedPath({
+  profile,
+  specialization,
+  updateCareer,
+  speak,
+  award,
+}: {
+  profile: Profile | null;
+  specialization: (typeof specializationContent)[keyof typeof specializationContent];
+  updateCareer: (career: string) => void;
+  speak: (value: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const initial = Math.max(
+    0,
+    specializedTracks.findIndex((track) => track.title === profile?.career),
+  );
+  const [selected, setSelected] = useState(initial);
+  const track = specializedTracks[selected];
+  return (
+    <section className="learning-panel specialized-path">
+      <PanelTitle
+        eyebrow="PERSONALIZED STUDY & CAREER CHINESE"
+        title="Chinese for your exact next chapter"
+        copy="Choose a focused situation: a CS master’s in China, AI research, software engineering, or data and cybersecurity."
+      />
+      <div className="specialized-track-picker">
+        {specializedTracks.map((item, index) => (
+          <button
+            className={selected === index ? "active" : ""}
+            onClick={() => {
+              setSelected(index);
+              updateCareer(item.title);
+            }}
+            key={item.id}
+          >
+            <span>
+              {index === 0
+                ? "硕"
+                : index === 1
+                  ? "智"
+                  : index === 2
+                    ? "软"
+                    : "安"}
+            </span>
+            <div>
+              <strong>{item.title}</strong>
+              <small>{item.chinese}</small>
+            </div>
+          </button>
+        ))}
+      </div>
+      <div className="specialized-track-hero">
+        <span>
+          {selected === 0
+            ? "硕"
+            : selected === 1
+              ? "智"
+              : selected === 2
+                ? "码"
+                : "盾"}
+        </span>
+        <div>
+          <small>SELECTED FOCUS · {specialization.chinese}</small>
+          <h3>
+            {track.chinese} · {track.title}
+          </h3>
+          <p>{track.goal}</p>
+        </div>
+      </div>
+      <div className="special-words expanded">
+        {track.words.map((word) => (
+          <article key={word.hanzi}>
+            <span>{word.hanzi}</span>
+            <div>
+              <strong>{word.english}</strong>
+              <small>{word.pinyin}</small>
+              <p>{word.example}</p>
+            </div>
+            <button onClick={() => speak(word.hanzi)}>◖))</button>
+          </article>
+        ))}
+      </div>
+      <div className="specialized-practice">
+        <div>
+          <p className="eyebrow">SITUATION PRACTICE</p>
+          <h3>Use this vocabulary in real decisions</h3>
+          <p>
+            Questions cover campus, labs, research, and technical teamwork—not
+            just isolated translation.
+          </p>
+        </div>
+        <ChoiceDrill
+          key={track.id}
+          label={`${track.title} practice`}
+          questions={track.questions}
+          award={award}
+          skill="Vocabulary"
+        />
+      </div>
+      <footer className="specialized-general-note">
+        <b>General Chinese remains active.</b> This focus adds terminology and
+        situations; it does not replace HSK grammar, listening, speaking, or
+        daily conversation.
+      </footer>
+    </section>
+  );
+}
+
+function ComprehensiveHskCenter({
+  level,
+  diagnosticQuestions,
+  speak,
+  award,
+  openPlacement,
+}: {
+  level: number;
+  diagnosticQuestions: DrillQuestion[];
+  speak: (value: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+    gameResult?: { score: number; total: number; mistakes?: GameMistake[] },
+  ) => void;
+  openPlacement: () => void;
+}) {
+  return (
+    <>
+      <HskCourseCenter
+        level={level}
+        diagnosticQuestions={diagnosticQuestions}
+        speak={speak}
+        award={award}
+        openPlacement={openPlacement}
+      />
+      <CourseWorkbookPractice
+        initialLevel={level}
+        speak={speak}
+        award={award}
+      />
+    </>
+  );
+}
+
+function CourseWorkbookPractice({
+  initialLevel,
+  speak,
+  award,
+}: {
+  initialLevel: number;
+  speak: (value: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+    gameResult?: { score: number; total: number; mistakes?: GameMistake[] },
+  ) => void;
+}) {
+  const kinds: ("All" | CourseExerciseKind)[] = [
+    "All",
+    "Vocabulary",
+    "Listening",
+    "Grammar",
+    "Sentence order",
+    "Reading",
+    "Context",
+  ];
+  const coverage = courseExerciseCoverage();
+  const [level, setLevel] = useState(Math.max(1, Math.min(6, initialLevel)));
+  const [volume, setVolume] = useState<"all" | "上" | "下">("all");
+  const [lessonIndex, setLessonIndex] = useState(0);
+  const [kind, setKind] = useState<"All" | CourseExerciseKind>("All");
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [graded, setGraded] = useState(false);
+  const [answers, setAnswers] = useState<
+    {
+      prompt: string;
+      selected: string;
+      answer: string;
+      explanation: string;
+      correct: boolean;
+      skill: LearningEvent["skill"];
+    }[]
+  >([]);
+  const [complete, setComplete] = useState(false);
+  const levelLessons = courseExerciseLessons.filter(
+    (item) =>
+      item.level === level && (volume === "all" || item.volume === volume),
+  );
+  const lesson =
+    levelLessons[Math.min(lessonIndex, Math.max(0, levelLessons.length - 1))] ??
+    courseExerciseLessons[0];
+  const questions = lesson.questions.filter(
+    (question) => kind === "All" || question.kind === kind,
+  );
+  const question =
+    questions[Math.min(questionIndex, Math.max(0, questions.length - 1))] ??
+    lesson.questions[0];
+  const correct = selected === question.answer;
+  const score = answers.filter((answer) => answer.correct).length;
+
+  function resetSession() {
+    setQuestionIndex(0);
+    setSelected("");
+    setGraded(false);
+    setAnswers([]);
+    setComplete(false);
+  }
+  function chooseLevel(next: number) {
+    setLevel(next);
+    setVolume("all");
+    setLessonIndex(0);
+    resetSession();
+  }
+  function chooseVolume(next: "all" | "上" | "下") {
+    setVolume(next);
+    setLessonIndex(0);
+    resetSession();
+  }
+  function chooseLesson(index: number) {
+    setLessonIndex(index);
+    resetSession();
+  }
+  function chooseKind(next: "All" | CourseExerciseKind) {
+    setKind(next);
+    resetSession();
+  }
+  function check() {
+    if (!selected) return;
+    setGraded(true);
+  }
+  function moveQuestion(direction: number) {
+    const next = Math.max(
+      0,
+      Math.min(questions.length - 1, questionIndex + direction),
+    );
+    setQuestionIndex(next);
+    setSelected(answers[next]?.selected ?? "");
+    setGraded(Boolean(answers[next]));
+  }
+  function continueQuestion() {
+    const result = {
+      prompt: question.prompt,
+      selected,
+      answer: question.answer,
+      explanation: question.explanation,
+      correct,
+      skill: question.skill as LearningEvent["skill"],
+    };
+    const nextAnswers = [
+      ...answers.filter((_, index) => index !== questionIndex),
+    ];
+    nextAnswers.splice(questionIndex, 0, result);
+    setAnswers(nextAnswers);
+    if (questionIndex === questions.length - 1) {
+      const finalScore = nextAnswers.filter((answer) => answer.correct).length;
+      const mistakes = nextAnswers
+        .filter((answer) => !answer.correct)
+        .map((answer) => ({
+          prompt: answer.prompt,
+          answer: answer.selected,
+          correction: answer.answer,
+          explanation: answer.explanation,
+        }));
+      award(
+        `HSK ${level} ${lesson.volume} lesson ${lesson.lesson} workbook`,
+        30,
+        question.skill,
+        finalScore === questions.length,
+        { score: finalScore, total: questions.length, mistakes },
+      );
+      setComplete(true);
+      return;
+    }
+    setQuestionIndex(questionIndex + 1);
+    setSelected("");
+    setGraded(false);
+  }
+  function nextLesson() {
+    const next = (lessonIndex + 1) % levelLessons.length;
+    chooseLesson(next);
+  }
+
+  return (
+    <section className="learning-panel course-workbook-center">
+      <PanelTitle
+        eyebrow="SUPPLIED TEXTBOOK + WORKBOOK PRACTICE"
+        title="Practice every HSK course lesson"
+        copy="Original interactive exercises mapped to all 146 supplied course topics, including HSK 4–6 上 and 下. Wrong answers are sent to Review & mistakes."
+      />
+      <div className="course-bank-total">
+        <span>题</span>
+        <div>
+          <small>COMPLETE INTERACTIVE BANK</small>
+          <strong>{completeCourseExerciseBank.length} questions</strong>
+          <p>
+            Vocabulary · listening · grammar · sentence order · reading ·
+            context
+          </p>
+        </div>
+        <b>
+          {courseExerciseLessons.length}
+          <small>LESSONS COVERED</small>
+        </b>
+      </div>
+      <div className="course-coverage-grid">
+        {coverage.map((item) => (
+          <button
+            className={item.level === level ? "active" : ""}
+            onClick={() => chooseLevel(item.level)}
+            key={item.level}
+          >
+            <span>HSK {item.level}</span>
+            <strong>{item.lessons} lessons</strong>
+            <small>{item.questions} questions</small>
+          </button>
+        ))}
+      </div>
+      {level >= 4 && (
+        <div className="course-volume-switch">
+          <button
+            className={volume === "all" ? "active" : ""}
+            onClick={() => chooseVolume("all")}
+          >
+            All lessons{" "}
+            <small>
+              {
+                courseExerciseLessons.filter((item) => item.level === level)
+                  .length
+              }
+            </small>
+          </button>
+          <button
+            className={volume === "上" ? "active" : ""}
+            onClick={() => chooseVolume("上")}
+          >
+            HSK {level} 上{" "}
+            <small>
+              {
+                courseExerciseLessons.filter(
+                  (item) => item.level === level && item.volume === "上",
+                ).length
+              }
+            </small>
+          </button>
+          <button
+            className={volume === "下" ? "active" : ""}
+            onClick={() => chooseVolume("下")}
+          >
+            HSK {level} 下{" "}
+            <small>
+              {
+                courseExerciseLessons.filter(
+                  (item) => item.level === level && item.volume === "下",
+                ).length
+              }
+            </small>
+          </button>
+        </div>
+      )}
+      <div className="course-workbook-layout">
+        <aside className="course-lesson-list">
+          <header>
+            <small>CHOOSE A LESSON</small>
+            <strong>
+              HSK {level}
+              {volume === "all" ? "" : ` ${volume}`}
+            </strong>
+          </header>
+          <div>
+            {levelLessons.map((item, index) => (
+              <button
+                className={index === lessonIndex ? "active" : ""}
+                onClick={() => chooseLesson(index)}
+                key={item.id}
+              >
+                <span>{item.lesson}</span>
+                <p>
+                  <strong>{item.chinese}</strong>
+                  <small>{item.english}</small>
+                </p>
+                <b>{item.questions.length}题</b>
+              </button>
+            ))}
+          </div>
+        </aside>
+        <div className="course-practice-stage">
+          <header className="course-practice-title">
+            <div>
+              <p className="eyebrow">
+                HSK {level}
+                {lesson.volume === "全" ? "" : ` ${lesson.volume}`} · LESSON{" "}
+                {lesson.lesson}
+              </p>
+              <h3>{lesson.chinese}</h3>
+              <span>{lesson.english}</span>
+            </div>
+            <b>{lesson.questions.length} exercises</b>
+          </header>
+          <div className="course-kind-filter">
+            {kinds.map((item) => (
+              <button
+                className={kind === item ? "active" : ""}
+                onClick={() => chooseKind(item)}
+                key={item}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          {!complete ? (
+            <article className="course-question-card">
+              <div className="course-question-meta">
+                <span>{question.kind}</span>
+                <small>
+                  QUESTION {questionIndex + 1} OF {questions.length}
+                </small>
+              </div>
+              <div className="course-question-progress">
+                <i
+                  style={{
+                    width: `${((questionIndex + (graded ? 1 : 0)) / questions.length) * 100}%`,
+                  }}
+                />
+              </div>
+              {question.audio && (
+                <button
+                  className="course-audio-button"
+                  onClick={() => speak(question.audio!)}
+                >
+                  ◖)) Play workbook audio
+                </button>
+              )}
+              <h3>{question.prompt}</h3>
+              <div className="course-answer-list">
+                {question.choices.map((choice) => (
+                  <button
+                    disabled={graded}
+                    className={`${selected === choice ? "selected " : ""}${graded && choice === question.answer ? "correct " : ""}${graded && selected === choice && !correct ? "wrong" : ""}`}
+                    onClick={() => setSelected(choice)}
+                    key={choice}
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
+              {graded && (
+                <div
+                  className={`course-answer-feedback ${correct ? "good" : "try"}`}
+                >
+                  <strong>
+                    {correct
+                      ? "✓ Correct"
+                      : `Correct answer: ${question.answer}`}
+                  </strong>
+                  <p>{question.explanation}</p>
+                </div>
+              )}
+              <footer>
+                <button
+                  disabled={questionIndex === 0}
+                  onClick={() => moveQuestion(-1)}
+                >
+                  ← Previous question
+                </button>
+                {!graded ? (
+                  <button
+                    className="primary"
+                    disabled={!selected}
+                    onClick={check}
+                  >
+                    Check answer
+                  </button>
+                ) : (
+                  <button className="primary" onClick={continueQuestion}>
+                    {questionIndex === questions.length - 1
+                      ? "Finish lesson"
+                      : "Next question →"}
+                  </button>
+                )}
+              </footer>
+            </article>
+          ) : (
+            <article className="course-session-result">
+              <span>{score === questions.length ? "冠" : "进"}</span>
+              <p className="eyebrow">LESSON PRACTICE COMPLETE</p>
+              <h3>
+                {score}/{questions.length} correct
+              </h3>
+              <p>
+                {score === questions.length
+                  ? "Excellent. You connected this course topic with sound, grammar, word order, and meaning."
+                  : "Your incorrect answers are now available in Review & mistakes for repeated practice."}
+              </p>
+              <div>
+                <button onClick={resetSession}>Practice again</button>
+                <button className="primary" onClick={nextLesson}>
+                  Next lesson →
+                </button>
+              </div>
+            </article>
+          )}
+        </div>
+      </div>
+      <footer className="course-source-note">
+        <b>How this material was made</b>
+        <p>
+          Lesson order and learning targets follow the supplied HSK Standard
+          Course textbooks and workbooks. Questions and answer wording are
+          original web adaptations, not copied official exam items.
+        </p>
+      </footer>
+    </section>
+  );
+}
+
+function PanelTitle({
+  eyebrow,
+  title,
+  copy,
+}: {
+  eyebrow: string;
+  title: string;
+  copy: string;
+}) {
+  return (
+    <div className="panel-title">
+      <p className="eyebrow">{eyebrow}</p>
+      <h2>{title}</h2>
+      <p>{copy}</p>
+    </div>
+  );
+}
+
+function HskCourseCenter({
+  level,
+  diagnosticQuestions,
+  speak,
+  award,
+  openPlacement,
+}: {
+  level: number;
+  diagnosticQuestions: DrillQuestion[];
+  speak: (value: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+  openPlacement: () => void;
+}) {
+  const units = hskCourseUnits[level] ?? hskCourseUnits[1];
+  const [unitIndex, setUnitIndex] = useState(0);
+  const [mode, setMode] = useState<"lesson" | "practice" | "diagnostic">(
+    "lesson",
+  );
+  const unit = units[unitIndex % units.length];
+  const words = units.flatMap((item) => item.vocabulary);
+  const questionCount =
+    diagnosticQuestions.length +
+    units.reduce((sum, item) => sum + item.questions.length, 0);
+  function move(direction: number) {
+    setUnitIndex((unitIndex + direction + units.length) % units.length);
+    setMode("lesson");
+  }
+  return (
+    <section className="learning-panel hsk-course-panel">
+      <PanelTitle
+        eyebrow={`HSK ${level} · GRADED COURSE`}
+        title="A complete track, not a single quiz"
+        copy="Move through themed units with vocabulary, grammar, a graded story, and active-recall questions."
+      />
+      <div className="hsk-course-stats">
+        <article>
+          <span>课</span>
+          <p>
+            <small>COURSE UNITS</small>
+            <strong>{units.length}</strong>
+            <b>at HSK {level}</b>
+          </p>
+        </article>
+        <article>
+          <span>词</span>
+          <p>
+            <small>FOCUS WORDS</small>
+            <strong>{words.length}</strong>
+            <b>in contextual lessons</b>
+          </p>
+        </article>
+        <article>
+          <span>问</span>
+          <p>
+            <small>ACTIVE QUESTIONS</small>
+            <strong>{questionCount}</strong>
+            <b>course + track bank</b>
+          </p>
+        </article>
+        <article>
+          <span>文</span>
+          <p>
+            <small>GRADED STORIES</small>
+            <strong>{units.length}</strong>
+            <b>for this level</b>
+          </p>
+        </article>
+      </div>
+      <div className="hsk-unit-picker">
+        {units.map((item, index) => (
+          <button
+            className={index === unitIndex ? "active" : ""}
+            onClick={() => {
+              setUnitIndex(index);
+              setMode("lesson");
+            }}
+            key={item.id}
+          >
+            <span>{index + 1}</span>
+            <p>
+              <small>UNIT {index + 1}</small>
+              <strong>{item.title}</strong>
+              <b>{item.chinese}</b>
+            </p>
+          </button>
+        ))}
+      </div>
+      <div className="hsk-course-tabs">
+        <button
+          className={mode === "lesson" ? "active" : ""}
+          onClick={() => setMode("lesson")}
+        >
+          Lesson & story
+        </button>
+        <button
+          className={mode === "practice" ? "active" : ""}
+          onClick={() => setMode("practice")}
+        >
+          Unit questions ({unit.questions.length})
+        </button>
+        <button
+          className={mode === "diagnostic" ? "active" : ""}
+          onClick={() => setMode("diagnostic")}
+        >
+          HSK track bank ({diagnosticQuestions.length})
+        </button>
+      </div>
+      {mode === "lesson" && (
+        <div className="hsk-unit-content">
+          <header>
+            <div>
+              <p className="eyebrow">
+                UNIT {unitIndex + 1} · {unit.theme.toUpperCase()}
+              </p>
+              <h3>
+                {unit.title} <span>{unit.chinese}</span>
+              </h3>
+            </div>
+            <b>HSK {level}</b>
+          </header>
+          <div className="hsk-course-words">
+            {unit.vocabulary.map((word) => (
+              <article key={word.hanzi}>
+                <button
+                  onClick={() => speak(word.hanzi)}
+                  aria-label={`Play ${word.hanzi}`}
+                >
+                  ▶
+                </button>
+                <strong>{word.hanzi}</strong>
+                <span>{word.pinyin}</span>
+                <p>{word.english}</p>
+              </article>
+            ))}
+          </div>
+          <div className="hsk-grammar-story">
+            <article className="hsk-course-grammar">
+              <small>GRAMMAR PATTERN</small>
+              <h4>{unit.grammar.pattern}</h4>
+              <p>{unit.grammar.explanation}</p>
+              <button onClick={() => speak(unit.grammar.example)}>
+                ▶ <strong>{unit.grammar.example}</strong>
+                <span>
+                  {unit.grammar.pinyin}
+                  <br />
+                  {unit.grammar.translation}
+                </span>
+              </button>
+            </article>
+            <article className="hsk-course-story">
+              <small>GRADED READER · {unit.story.title.toUpperCase()}</small>
+              <h4>{unit.story.chinese}</h4>
+              <p>{unit.story.summary}</p>
+              {unit.story.scenes.map((scene, index) => (
+                <div key={scene.zh}>
+                  <span>0{index + 1}</span>
+                  <p>
+                    <strong>{scene.zh}</strong>
+                    <small>
+                      {scene.py}
+                      <br />
+                      {scene.en}
+                    </small>
+                  </p>
+                  <button onClick={() => speak(scene.zh)}>▶</button>
+                </div>
+              ))}
+            </article>
+          </div>
+          <div className="hsk-unit-footer">
+            <button onClick={() => move(-1)}>← Previous unit</button>
+            <button className="primary" onClick={() => setMode("practice")}>
+              Practice this unit →
+            </button>
+            <button onClick={() => move(1)}>Next unit →</button>
+          </div>
+        </div>
+      )}
+      {mode === "practice" && (
+        <div className="hsk-course-practice">
+          <div>
+            <p className="eyebrow">UNIT {unitIndex + 1} ACTIVE RECALL</p>
+            <h3>{unit.title}</h3>
+            <p>
+              Each correct answer moves forward. Incorrect answers keep the
+              explanation visible before you retry.
+            </p>
+          </div>
+          <ChoiceDrill
+            key={unit.id}
+            label={`HSK ${level} ${unit.title}`}
+            questions={unit.questions}
+            award={award}
+            skill="Reading"
+            onNext={() => undefined}
+          />
+        </div>
+      )}
+      {mode === "diagnostic" && (
+        <div className="hsk-course-practice">
+          <div>
+            <p className="eyebrow">EXPANDED HSK {level} QUESTION BANK</p>
+            <h3>{diagnosticQuestions.length} rotating questions</h3>
+            <p>
+              Vocabulary, grammar, meaning, and sentence-pattern decisions
+              across the full track.
+            </p>
+          </div>
+          <ChoiceDrill
+            key={`diagnostic-${level}`}
+            label={`HSK ${level} track`}
+            questions={diagnosticQuestions}
+            award={award}
+            skill="Reading"
+          />
+          <button className="placement-button" onClick={openPlacement}>
+            Not sure about your track? Take the placement test →
+          </button>
+          <div className="disclaimer">
+            HSK-style learning material and diagnostic guidance—not an official
+            exam result.
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function VocabularyNetwork({
+  currentChapterId,
+  speak,
+  award,
+}: {
+  currentChapterId: string;
+  speak: (text: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const [topic, setTopic] = useState(currentChapterId);
+  const [page, setPage] = useState(0);
+  const [group, setGroup] = useState("all");
+  const [search, setSearch] = useState("");
+  const [wordSearch, setWordSearch] = useState("");
+  const pageSize = 6;
+  const groupOf = (id: string) =>
+    [
+      "arrival",
+      "hotel",
+      "restaurant",
+      "transport",
+      "shopping",
+      "health",
+      "coffee",
+    ].includes(id)
+      ? "essentials"
+      : [
+            "campus",
+            "social",
+            "sightseeing",
+            "payments",
+            "apartment",
+            "delivery",
+            "rail",
+            "emergency",
+            "public-services",
+            "festivals",
+          ].includes(id)
+        ? "city"
+        : ["workplace", "technology"].includes(id)
+          ? "work"
+          : "sports";
+  const groupLabels = [
+    ["all", "All worlds"],
+    ["essentials", "Daily essentials"],
+    ["city", "City & social"],
+    ["work", "Work & technology"],
+    ["sports", "Fitness & sport"],
+  ];
+  const visibleCategories = vocabularyNetworkCategories
+    .filter(
+      (category) =>
+        (group === "all" || groupOf(category.id) === group) &&
+        `${category.title} ${category.chinese}`
+          .toLowerCase()
+          .includes(search.toLowerCase()),
+    )
+    .sort((a, b) => a.title.localeCompare(b.title));
+  const selected =
+    topic === "all"
+      ? {
+          id: "all",
+          icon: "全",
+          title: "All Adventure Topics",
+          chinese: "全部主题",
+          words: allNetworkVocabulary,
+        }
+      : (vocabularyNetworkCategories.find(
+          (category) => category.id === topic,
+        ) ?? vocabularyNetworkCategories[0]);
+  const filteredWords = selected.words.filter((word) =>
+    `${word.hanzi} ${word.pinyin} ${word.english}`
+      .toLowerCase()
+      .includes(wordSearch.toLowerCase()),
+  );
+  const pages = Math.max(1, Math.ceil(filteredWords.length / pageSize));
+  const safePage = Math.min(page, pages - 1);
+  const pageWords = filteredWords.slice(
+    safePage * pageSize,
+    (safePage + 1) * pageSize,
+  );
+  const questions: DrillQuestion[] = selected.words.map((word, index) => {
+    const candidates = [
+      word,
+      ...[1, 3, 5].map(
+        (offset) => selected.words[(index + offset) % selected.words.length],
+      ),
+    ];
+    const choices = candidates
+      .filter(
+        (item, itemIndex, items) =>
+          items.findIndex((candidate) => candidate.id === item.id) ===
+          itemIndex,
+      )
+      .slice(0, 4)
+      .map((item) => item.hanzi);
+    return {
+      prompt: `Which word means “${word.english}”?`,
+      choices,
+      answer: word.hanzi,
+      explanation: `${word.hanzi} · ${word.pinyin} means “${word.english}.”`,
+    };
+  });
+  function chooseTopic(id: string) {
+    setTopic(id);
+    setPage(0);
+    setWordSearch("");
+  }
+  function surprise() {
+    const choices = visibleCategories.length
+      ? visibleCategories
+      : vocabularyNetworkCategories;
+    const target = choices[Math.floor(Math.random() * choices.length)];
+    chooseTopic(target.id);
+  }
+  return (
+    <section className="learning-panel vocabulary-network-panel">
+      <PanelTitle
+        eyebrow={`${selected.chinese} · ${selected.title}`}
+        title="Vocabulary network"
+        copy="Move from a learning world to its words, examples, sound, and an active-recall loop."
+      />
+      <div className="network-control-deck">
+        <div className="network-group-tabs">
+          {groupLabels.map(([id, label]) => (
+            <button
+              className={group === id ? "active" : ""}
+              onClick={() => {
+                setGroup(id);
+                setSearch("");
+              }}
+              key={id}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <label>
+          <span>⌕</span>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Find a topic…"
+          />
+        </label>
+        <button onClick={surprise}>✦ Surprise topic</button>
+      </div>
+      <div className="network-summary">
+        <span>{selected.icon}</span>
+        <div>
+          <small>CURRENT COLLECTION</small>
+          <strong>{selected.words.length} useful words</strong>
+          <p>
+            {filteredWords.length
+              ? `Showing ${safePage * pageSize + 1}–${Math.min((safePage + 1) * pageSize, filteredWords.length)} of ${filteredWords.length}`
+              : "No matching words yet"}
+          </p>
+        </div>
+        <b>
+          {allNetworkVocabulary.length}
+          <small>WORDS ACROSS ALL TOPICS</small>
+        </b>
+      </div>
+      <div
+        className="network-topic-picker organized"
+        aria-label="Vocabulary topic"
+      >
+        <button
+          className={topic === "all" ? "active" : ""}
+          onClick={() => chooseTopic("all")}
+        >
+          <span>全</span>
+          <strong>All topics</strong>
+          <small>{allNetworkVocabulary.length} words</small>
+        </button>
+        {visibleCategories.map((category) => (
+          <button
+            className={topic === category.id ? "active" : ""}
+            onClick={() => chooseTopic(category.id)}
+            key={category.id}
+          >
+            <span>{category.icon}</span>
+            <strong>{category.title}</strong>
+            <small>
+              {category.words.length} words · {category.chinese}
+            </small>
+            <i>Explore →</i>
+          </button>
+        ))}
+      </div>
+      <div className="network-word-toolbar">
+        <div>
+          <small>EXPLORE THIS COLLECTION</small>
+          <strong>See, hear, then recall</strong>
+        </div>
+        <label>
+          <span>⌕</span>
+          <input
+            value={wordSearch}
+            onChange={(event) => {
+              setWordSearch(event.target.value);
+              setPage(0);
+            }}
+            placeholder="Search Hanzi, pinyin, or meaning…"
+          />
+        </label>
+      </div>
+      <div className="vocab-cards expanded-network">
+        {pageWords.map((word, index) => (
+          <article
+            style={{ "--word-order": index } as React.CSSProperties}
+            key={word.id}
+          >
+            <button
+              onClick={() => speak(word.hanzi)}
+              aria-label={`Play ${word.hanzi}`}
+            >
+              ◖))
+            </button>
+            <strong>{word.hanzi}</strong>
+            <span>{word.pinyin}</span>
+            <b>{word.english}</b>
+            <p>
+              {word.example.hanzi}
+              <small>{word.example.pinyin}</small>
+            </p>
+            <em>Tap sound · remember the context</em>
+          </article>
+        ))}
+      </div>
+      {!pageWords.length && (
+        <div className="network-empty">
+          <span>寻</span>
+          <strong>No word matched that search</strong>
+          <button onClick={() => setWordSearch("")}>Clear search</button>
+        </div>
+      )}
+      {pages > 1 && (
+        <div className="network-pagination">
+          <button
+            disabled={safePage === 0}
+            onClick={() => setPage(safePage - 1)}
+          >
+            ← Previous words
+          </button>
+          <div>
+            {Array.from({ length: pages }, (_, index) => (
+              <button
+                aria-label={`Page ${index + 1}`}
+                className={safePage === index ? "active" : ""}
+                onClick={() => setPage(index)}
+                key={index}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+          <button
+            disabled={safePage === pages - 1}
+            onClick={() => setPage(safePage + 1)}
+          >
+            Next words →
+          </button>
+        </div>
+      )}
+      <div className="network-practice-head">
+        <div>
+          <p className="eyebrow">
+            ACTIVE RECALL · {selected.words.length} QUESTIONS
+          </p>
+          <h3>Practice this collection</h3>
+        </div>
+        <span>
+          Correct-answer positions rotate so memory—not button position—wins.
+        </span>
+      </div>
+      <ChoiceDrill
+        key={selected.id}
+        label={`Vocabulary network ${selected.id}`}
+        questions={questions}
+        award={award}
+        skill="Vocabulary"
+      />
+    </section>
+  );
+}
+
+type DrillQuestion = {
+  prompt: string;
+  choices: string[];
+  answer: string;
+  explanation: string;
+};
+type PracticeGuideWord = {
+  id: string;
+  hanzi: string;
+  pinyin: string;
+  english: string;
+};
+function PracticeAnswerGuide({
+  answer,
+  explanation,
+  saveWord,
+}: {
+  answer: string;
+  explanation: string;
+  saveWord?: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  const [words, setWords] = useState<PracticeGuideWord[]>([]);
+  const [saved, setSaved] = useState<string[]>([]);
+  useEffect(() => {
+    let active = true;
+    import("./hsk-vocabulary.json")
+      .then((module) => {
+        if (!active) return;
+        const data = module.default as HskDictionaryData;
+        const matches = imageDictionaryMatches(
+          answer,
+          data.levels.flatMap((group) => group.words),
+          8,
+        );
+        setWords(
+          matches.map((word) => ({
+            id: word.id,
+            hanzi: word.h,
+            pinyin: word.py,
+            english: word.m,
+          })),
+        );
+      })
+      .catch(() => setWords([]));
+    return () => {
+      active = false;
+    };
+  }, [answer]);
+  return (
+    <aside className="practice-answer-guide">
+      <header>
+        <span>解</span>
+        <div>
+          <small>ANSWER BREAKDOWN</small>
+          <strong>Why this answer works</strong>
+        </div>
+      </header>
+      <p>{explanation}</p>
+      {words.length > 0 ? (
+        <div className="practice-answer-words">
+          {words.map((word) => (
+            <article key={word.id}>
+              <div>
+                <strong>{word.hanzi}</strong>
+                <span>{word.pinyin}</span>
+                <small>{word.english}</small>
+              </div>
+              {saveWord && (
+                <button
+                  className={saved.includes(word.id) ? "saved" : ""}
+                  disabled={saved.includes(word.id)}
+                  onClick={() => {
+                    saveWord({
+                      hanzi: word.hanzi,
+                      pinyin: word.pinyin,
+                      english: word.english,
+                    });
+                    setSaved([...saved, word.id]);
+                  }}
+                >
+                  {saved.includes(word.id) ? "★ Saved" : "☆ Library"}
+                </button>
+              )}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <small className="practice-guide-loading">
+          Pinyin and word meanings appear when this answer matches the HSK
+          library.
+        </small>
+      )}
+    </aside>
+  );
+}
+function ChoiceDrill({
+  questions,
+  label,
+  award,
+  skill,
+  onNext,
+  saveWord,
+}: {
+  questions: DrillQuestion[];
+  label: string;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+  skill: LearningEvent["skill"];
+  onNext?: () => void;
+  saveWord?: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [graded, setGraded] = useState(false);
+  const question = questions[index % questions.length];
+  const correct = selected === question.answer;
+  const choices = balancedShuffle(
+    question.choices,
+    question.answer,
+    `${localDateKey()}-${label}-${question.prompt}-${index}`,
+    index,
+  );
+  function check() {
+    if (!selected) return;
+    setGraded(true);
+    award(`${label} ${index + 1}`, 10, skill, correct);
+  }
+  function next() {
+    setIndex((index + 1) % questions.length);
+    setSelected("");
+    setGraded(false);
+    onNext?.();
+  }
+  return (
+    <div className="mini-exercise question-flow">
+      <small>
+        QUESTION {index + 1} OF {questions.length}
+      </small>
+      <h3>{question.prompt}</h3>
+      <div>
+        {choices.map((choice) => (
+          <button
+            disabled={graded}
+            className={selected === choice ? "selected" : ""}
+            onClick={() => setSelected(choice)}
+            key={choice}
+          >
+            {choice}
+          </button>
+        ))}
+      </div>
+      {!graded ? (
+        <button className="check" disabled={!selected} onClick={check}>
+          Check answer
+        </button>
+      ) : (
+        <>
+          <div className={correct ? "flow-feedback good" : "flow-feedback try"}>
+            <p>
+              <strong>
+                {correct ? "✓ Correct" : `Not yet · ${question.answer}`}
+              </strong>
+              <span>{question.explanation}</span>
+            </p>
+            <button
+              onClick={
+                correct
+                  ? next
+                  : () => {
+                      setSelected("");
+                      setGraded(false);
+                    }
+              }
+            >
+              {correct ? "Next question →" : "Try again"}
+            </button>
+          </div>
+          <PracticeAnswerGuide
+            answer={question.answer}
+            explanation={question.explanation}
+            saveWord={saveWord}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+function ListeningPractice({
+  chapter,
+  speak,
+  award,
+  saveWord,
+}: {
+  chapter: Chapter;
+  speak: (text: string, speed?: number) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+  saveWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  const [topic, setTopic] = useState("auto");
+  const ordered =
+    topic === "auto"
+      ? [chapter, ...adventureChapters.filter((item) => item.id !== chapter.id)]
+      : adventureChapters.filter((item) => item.id === topic);
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [graded, setGraded] = useState(false);
+  const [transcript, setTranscript] = useState(false);
+  const [speed, setSpeed] = useState(0.75);
+  const item = ordered[index % ordered.length] ?? chapter;
+  const answerChoice = item.question.choices.find(
+    (choice) => choice.id === item.question.answer,
+  );
+  const answer = answerChoice?.text ?? "";
+  const correct = selected === answer;
+  const choices = answerChoice
+    ? balancedShuffle(
+        item.question.choices,
+        answerChoice,
+        `${localDateKey()}-listening-${item.id}-${index}`,
+        index,
+      )
+    : seededShuffle(
+        item.question.choices,
+        `${localDateKey()}-listening-${item.id}-${index}`,
+      );
+  function play() {
+    speak(item.question.chinesePrompt, speed);
+  }
+  function check() {
+    setGraded(true);
+    award(`Listening question ${item.id}`, 12, "Listening", correct);
+  }
+  function next() {
+    setIndex((index + 1) % ordered.length);
+    setSelected("");
+    setGraded(false);
+    setTranscript(false);
+  }
+  function changeTopic(value: string) {
+    setTopic(value);
+    setIndex(0);
+    setSelected("");
+    setGraded(false);
+    setTranscript(false);
+  }
+  return (
+    <section className="learning-panel listening-panel">
+      <PanelTitle
+        eyebrow="LISTENING · QUESTION FLOW"
+        title={`Hear Chinese in ${item.title}`}
+        copy="Choose one situation or let Auto Mix rotate across every Adventure topic."
+      />
+      <div className="listening-topic-picker">
+        <label htmlFor="listening-topic">Listening topic</label>
+        <select
+          id="listening-topic"
+          value={topic}
+          onChange={(event) => changeTopic(event.target.value)}
+        >
+          <option value="auto">Auto Mix · all Adventure topics</option>
+          {adventureChapters.map((option) => (
+            <option value={option.id} key={option.id}>
+              {option.title} · {option.chinese}
+            </option>
+          ))}
+        </select>
+        <small>
+          Answer positions are reshuffled for every question and study day.
+        </small>
+      </div>
+      <div className="listening-player">
+        <button className="big-audio" onClick={play}>
+          <span>▶</span>
+          <div>
+            <b>Play conversation clip</b>
+            <small>
+              {speed}× Mandarin · Question {index + 1} of {ordered.length}
+            </small>
+          </div>
+        </button>
+        <div className="listening-speeds" aria-label="Listening playback speed">
+          {[0.5, 0.75, 1].map((value) => (
+            <button
+              className={speed === value ? "active" : ""}
+              onClick={() => setSpeed(value)}
+              key={value}
+            >
+              {value}×
+            </button>
+          ))}
+        </div>
+      </div>
+      <h3 className="listening-question">{item.question.prompt}</h3>
+      <div className="listening-choices">
+        {choices.map((choice) => (
+          <button
+            disabled={graded}
+            className={selected === choice.text ? "selected" : ""}
+            onClick={() => setSelected(choice.text)}
+            key={choice.id}
+          >
+            {choice.text}
+          </button>
+        ))}
+      </div>
+      {!graded ? (
+        <button
+          className="primary listening-check"
+          disabled={!selected}
+          onClick={check}
+        >
+          Check answer
+        </button>
+      ) : (
+        <>
+          <div className={correct ? "flow-feedback good" : "flow-feedback try"}>
+            <p>
+              <strong>{correct ? "✓ Correct" : "Listen once more"}</strong>
+              <span>{item.question.explanation}</span>
+            </p>
+            <button
+              onClick={
+                correct
+                  ? next
+                  : () => {
+                      setSelected("");
+                      setGraded(false);
+                      play();
+                    }
+              }
+            >
+              {correct ? "Next question →" : "Try again"}
+            </button>
+          </div>
+          <PracticeAnswerGuide
+            answer={answer}
+            explanation={item.question.explanation}
+            saveWord={saveWord}
+          />
+        </>
+      )}
+      <button
+        className="transcript-toggle"
+        onClick={() => setTranscript(!transcript)}
+      >
+        {transcript ? "Hide" : "Show"} transcript
+      </button>
+      {transcript && (
+        <div className="transcript">
+          <strong>{item.question.chinesePrompt}</strong>
+          <span>{answerChoice?.pinyin}</span>
+          <p>{answer}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ImageDictionary({
+  favorites,
+  toggleFavorite,
+  speak,
+  openLibrary,
+}: {
+  favorites: string[];
+  toggleFavorite: (id: string) => void;
+  speak: (text: string) => void;
+  openLibrary: () => void;
+}) {
+  const [data, setData] = useState<HskDictionaryData | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [loadKey, setLoadKey] = useState(0);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
+  const [recognizedText, setRecognizedText] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
+  const [confidence, setConfidence] = useState<number | null>(null);
+  const [scanError, setScanError] = useState("");
+  const [dragging, setDragging] = useState(false);
+  useEffect(() => {
+    let active = true;
+    import("./hsk-vocabulary.json")
+      .then((module) => {
+        if (active) setData(module.default as HskDictionaryData);
+      })
+      .catch(() => {
+        if (active)
+          setLoadError("The HSK dictionary could not be loaded. Please retry.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [loadKey]);
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview);
+    },
+    [preview],
+  );
+  const allWords = data ? data.levels.flatMap((group) => group.words) : [];
+  const matches = data ? imageDictionaryMatches(recognizedText, allWords) : [];
+  function chooseFile(next: File | null) {
+    setDragging(false);
+    setScanError("");
+    setConfidence(null);
+    setProgress(0);
+    setProgressLabel("");
+    setRecognizedText("");
+    if (!next) {
+      setFile(null);
+      setPreview("");
+      return;
+    }
+    if (!next.type.startsWith("image/"))
+      return setScanError(
+        "Choose an image file such as JPG, PNG, HEIC, or WebP.",
+      );
+    if (next.size > 12 * 1024 * 1024)
+      return setScanError(
+        "That image is larger than 12 MB. Crop or compress it, then try again.",
+      );
+    setFile(next);
+    setPreview(URL.createObjectURL(next));
+  }
+  async function scan() {
+    if (!file || !data || scanning) return;
+    setScanning(true);
+    setScanError("");
+    setConfidence(null);
+    setProgress(0);
+    setProgressLabel("Preparing OCR");
+    try {
+      const Tesseract = await import("tesseract.js");
+      const worker = await Tesseract.createWorker(
+        ["chi_sim", "eng"],
+        Tesseract.OEM.LSTM_ONLY,
+        {
+          logger: (message) => {
+            setProgress(Math.round((message.progress ?? 0) * 100));
+            setProgressLabel(message.status.replace(/_/g, " "));
+          },
+        },
+      );
+      try {
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
+          preserve_interword_spaces: "1",
+        });
+        const result = await worker.recognize(file, { rotateAuto: true });
+        const text = result.data.text.trim();
+        setRecognizedText(text);
+        setConfidence(Math.round(result.data.confidence));
+        if (!imageDictionaryMatches(text, allWords, 1).length)
+          setScanError(
+            "No matching HSK word was found. Try a tighter crop, clearer lighting, or edit the detected text below.",
+          );
+      } finally {
+        await worker.terminate();
+      }
+    } catch {
+      setScanError(
+        "The image could not be read. Check your connection for the first OCR model download, then try a sharper crop.",
+      );
+    } finally {
+      setScanning(false);
+    }
+  }
   // Object URLs are local previews, so automatic remote image optimization is not useful here.
   // eslint-disable-next-line @next/next/no-img-element
-  return <section className="learning-panel image-dictionary-panel"><PanelTitle eyebrow="IMAGE DICTIONARY · 看图查词" title="Find Chinese words in a photo" copy="Take a photo or choose an image, extract its Chinese text, then hear and save matching HSK words."/><div className="image-how-it-works"><article><span>1</span><p><strong>Take or choose a photo</strong><small>Crop close to clear Chinese text.</small></p></article><article><span>2</span><p><strong>Scan on this device</strong><small>OCR reads Simplified Chinese locally.</small></p></article><article><span>3</span><p><strong>Check the detected text</strong><small>Edit any character the camera misread.</small></p></article><article><span>4</span><p><strong>Hear and save words</strong><small>Tap ☆ and the word enters My Library Bank.</small></p></article></div><div className="image-privacy"><span>私</span><div><strong>Your image stays in this browser</strong><p>OCR runs on your device. The first scan downloads the language model, but your photo is not uploaded to our server.</p></div></div>{!data&&!loadError&&<div className="dictionary-loading" role="status"><span/><span/><span/><p>Preparing the HSK lookup library…</p></div>}{loadError&&<div className="dictionary-load-error" role="alert"><span>!</span><div><strong>Dictionary unavailable</strong><p>{loadError}</p></div><button onClick={()=>{setLoadError('');setLoadKey(loadKey+1)}}>Retry</button></div>}{data&&<><div className={`image-dropzone ${dragging?'dragging':''} ${preview?'has-image':''}`} onDragOver={event=>{event.preventDefault();setDragging(true)}} onDragLeave={()=>setDragging(false)} onDrop={event=>{event.preventDefault();chooseFile(event.dataTransfer.files[0]??null)}}>{preview?<img src={preview} alt="Selected image preview"/>:<div className="image-drop-empty"><span>图</span><strong>Drop an image here</strong><p>For better results, crop close to sharp, horizontal Chinese text.</p></div>}<div className="image-upload-actions"><label><input type="file" accept="image/*" capture="environment" onChange={event=>{chooseFile(event.target.files?.[0]??null);event.target.value=''}}/><span>▣</span> Take photo</label><label><input type="file" accept="image/*" onChange={event=>{chooseFile(event.target.files?.[0]??null);event.target.value=''}}/><span>↑</span> Choose image</label>{file&&<button onClick={()=>chooseFile(null)}>Clear</button>}</div></div>{file&&<button className="image-scan-button" disabled={scanning} onClick={scan}>{scanning?<><span className="scan-spinner"/> Reading Chinese… {progress}%</>:<>⌕ Scan Chinese text</>}</button>}{scanning&&<div className="image-scan-progress" role="status"><div><i style={{width:`${progress}%`}}/></div><span>{progressLabel||'Reading image'}</span></div>}{scanError&&<div className="image-scan-error" role="alert">{scanError}</div>}<div className="ocr-text-editor"><header><div><small>DETECTED TEXT</small><strong>{confidence===null?'Scan a photo or type Hanzi':`${confidence}% OCR confidence`}</strong></div><span>Editable</span></header><textarea aria-label="Detected Chinese text" value={recognizedText} onChange={event=>{setRecognizedText(event.target.value);setScanError('')}} placeholder="Detected Chinese text appears here. You can also paste or type Hanzi manually, for example: 请看菜单。"/><p>Fix any OCR mistakes and matches will update immediately.</p></div>{recognizedText.trim()&&<div className="image-match-head"><div><p className="eyebrow">HSK DICTIONARY MATCHES</p><h3>{matches.length?`${matches.length} word${matches.length===1?'':'s'} found`:'No HSK matches yet'}</h3></div><span>Longest exact matches appear first</span></div>}{matches.length>0&&<div className="image-word-results">{matches.map(word=><article key={word.id}><header><span>HSK {word.l}</span><button className={favorites.includes(word.id)?'saved':''} onClick={()=>toggleFavorite(word.id)} aria-label={`${favorites.includes(word.id)?'Remove':'Save'} ${word.h}`}>{favorites.includes(word.id)?'★':'☆'}</button></header><button className="image-word-audio" onClick={()=>speak(word.h)} aria-label={`Play ${word.h}`}>▶</button><strong>{word.h}</strong><em>{word.py||'Pinyin unavailable'}</em><p>{word.m}</p><small>{word.pos||'word'}{word.r?` · radical ${word.r}`:''}</small></article>)}</div>}{favorites.length>0&&<div className="image-library-link"><span>藏</span><p><strong>{favorites.length} saved words in your personal bank</strong><small>Words starred here are immediately available in My Library Bank.</small></p><button onClick={openLibrary}>Open My Library →</button></div>}</>}</section>
+  return (
+    <section className="learning-panel image-dictionary-panel">
+      <PanelTitle
+        eyebrow="IMAGE DICTIONARY · 看图查词"
+        title="Find Chinese words in a photo"
+        copy="Take a photo or choose an image, extract its Chinese text, then hear and save matching HSK words."
+      />
+      <div className="image-how-it-works">
+        <article>
+          <span>1</span>
+          <p>
+            <strong>Take or choose a photo</strong>
+            <small>Crop close to clear Chinese text.</small>
+          </p>
+        </article>
+        <article>
+          <span>2</span>
+          <p>
+            <strong>Scan on this device</strong>
+            <small>OCR reads Simplified Chinese locally.</small>
+          </p>
+        </article>
+        <article>
+          <span>3</span>
+          <p>
+            <strong>Check the detected text</strong>
+            <small>Edit any character the camera misread.</small>
+          </p>
+        </article>
+        <article>
+          <span>4</span>
+          <p>
+            <strong>Hear and save words</strong>
+            <small>Tap ☆ and the word enters My Library Bank.</small>
+          </p>
+        </article>
+      </div>
+      <div className="image-privacy">
+        <span>私</span>
+        <div>
+          <strong>Your image stays in this browser</strong>
+          <p>
+            OCR runs on your device. The first scan downloads the language
+            model, but your photo is not uploaded to our server.
+          </p>
+        </div>
+      </div>
+      {!data && !loadError && (
+        <div className="dictionary-loading" role="status">
+          <span />
+          <span />
+          <span />
+          <p>Preparing the HSK lookup library…</p>
+        </div>
+      )}
+      {loadError && (
+        <div className="dictionary-load-error" role="alert">
+          <span>!</span>
+          <div>
+            <strong>Dictionary unavailable</strong>
+            <p>{loadError}</p>
+          </div>
+          <button
+            onClick={() => {
+              setLoadError("");
+              setLoadKey(loadKey + 1);
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {data && (
+        <>
+          <div
+            className={`image-dropzone ${dragging ? "dragging" : ""} ${preview ? "has-image" : ""}`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              chooseFile(event.dataTransfer.files[0] ?? null);
+            }}
+          >
+            {preview ? (
+              <img src={preview} alt="Selected image preview" />
+            ) : (
+              <div className="image-drop-empty">
+                <span>图</span>
+                <strong>Drop an image here</strong>
+                <p>
+                  For better results, crop close to sharp, horizontal Chinese
+                  text.
+                </p>
+              </div>
+            )}
+            <div className="image-upload-actions">
+              <label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => {
+                    chooseFile(event.target.files?.[0] ?? null);
+                    event.target.value = "";
+                  }}
+                />
+                <span>▣</span> Take photo
+              </label>
+              <label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    chooseFile(event.target.files?.[0] ?? null);
+                    event.target.value = "";
+                  }}
+                />
+                <span>↑</span> Choose image
+              </label>
+              {file && <button onClick={() => chooseFile(null)}>Clear</button>}
+            </div>
+          </div>
+          {file && (
+            <button
+              className="image-scan-button"
+              disabled={scanning}
+              onClick={scan}
+            >
+              {scanning ? (
+                <>
+                  <span className="scan-spinner" /> Reading Chinese… {progress}%
+                </>
+              ) : (
+                <>⌕ Scan Chinese text</>
+              )}
+            </button>
+          )}
+          {scanning && (
+            <div className="image-scan-progress" role="status">
+              <div>
+                <i style={{ width: `${progress}%` }} />
+              </div>
+              <span>{progressLabel || "Reading image"}</span>
+            </div>
+          )}
+          {scanError && (
+            <div className="image-scan-error" role="alert">
+              {scanError}
+            </div>
+          )}
+          <div className="ocr-text-editor">
+            <header>
+              <div>
+                <small>DETECTED TEXT</small>
+                <strong>
+                  {confidence === null
+                    ? "Scan a photo or type Hanzi"
+                    : `${confidence}% OCR confidence`}
+                </strong>
+              </div>
+              <span>Editable</span>
+            </header>
+            <textarea
+              aria-label="Detected Chinese text"
+              value={recognizedText}
+              onChange={(event) => {
+                setRecognizedText(event.target.value);
+                setScanError("");
+              }}
+              placeholder="Detected Chinese text appears here. You can also paste or type Hanzi manually, for example: 请看菜单。"
+            />
+            <p>Fix any OCR mistakes and matches will update immediately.</p>
+          </div>
+          {recognizedText.trim() && (
+            <div className="image-match-head">
+              <div>
+                <p className="eyebrow">HSK DICTIONARY MATCHES</p>
+                <h3>
+                  {matches.length
+                    ? `${matches.length} word${matches.length === 1 ? "" : "s"} found`
+                    : "No HSK matches yet"}
+                </h3>
+              </div>
+              <span>Longest exact matches appear first</span>
+            </div>
+          )}
+          {matches.length > 0 && (
+            <div className="image-word-results">
+              {matches.map((word) => (
+                <article key={word.id}>
+                  <header>
+                    <span>HSK {word.l}</span>
+                    <button
+                      className={favorites.includes(word.id) ? "saved" : ""}
+                      onClick={() => toggleFavorite(word.id)}
+                      aria-label={`${favorites.includes(word.id) ? "Remove" : "Save"} ${word.h}`}
+                    >
+                      {favorites.includes(word.id) ? "★" : "☆"}
+                    </button>
+                  </header>
+                  <button
+                    className="image-word-audio"
+                    onClick={() => speak(word.h)}
+                    aria-label={`Play ${word.h}`}
+                  >
+                    ▶
+                  </button>
+                  <strong>{word.h}</strong>
+                  <em>{word.py || "Pinyin unavailable"}</em>
+                  <p>{word.m}</p>
+                  <small>
+                    {word.pos || "word"}
+                    {word.r ? ` · radical ${word.r}` : ""}
+                  </small>
+                </article>
+              ))}
+            </div>
+          )}
+          {favorites.length > 0 && (
+            <div className="image-library-link">
+              <span>藏</span>
+              <p>
+                <strong>
+                  {favorites.length} saved words in your personal bank
+                </strong>
+                <small>
+                  Words starred here are immediately available in My Library
+                  Bank.
+                </small>
+              </p>
+              <button onClick={openLibrary}>Open My Library →</button>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
 }
 
-function HskFlashcards({favorites,personalWords,stats,toggleFavorite,rate,speak}:{favorites:string[];personalWords:PersonalWord[];stats:Record<string,FlashcardStat>;toggleFavorite:(id:string)=>void;rate:(wordId:string,rating:FlashcardRating)=>void;speak:(text:string)=>void}){
-  type Filter='all'|'due'|FlashcardStatus|'saved';type Deck='hsk'|'saved'|'personal';
-  const [data,setData]=useState<HskDictionaryData|null>(null);const [loadError,setLoadError]=useState('');const [loadKey,setLoadKey]=useState(0);const [deck,setDeck]=useState<Deck>('hsk');const [level,setLevel]=useState(1);const [filter,setFilter]=useState<Filter>('all');const [roundVersion,setRoundVersion]=useState(0);const [roundIds,setRoundIds]=useState<string[]>([]);const [index,setIndex]=useState(0);const [revealed,setRevealed]=useState(false);const [ratings,setRatings]=useState<Record<FlashcardRating,number>>({again:0,hard:0,good:0,easy:0});const statsRef=useRef(stats);const favoritesRef=useRef(favorites);
-  useEffect(()=>{statsRef.current=stats},[stats]);useEffect(()=>{favoritesRef.current=favorites},[favorites]);
-  useEffect(()=>{let active=true;import('./hsk-vocabulary.json').then(module=>{if(active)setData(module.default as HskDictionaryData)}).catch(()=>{if(active)setLoadError('The HSK flashcard library could not be loaded. Please retry.')});return()=>{active=false}},[loadKey]);
-  const personalCards:HskDictionaryWord[]=personalWords.map(word=>({id:word.id,h:word.hanzi,py:word.pinyin,m:word.english,pos:'personal',r:'',q:0,l:0}));const adventureCards:HskDictionaryWord[]=allVocabulary.map(word=>({id:word.id,h:word.hanzi,py:word.pinyin,m:word.english,pos:'adventure',r:'',q:0,l:0}));const allHsk=data?data.levels.flatMap(group=>group.words):[];const allSavedCandidates=[...allHsk,...adventureCards];const deckWords=!data?[]:deck==='personal'?personalCards:deck==='saved'?allSavedCandidates.filter(word=>favorites.includes(word.id)):selectHskWords(data,level,'new');
-  useEffect(()=>{if(!data)return;const allHskWords=data.levels.flatMap(group=>group.words);const adventure=allVocabulary.map(word=>({id:word.id,h:word.hanzi,py:word.pinyin,m:word.english,pos:'adventure',r:'',q:0,l:0}));const base=deck==='personal'?personalWords.map(word=>({id:word.id,h:word.hanzi,py:word.pinyin,m:word.english,pos:'personal',r:'',q:0,l:0})):deck==='saved'?[...allHskWords,...adventure].filter(word=>favoritesRef.current.includes(word.id)):selectHskWords(data,level,'new');const words=base.filter(word=>filter==='all'||(filter==='due'?isFlashcardDue(statsRef.current[word.id]):filter==='saved'?favoritesRef.current.includes(word.id):flashcardStatus(statsRef.current[word.id])===filter));setRoundIds(buildFlashcardRound(words,statsRef.current,10).map(word=>word.id));setIndex(0);setRevealed(false);setRatings({again:0,hard:0,good:0,easy:0})},[data,level,filter,roundVersion,deck,personalWords]);
-  const current=[...allHsk,...adventureCards,...personalCards].find(word=>word.id===roundIds[index]);const counts:Record<FlashcardStatus,number>={unseen:0,learning:0,mastered:0};for(const word of deckWords)counts[flashcardStatus(stats[word.id])]++;const dueCount=deckWords.filter(word=>isFlashcardDue(stats[word.id])).length;const finished=roundIds.length>0&&index>=roundIds.length;const status=current?flashcardStatus(stats[current.id]):'unseen';const deckLabel=deck==='hsk'?`HSK ${level}`:deck==='saved'?'SAVED WORDS':'MY OWN WORDS';
-  function answer(rating:FlashcardRating){if(!current)return;rate(current.id,rating);setRatings({...ratings,[rating]:ratings[rating]+1});setIndex(index+1);setRevealed(false)}function restart(){setRoundVersion(roundVersion+1)}function chooseDeck(value:Deck){setDeck(value);setFilter('all')}
-  return <section className="learning-panel hsk-flashcard-panel"><PanelTitle eyebrow="FLASHCARD DECKS · SPACED REPETITION" title="HSK, saved, and personal decks" copy="Every rating sets a real due date. Personal words use the same demanding review schedule as verified HSK vocabulary."/>{!data&&!loadError&&<div className="dictionary-loading" role="status"><span/><span/><span/><p>Preparing your flashcards…</p></div>}{loadError&&<div className="dictionary-load-error" role="alert"><span>!</span><div><strong>Flashcards unavailable</strong><p>{loadError}</p></div><button onClick={()=>{setLoadError('');setLoadKey(loadKey+1)}}>Retry</button></div>}{data&&<><div className="flashcard-decks" aria-label="Flashcard deck"><button className={deck==='hsk'?'active':''} onClick={()=>chooseDeck('hsk')}><span>级</span><strong>HSK 1–6</strong><small>Verified course words</small></button><button className={deck==='saved'?'active':''} onClick={()=>chooseDeck('saved')}><span>★</span><strong>Saved words</strong><small>{favorites.length} in My Library</small></button><button className={deck==='personal'?'active':''} onClick={()=>chooseDeck('personal')}><span>我</span><strong>My own words</strong><small>{personalWords.length} added manually</small></button></div>{deck==='hsk'&&<div className="hsk-level-picker flashcard-level-picker" aria-label="Flashcard HSK level">{[1,2,3,4,5,6].map(item=><button className={level===item?'active':''} onClick={()=>setLevel(item)} key={item}><span>HSK</span><b>{item}</b><small>{data.levels.find(group=>group.level===item)?.words.length.toLocaleString()??0} words</small></button>)}</div>}<div className="flashcard-overview"><article><small>{deckLabel} DECK</small><strong>{deckWords.length.toLocaleString()}</strong><span>available cards</span></article><article className="due"><small>DUE NOW</small><strong>{dueCount}</strong><span>scheduled for review</span></article><article><small>LEARNING</small><strong>{counts.learning}</strong><span>building stability</span></article><article><small>MASTERED</small><strong>{counts.mastered}</strong><span>7+ day interval</span></article><article><small>UNSEEN</small><strong>{counts.unseen}</strong><span>ready to discover</span></article></div><div className="flashcard-filters" aria-label="Flashcard filters">{([['all','All cards'],['due','Due now'],['unseen','Unseen'],['learning','Learning'],['mastered','Mastered'],...(deck==='hsk'?[['saved','★ Saved']]:[])] as [Filter,string][]).map(([id,label])=><button className={filter===id?'active':''} onClick={()=>setFilter(id)} key={id}>{label}</button>)}</div>{finished?<div className="flashcard-finish"><span>成</span><p className="eyebrow">ROUND COMPLETE · {deckLabel}</p><h3>{ratings.good+ratings.easy} strong · {ratings.hard} hard · {ratings.again} again</h3><p>Your ratings created new review dates. Mastery requires accurate recall plus a stable interval of at least seven days.</p><button onClick={restart}>Start another 10-card round →</button></div>:current?<><div className="flashcard-round-head"><span>Card {index+1} of {roundIds.length}</span><div><i style={{width:`${index/roundIds.length*100}%`}}/></div><b className={`flashcard-status ${status}`}>{status}</b></div><article className={`hsk-study-card ${revealed?'revealed':''}`}><header><span>{current.l?`HSK ${current.l}`:current.pos==='adventure'?'ADVENTURE':'MY WORD'} · {status.toUpperCase()}</span><div><button onClick={()=>speak(current.h)} aria-label={`Play ${current.h}`}>▶ Hear</button>{current.pos!=='personal'&&<button className={favorites.includes(current.id)?'saved':''} onClick={()=>toggleFavorite(current.id)} aria-label={`${favorites.includes(current.id)?'Remove':'Save'} ${current.h}`}>{favorites.includes(current.id)?'★':'☆'}</button>}</div></header><button className="flashcard-face" onClick={()=>setRevealed(true)} disabled={revealed}><strong>{current.h}</strong>{revealed?<><span>{current.py||'Pinyin not added'}</span><h3>{current.m}</h3><p>{current.l?`HSK ${current.l}${current.pos?` · ${current.pos}`:''}${current.r?` · radical ${current.r}`:''}`:current.pos==='adventure'?'Adventure vocabulary · saved in My Library':'Personal vocabulary · saved locally'}</p></>:<><span>Think of the pronunciation and meaning</span><p>Tap to reveal the answer</p></>}</button></article><div className="flashcard-actions">{!revealed?<button className="reveal" onClick={()=>setRevealed(true)}>Reveal answer</button>:<>{([['again','Again','Forgot it'],['hard','Hard','Barely recalled'],['good','Good','Recalled well'],['easy','Easy','Instant recall']] as [FlashcardRating,string,string][]).map(([rating,label,copy])=><button className={rating} onClick={()=>answer(rating)} key={rating}><strong>{label}</strong><small>{copy} · {flashcardRatingPreview(stats[current.id],rating)}</small></button>)}</>}</div></>:<div className="flashcard-finish empty"><span>空</span><h3>No cards in this deck or filter</h3><p>{deck==='personal'?'Add a word in My Dictionary, then return here to practice it.':'Choose another deck, HSK level, or filter.'}</p><button onClick={()=>setFilter('all')}>Show all {deckLabel.toLowerCase()} cards</button></div>}</>}</section>
-}
-
-function Dictionary({favorites,personalWords,toggleFavorite,addPersonalWord,removePersonalWord,speak,award}:{favorites:string[];personalWords:PersonalWord[];toggleFavorite:(id:string)=>void;addPersonalWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void;removePersonalWord:(id:string)=>void;speak:(text:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){
-  const [query,setQuery]=useState('');const [savedOnly,setSavedOnly]=useState(false);const [adding,setAdding]=useState(false);const [draft,setDraft]=useState({hanzi:'',pinyin:'',english:''});const [section,setSection]=useState<'hsk'|'personal'|'adventure'>('hsk');const [level,setLevel]=useState(1);const [mode,setMode]=useState<HskDictionaryMode>('new');const [visible,setVisible]=useState(60);const [data,setData]=useState<HskDictionaryData|null>(null);const [loadError,setLoadError]=useState('');const [loadKey,setLoadKey]=useState(0);const [practiceOpen,setPracticeOpen]=useState(false);
-  useEffect(()=>{let active=true;import('./hsk-vocabulary.json').then(module=>{if(active)setData(module.default as HskDictionaryData)}).catch(()=>{if(active)setLoadError('The HSK vocabulary library could not be loaded. Please retry.')});return()=>{active=false}},[loadKey]);
-  const needle=query.trim().toLowerCase();const curated=allVocabulary.filter(word=>(!savedOnly||favorites.includes(word.id))&&(!needle||`${word.hanzi} ${word.pinyin} ${word.english}`.toLowerCase().includes(needle)));const personal=personalWords.filter(word=>!needle||`${word.hanzi} ${word.pinyin} ${word.english}`.toLowerCase().includes(needle));const selectedWords=data?selectHskWords(data,level,mode):[];const filteredHsk=searchHskWords(selectedWords,query,savedOnly,favorites);const coverage=hskCoverage(selectedWords,favorites);const officialCount=data?(mode==='new'?data.meta.officialNewCounts[level]:data.meta.officialCumulativeCounts[level]):0;const savedHsk=data?data.levels.flatMap(group=>group.words).filter(word=>favorites.includes(word.id)):[];const practiceWords=savedHsk.slice(0,Math.min(8,savedHsk.length));const practiceQuestions:DrillQuestion[]=practiceWords.map((word,index)=>({prompt:`What does ${word.h} mean?`,choices:[word.m,selectedWords[(index+17)%Math.max(1,selectedWords.length)]?.m,selectedWords[(index+43)%Math.max(1,selectedWords.length)]?.m].filter((value,i,values):value is string=>!!value&&values.indexOf(value)===i),answer:word.m,explanation:`${word.h} · ${word.py} means “${word.m}.”`}));
-  function save(){if(!draft.hanzi.trim()||!draft.english.trim())return;addPersonalWord({hanzi:draft.hanzi.trim(),pinyin:draft.pinyin.trim(),english:draft.english.trim()});setDraft({hanzi:'',pinyin:'',english:''});setAdding(false);setSection('personal')}
-  function changeSection(next:typeof section){setSection(next);setQuery('');setSavedOnly(false);setVisible(60)}function changeLevel(next:number){setLevel(next);setVisible(60)}function changeMode(next:HskDictionaryMode){setMode(next);setVisible(60)}
-  return <section className="learning-panel dictionary-panel"><PanelTitle eyebrow="MY DICTIONARY · 生词本" title="One organized home for every word" copy="Browse verified HSK 3.0 levels, your own vocabulary, and words from Adventure."/><div className="dictionary-sections" role="tablist" aria-label="Dictionary sections"><button role="tab" aria-selected={section==='hsk'} className={section==='hsk'?'active':''} onClick={()=>changeSection('hsk')}><span>级</span><div><strong>HSK Vocabulary</strong><small>Levels 1–6</small></div></button><button role="tab" aria-selected={section==='personal'} className={section==='personal'?'active':''} onClick={()=>changeSection('personal')}><span>我</span><div><strong>My Own Words</strong><small>{personalWords.length} saved manually</small></div></button><button role="tab" aria-selected={section==='adventure'} className={section==='adventure'?'active':''} onClick={()=>changeSection('adventure')}><span>旅</span><div><strong>Adventure Words</strong><small>{allVocabulary.length} curated words</small></div></button></div><div className="dictionary-tools"><label><span>⌕</span><input value={query} onChange={event=>{setQuery(event.target.value);setVisible(60)}} placeholder="Search Hanzi, pinyin, meaning, or word type…"/></label><button className={savedOnly?'active':''} onClick={()=>{setSavedOnly(!savedOnly);setVisible(60)}}>★ Saved ({favorites.length+personalWords.length})</button><button onClick={()=>setAdding(!adding)}>＋ Add word</button></div>{adding&&<div className="add-word-form"><input aria-label="Hanzi" value={draft.hanzi} onChange={event=>setDraft({...draft,hanzi:event.target.value})} placeholder="汉字"/><input aria-label="Pinyin" value={draft.pinyin} onChange={event=>setDraft({...draft,pinyin:event.target.value})} placeholder="Pinyin"/><input aria-label="English meaning" value={draft.english} onChange={event=>setDraft({...draft,english:event.target.value})} placeholder="English meaning"/><button disabled={!draft.hanzi.trim()||!draft.english.trim()} onClick={save}>Save word</button></div>}
-    {section==='hsk'&&<>{!data&&!loadError&&<div className="dictionary-loading" role="status"><span/><span/><span/><p>Loading the verified HSK vocabulary library…</p></div>}{loadError&&<div className="dictionary-load-error" role="alert"><span>!</span><div><strong>Vocabulary library unavailable</strong><p>{loadError}</p></div><button onClick={()=>{setLoadError('');setLoadKey(loadKey+1)}}>Retry</button></div>}{data&&<><div className="hsk-dictionary-head"><div><p className="eyebrow">GF0025-2021 · NORMALIZED SEARCH VIEW</p><h3>Browse HSK 3.0 vocabulary</h3><p>Choose one level, then show only words introduced there or every word accumulated through that level.</p></div><div><span><b>{filteredHsk.length}</b>matching entries</span><span><b>{coverage.count}</b>saved · {coverage.percent}%</span></div></div>{savedHsk.length>=3&&<div className="saved-practice-banner"><span>练</span><div><small>SAVED WORDS → ACTIVE RECALL</small><strong>{savedHsk.length} HSK words ready to practice</strong><p>Turn your dictionary collection into a short meaning quiz.</p></div><button onClick={()=>setPracticeOpen(!practiceOpen)}>{practiceOpen?'Close practice':'Practice saved words →'}</button></div>}{practiceOpen&&practiceQuestions.length>=3&&<div className="hsk-saved-practice"><div><p className="eyebrow">PERSONAL DECK · {practiceQuestions.length} QUESTIONS</p><h3>Practice words you chose</h3></div><ChoiceDrill label="Saved HSK vocabulary" questions={practiceQuestions} award={award} skill="Vocabulary"/></div>}<div className="hsk-level-picker" aria-label="HSK level">{[1,2,3,4,5,6].map(item=><button className={level===item?'active':''} onClick={()=>changeLevel(item)} key={item}><span>HSK</span><b>{item}</b><small>{data.meta.officialCumulativeCounts[item].toLocaleString()} official rows total</small></button>)}</div><div className="hsk-mode-switch"><button className={mode==='new'?'active':''} onClick={()=>changeMode('new')}><span>NEW IN HSK {level}</span><strong>Level {level} additions</strong><small>{data.meta.officialNewCounts[level].toLocaleString()} official rows</small></button><button className={mode==='cumulative'?'active':''} onClick={()=>changeMode('cumulative')}><span>HSK 1 → {level}</span><strong>All words through HSK {level}</strong><small>{data.meta.officialCumulativeCounts[level].toLocaleString()} official rows</small></button></div><div className="hsk-library-summary"><div><span>{mode==='new'?'新':'全'}</span><p><small>{mode==='new'?`WORDS INTRODUCED AT HSK ${level}`:`CUMULATIVE HSK 1–${level}`}</small><strong>{selectedWords.length.toLocaleString()} normalized searchable entries</strong><b>Official standard count: {officialCount.toLocaleString()} rows</b></p></div><i><em style={{width:`${coverage.percent}%`}}/></i><p>{coverage.count} saved for later · {coverage.percent}% of this view</p></div>{filteredHsk.length?<><div className="hsk-word-grid">{filteredHsk.slice(0,visible).map(word=><article key={word.id}><button className="dictionary-audio" onClick={()=>speak(word.h)} aria-label={`Play ${word.h}`}>▶</button><div><strong>{word.h}</strong><span>{word.py||'Pinyin unavailable'}</span><b>{word.m}</b><small>HSK {word.l}{word.pos?` · ${word.pos}`:''}{word.r?` · radical ${word.r}`:''}</small></div><button className={favorites.includes(word.id)?'saved':''} onClick={()=>toggleFavorite(word.id)} aria-label={`${favorites.includes(word.id)?'Remove':'Save'} ${word.h}`}>{favorites.includes(word.id)?'★':'☆'}</button></article>)}</div>{visible<filteredHsk.length&&<button className="dictionary-load-more" onClick={()=>setVisible(visible+60)}>Show 60 more · {filteredHsk.length-visible} remaining</button>}</>:<div className="dictionary-empty"><span>词</span><strong>No matching HSK words</strong><p>Try another level, switch between new and cumulative, or clear your search.</p></div>}<div className="hsk-source-note"><span>源</span><p><strong>Source & classification</strong><small>Level metadata follows the official GF0025-2021 standard. Search entries normalize written variants, so visible entry totals can differ slightly from official row counts.</small></p><a href={data.meta.officialSource} target="_blank" rel="noreferrer">Official standard ↗</a><a href={data.meta.datasetSource} target="_blank" rel="noreferrer">MIT dataset ↗</a></div></>}</>}
-    {section==='personal'&&(personal.length?<><p className="dictionary-section-label">MY OWN WORDS · {personal.length}</p><div className="dictionary-list personal-list">{personal.map(word=><article key={word.id}><button className="dictionary-audio" onClick={()=>speak(word.hanzi)}>▶</button><div><strong>{word.hanzi}</strong><span>{word.pinyin||'—'}</span><b>{word.english}</b><small>Personal vocabulary · saved locally</small></div><button onClick={()=>removePersonalWord(word.id)} aria-label={`Remove ${word.hanzi}`}>×</button></article>)}</div></>:<div className="dictionary-empty"><span>我</span><strong>No personal words yet</strong><p>Use “Add word” whenever you encounter useful Chinese in real life.</p></div>)}
-    {section==='adventure'&&(curated.length?<><p className="dictionary-section-label">ADVENTURE VOCABULARY · {curated.length}</p><div className="dictionary-list">{curated.map(word=><article key={word.id}><button className="dictionary-audio" onClick={()=>speak(word.hanzi)}>▶</button><div><strong>{word.hanzi}</strong><span>{word.pinyin}</span><b>{word.english}</b><small>{word.chapter} · {word.example.hanzi}</small></div><button className={favorites.includes(word.id)?'saved':''} onClick={()=>toggleFavorite(word.id)} aria-label={`${favorites.includes(word.id)?'Remove':'Save'} ${word.hanzi}`}>{favorites.includes(word.id)?'★':'☆'}</button></article>)}</div></>:<div className="dictionary-empty"><span>旅</span><strong>No matching Adventure words</strong><p>Try a broader search or turn off the saved-only filter.</p></div>)}
-  </section>
-}
-
-function LibraryBank({favorites,personalWords,flashcardStats,toggleFavorite,removePersonalWord,speak,award}:{favorites:string[];personalWords:PersonalWord[];flashcardStats:Record<string,FlashcardStat>;toggleFavorite:(id:string)=>void;removePersonalWord:(id:string)=>void;speak:(text:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){
-  type SourceFilter='all'|LibraryBankWord['source'];
-  type SortMode='recent'|'hsk'|'hanzi';
-  const [data,setData]=useState<HskDictionaryData|null>(null);
-  const [loadError,setLoadError]=useState('');
-  const [loadKey,setLoadKey]=useState(0);
-  const [query,setQuery]=useState('');
-  const [source,setSource]=useState<SourceFilter>('all');
-  const [hsk,setHsk]=useState<number|'all'>('all');
-  const [sort,setSort]=useState<SortMode>('recent');
-  const [practiceOpen,setPracticeOpen]=useState(false);
-  useEffect(()=>{let active=true;import('./hsk-vocabulary.json').then(module=>{if(active)setData(module.default as HskDictionaryData)}).catch(()=>{if(active)setLoadError('Your saved HSK library could not be loaded. Please retry.')});return()=>{active=false}},[loadKey]);
-  const hskWords=data?data.levels.flatMap(group=>group.words):[];
-  const bank=buildLibraryBank({favoriteIds:favorites,hskWords,adventureWords:allVocabulary,personalWords});
-  const counts=libraryBankCounts(bank);
-  const due=bank.filter(word=>word.source==='hsk'&&isFlashcardDue(flashcardStats[word.id])).length;
-  const mastered=bank.filter(word=>word.source==='hsk'&&flashcardStatus(flashcardStats[word.id])==='mastered').length;
-  const visible=filterLibraryBank(bank,{query,source,hsk:source==='adventure'||source==='personal'?'all':hsk}).sort((left,right)=>sort==='hsk'?(left.hsk??99)-(right.hsk??99)||left.hanzi.localeCompare(right.hanzi,'zh'):sort==='hanzi'?left.hanzi.localeCompare(right.hanzi,'zh'):right.savedOrder-left.savedOrder);
-  const practiceWords=bank.slice(0,Math.min(10,bank.length));
-  const practiceQuestions:DrillQuestion[]=practiceWords.map((word,index)=>({prompt:`What does ${word.hanzi} mean?`,choices:[word.meaning,bank[(index+3)%Math.max(1,bank.length)]?.meaning,bank[(index+7)%Math.max(1,bank.length)]?.meaning].filter((value,itemIndex,values):value is string=>!!value&&values.indexOf(value)===itemIndex),answer:word.meaning,explanation:`${word.hanzi} · ${word.pinyin||'pinyin not added'} means “${word.meaning}.”`}));
-  function remove(word:LibraryBankWord){if(word.source==='personal')removePersonalWord(word.id);else toggleFavorite(word.id)}
-  return <section className="learning-panel library-bank"><PanelTitle eyebrow="MY LIBRARY BANK · 我的词库" title="Every saved word in one personal bank" copy="Stars from Image Lookup, Smart Reader, My Dictionary, and Flashcards all arrive here automatically."/>{!data&&!loadError&&<div className="dictionary-loading" role="status"><span/><span/><span/><p>Opening your personal word bank…</p></div>}{loadError&&<div className="dictionary-load-error" role="alert"><span>!</span><div><strong>Library unavailable</strong><p>{loadError}</p></div><button onClick={()=>{setLoadError('');setLoadKey(value=>value+1)}}>Retry</button></div>}{data&&<><div className="library-bank-summary"><article><span>藏</span><p><small>TOTAL SAVED</small><strong>{counts.total}</strong><b>words in your bank</b></p></article><article><span>级</span><p><small>HSK 1–6</small><strong>{counts.hsk}</strong><b>verified entries</b></p></article><article><span>复</span><p><small>DUE NOW</small><strong>{due}</strong><b>scheduled flashcards</b></p></article><article><span>成</span><p><small>MASTERED</small><strong>{mastered}</strong><b>stable 7+ day interval</b></p></article></div><div className="library-source-note"><span>★</span><p><strong>One Save button, one bank</strong><small>When you tap a star anywhere in Learn Center—including a word found inside a photo—the same word is stored here. Data stays on this device until you choose a sync provider.</small></p></div><div className="library-tools"><label><span>⌕</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search saved Hanzi, pinyin, or meaning…"/></label><select aria-label="Sort library" value={sort} onChange={event=>setSort(event.target.value as SortMode)}><option value="recent">Recently saved</option><option value="hsk">HSK level</option><option value="hanzi">Hanzi A–Z</option></select><button disabled={practiceQuestions.length<3} onClick={()=>setPracticeOpen(value=>!value)}>{practiceOpen?'Close practice':`Practice ${Math.min(10,bank.length)} words →`}</button></div><div className="library-source-filters">{([['all','All',counts.total],['hsk','HSK',counts.hsk],['adventure','Adventure',counts.adventure],['personal','My own',counts.personal]] as [SourceFilter,string,number][]).map(([id,label,count])=><button className={source===id?'active':''} onClick={()=>{setSource(id);if(id!=='hsk'&&id!=='all')setHsk('all')}} key={id}>{label}<b>{count}</b></button>)}</div>{(source==='all'||source==='hsk')&&<div className="library-hsk-filters"><button className={hsk==='all'?'active':''} onClick={()=>setHsk('all')}>All HSK</button>{[1,2,3,4,5,6].map(level=><button className={hsk===level?'active':''} onClick={()=>setHsk(level)} key={level}>HSK {level}<b>{bank.filter(word=>word.hsk===level).length}</b></button>)}</div>}{practiceOpen&&practiceQuestions.length>=3&&<div className="library-practice"><div><p className="eyebrow">ACTIVE RECALL · PERSONAL BANK</p><h3>Practice the words you chose to keep</h3><p>Wrong answers stay visible with an explanation before the next question.</p></div><ChoiceDrill label="My Library Bank" questions={practiceQuestions} award={award} skill="Vocabulary"/></div>}{visible.length?<div className="library-word-grid">{visible.map(word=>{const status=word.source==='hsk'?flashcardStatus(flashcardStats[word.id]):word.source;const isDue=word.source==='hsk'&&isFlashcardDue(flashcardStats[word.id]);return <article key={word.id}><header><span className={`library-source ${word.source}`}>{word.source==='hsk'?`HSK ${word.hsk}`:word.source==='adventure'?'Adventure':'My word'}</span><button onClick={()=>remove(word)} aria-label={`Remove ${word.hanzi} from library`}>★</button></header><button className="library-word-audio" onClick={()=>speak(word.hanzi)} aria-label={`Play ${word.hanzi}`}>▶</button><strong>{word.hanzi}</strong><em>{word.pinyin||'Pinyin not added'}</em><h3>{word.meaning}</h3><footer><span className={`${status} ${isDue?'due':''}`}>{isDue?'Due now':status}</span><small>{word.detail||'Saved vocabulary'}</small></footer></article>})}</div>:<div className="library-empty"><span>藏</span><h3>{bank.length?'No words match this filter':'Your library is ready for its first word'}</h3><p>{bank.length?'Try another HSK level, source, or search.':'Open Image Lookup, Smart Reader, Dictionary, or Flashcards and tap ☆ to save a word here.'}</p></div>}</>}</section>;
-}
-
-function Dictation({chapter,speak,award}:{chapter:Chapter;speak:(text:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){const items=[chapter,...adventureChapters.filter(item=>item.id!==chapter.id)];const [index,setIndex]=useState(0);const item=items[index%items.length];const target=item.question.chinesePrompt;const [answer,setAnswer]=useState('');const [result,setResult]=useState<'correct'|'try'|''>('');const clean=(value:string)=>value.replace(/[\s，。！？,.!?]/g,'');function check(){const correct=clean(answer)===clean(target);setResult(correct?'correct':'try');award(`Dictation ${item.id}`,18,'Listening',correct)}function next(){setIndex((index+1)%items.length);setAnswer('');setResult('')}return <section className="learning-panel dictation-panel"><PanelTitle eyebrow={`DICTATION · ${item.chinese} · ${index+1}/${items.length}`} title="Hear it, then type it" copy="Replay the phrase as needed. A correct transcription unlocks the next question."/><button className="dictation-play" onClick={()=>speak(target)}><span>▶</span><div><strong>Play dictation phrase</strong><small>Clear voice · punctuation is optional</small></div></button><label htmlFor="dictation-answer">What did you hear?</label><textarea id="dictation-answer" value={answer} onChange={event=>{setAnswer(event.target.value);setResult('')}} placeholder="用汉字写你听到的句子…"/><button className="primary" disabled={!answer.trim()} onClick={check}>Check dictation</button>{result&&<div className={`dictation-result ${result}`}><strong>{result==='correct'?'✓ Perfect transcription':'Keep listening — compare the phrase'}</strong><p>{result==='correct'?target:<>Correct phrase: <b>{target}</b></>}</p>{result==='correct'?<button onClick={next}>Next question →</button>:<button onClick={()=>speak(target)}>▶ Hear it again</button>}</div>}</section>}
-
-type RecognitionResult = { results: { 0: { 0: { transcript: string; confidence: number } } } };
-type RecognitionEngine = { lang:string;interimResults:boolean;continuous:boolean;start:()=>void;stop:()=>void;onresult:((event:RecognitionResult)=>void)|null;onerror:(()=>void)|null;onend:(()=>void)|null };
-function textSimilarity(a:string,b:string){const left=[...a.replace(/[\s，。！？,.!?]/g,'')];const right=[...b.replace(/[\s，。！？,.!?]/g,'')];if(!left.length||!right.length)return 0;let matches=0;let cursor=0;for(const char of left){const found=right.indexOf(char,cursor);if(found>=0){matches++;cursor=found+1}}return Math.round(matches/Math.max(left.length,right.length)*100)}
-function speechCharacterFeedback(target:string,heard:string){const clean=(value:string)=>[...value.replace(/[\s，。！？,.!?]/g,'')];const spoken=clean(heard);let cursor=0;return clean(target).map(character=>{const found=spoken.indexOf(character,cursor);if(found<0)return{character,matched:false};cursor=found+1;return{character,matched:true}})}
-
-function SpeakingCoach({targets,speak,onResult}:{targets:string[];speak:(v:string)=>void;onResult:(correct:boolean,index:number)=>void}){
-  const [index,setIndex]=useState(0);const [listening,setListening]=useState(false);const [transcript,setTranscript]=useState('');const [confidence,setConfidence]=useState(0);const [asrConfidence,setAsrConfidence]=useState(0);const [error,setError]=useState('');const target=targets[index%targets.length];const characters=speechCharacterFeedback(target,transcript);
-  function start(){const speechWindow=window as unknown as {SpeechRecognition?:new()=>RecognitionEngine;webkitSpeechRecognition?:new()=>RecognitionEngine};const Engine=speechWindow.SpeechRecognition??speechWindow.webkitSpeechRecognition;if(!Engine){setError('Speech recognition is not available in this browser. You can still use Listen & Shadow.');return}const recognition=new Engine();recognition.lang='zh-CN';recognition.interimResults=false;recognition.continuous=false;recognition.onresult=event=>{const result=event.results[0][0];const score=textSimilarity(result.transcript,target);setTranscript(result.transcript);setConfidence(score);setAsrConfidence(Math.round(result.confidence*100));setListening(false);onResult(score>=65,index)};recognition.onerror=()=>{setError('Microphone recognition failed. Check browser microphone permission and try again.');setListening(false)};recognition.onend=()=>setListening(false);setError('');setTranscript('');setAsrConfidence(0);setListening(true);try{recognition.start()}catch{setError('The microphone is already active. Please try again.');setListening(false)}}function next(){setIndex((index+1)%targets.length);setTranscript('');setConfidence(0);setAsrConfidence(0);setError('')}
-  return <section className="learning-panel speaking-coach"><PanelTitle eyebrow={`SPEAKING · PHRASE ${index+1} OF ${targets.length}`} title="Listen, shadow, then speak" copy="A successful phrase match unlocks the next speaking question."/><div className="shadow-target"><button onClick={()=>speak(target)}>▶ Listen</button><strong>{target}</strong><span>Repeat the phrase naturally. Focus on rhythm and clear syllables.</span></div><button className={`mic-button ${listening?'listening':''}`} onClick={start} disabled={listening}><span>{listening?'●':'◉'}</span>{listening?'Listening…':'Start speaking'}</button>{error&&<p className="speech-error">{error}</p>}{transcript&&<div className="speech-result"><small>I HEARD · RECOGNIZER CONFIDENCE {asrConfidence}%</small><strong>{transcript}</strong><div className="speech-character-feedback" aria-label="Recognized target characters">{characters.map((item,itemIndex)=><span className={item.matched?'matched':'missed'} key={`${item.character}-${itemIndex}`}>{item.character}</span>)}</div><div><i style={{width:`${confidence}%`}}/></div><b>{confidence}% phrase coverage</b><p>{confidence>=80?'Clear phrase match. Green characters were recognized in order; replay once more to refine tones.':confidence>=65?'Mostly recognized. Practice the highlighted characters, then continue or record once more.':'Replay the model and repeat the characters marked in coral before trying again.'}</p>{confidence>=65&&<button className="next-speaking" onClick={next}>Next question →</button>}<small className="speaking-limit">This device recognizer measures phrase coverage, not laboratory-grade tone contours. Tone scoring will require a dedicated acoustic provider.</small></div>}</section>
-}
-
-function PlacementTest({current,close,apply}:{current:number;close:()=>void;apply:(level:number)=>void}){const questions=[{level:1,q:'What does 你好 mean?',a:['Hello','Goodbye','Thank you'],correct:0},{level:2,q:'Choose “I want to drink tea.”',a:['我想喝茶。','我会开车。','我在看书。'],correct:0},{level:3,q:'Choose the natural sentence.',a:['虽然下雨，但是我还是去了。','下雨虽然我去了但是。','我但是去了虽然下雨。'],correct:0},{level:4,q:'“事半功倍” most closely means…',a:['Half the work, twice the result','Work all night','A difficult decision'],correct:0},{level:5,q:'“他的话耐人寻味” suggests his words are…',a:['Worth reflecting on','Very loud','Easy to forget'],correct:0},{level:6,q:'“这项政策仍有待商榷” means the policy…',a:['Still merits discussion','Has been cancelled','Is universally accepted'],correct:0}];const [level,setLevel]=useState(Math.max(1,Math.min(4,current-1)));const [count,setCount]=useState(0);const [results,setResults]=useState<{level:number;correct:boolean}[]>([]);const [selected,setSelected]=useState<number|null>(null);const [done,setDone]=useState(false);const recommendation=recommendHsk(results);function submit(){if(selected===null)return;const correct=selected===questions[level-1].correct;const next=[...results,{level,correct}];setResults(next);if(count===4){setDone(true)}else{setCount(count+1);setLevel(correct?Math.min(6,level+1):Math.max(1,level-1));setSelected(null)}}return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Adaptive placement test"><section className="placement-modal"><header><div><p className="eyebrow">ADAPTIVE PLACEMENT</p><h2>{done?'Your recommendation':`Question ${count+1} of 5 · HSK ${level} difficulty`}</h2></div><button onClick={close}>×</button></header>{!done?<div className="placement-body"><div className="placement-track"><i style={{width:`${(count+1)*20}%`}}/></div><h3>{questions[level-1].q}</h3><div>{questions[level-1].a.map((answer,index)=><button className={selected===index?'selected':''} onClick={()=>setSelected(index)} key={answer}>{answer}</button>)}</div><button className="placement-next" disabled={selected===null} onClick={submit}>Submit answer →</button></div>:<div className="placement-result"><span>{['🌱','🌿','🌳','🚀','🔥','🏆'][recommendation-1]}</span><p className="eyebrow">RECOMMENDED STARTING TRACK</p><h3>HSK {recommendation}</h3><p>Based on {results.filter(result=>result.correct).length} correct answers across adaptive difficulty. You can change tracks anytime.</p><button onClick={()=>apply(recommendation)}>Start HSK {recommendation}</button><button className="secondary-choice" onClick={close}>Keep HSK {current}</button></div>}</section></div>}
-
-function HanziCenter({speak,award,addPersonalWord}:{speak:(v:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void;addPersonalWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}){
-  const [selected,setSelected]=useState(0);
-  const family=radicalFamilies[selected];
-  const questions:DrillQuestion[]=radicalFamilies.map((item,index)=>{
-    const choices=Array.from({length:4},(_,offset)=>radicalFamilies[(index+offset*3)%radicalFamilies.length].radical);
-    return {prompt:`Which radical carries the meaning “${item.meaning}”?`,choices,answer:item.radical,explanation:`${item.radical}${item.variant?` / ${item.variant}`:''} signals ${item.meaning}. ${item.hint}`};
+function HskFlashcards({
+  favorites,
+  personalWords,
+  stats,
+  toggleFavorite,
+  rate,
+  speak,
+}: {
+  favorites: string[];
+  personalWords: PersonalWord[];
+  stats: Record<string, FlashcardStat>;
+  toggleFavorite: (id: string) => void;
+  rate: (wordId: string, rating: FlashcardRating) => void;
+  speak: (text: string) => void;
+}) {
+  type Filter = "all" | "due" | FlashcardStatus | "saved";
+  type Deck = "hsk" | "saved" | "personal";
+  const [data, setData] = useState<HskDictionaryData | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [loadKey, setLoadKey] = useState(0);
+  const [deck, setDeck] = useState<Deck>("hsk");
+  const [level, setLevel] = useState(1);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [roundVersion, setRoundVersion] = useState(0);
+  const [roundIds, setRoundIds] = useState<string[]>([]);
+  const [index, setIndex] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [ratings, setRatings] = useState<Record<FlashcardRating, number>>({
+    again: 0,
+    hard: 0,
+    good: 0,
+    easy: 0,
   });
-  return <section className="learning-panel hanzi-center">
-    <PanelTitle eyebrow="HANZI · RADICAL + WRITING LAB" title="Build characters from meaning and motion" copy="Study component families, write characters by hand, then prove recognition across an eight-question challenge."/>
-    <div className="radical-overview"><article><span>部</span><p><small>RADICAL FAMILIES</small><strong>{radicalFamilies.length}</strong><b>24 linked example characters</b></p></article><article><span>写</span><p><small>WRITING CANVAS</small><strong>∞</strong><b>repeat with self-check</b></p></article><article><span>练</span><p><small>ACTIVE CHALLENGE</small><strong>{questions.length}</strong><b>questions with explanations</b></p></article></div>
-    <div className="radical-skill-tree" aria-label="Radical families">{radicalFamilies.map((item,index)=><button className={selected===index?'active':''} onClick={()=>setSelected(index)} key={item.radical}><span>{item.radical}</span>{item.variant&&<em>{item.variant}</em>}<strong>{item.meaning}</strong><small>{index<2?'Foundation':index<5?'Developing':'Expanding'}</small></button>)}</div>
-    <article className="radical-family-card"><header><button onClick={()=>speak(family.radical)} aria-label={`Play ${family.radical}`}>▶</button><div><small>SELECTED COMPONENT FAMILY</small><h3>{family.radical}{family.variant&&<span> → {family.variant}</span>}</h3><p>{family.meaning}</p></div></header><div className="radical-character-chain">{family.characters.map(character=><button onClick={()=>speak(character.hanzi)} key={character.hanzi}><strong>{character.hanzi}</strong><span>{character.pinyin}</span><small>{character.meaning}</small></button>)}</div><footer><strong>Shape clue</strong><p>{family.hint}</p></footer></article>
-    <HandwritingLookup speak={speak} addPersonalWord={addPersonalWord}/>
-    <HanziWritingPad characters={family.characters} speak={speak} award={award}/>
-    <div className="hanzi-memory"><strong>Component memory</strong><p>木 is a tree. Two 木 form 林, a grove; three form 森, a forest. Repeated shapes often strengthen the original idea.</p></div>
-    <ChoiceDrill key={`radical-${selected}`} label="Hanzi radical" questions={questions} award={award} skill="Hanzi"/>
-  </section>;
+  const statsRef = useRef(stats);
+  const favoritesRef = useRef(favorites);
+  useEffect(() => {
+    statsRef.current = stats;
+  }, [stats]);
+  useEffect(() => {
+    favoritesRef.current = favorites;
+  }, [favorites]);
+  useEffect(() => {
+    let active = true;
+    import("./hsk-vocabulary.json")
+      .then((module) => {
+        if (active) setData(module.default as HskDictionaryData);
+      })
+      .catch(() => {
+        if (active)
+          setLoadError(
+            "The HSK flashcard library could not be loaded. Please retry.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [loadKey]);
+  const personalCards: HskDictionaryWord[] = personalWords.map((word) => ({
+    id: word.id,
+    h: word.hanzi,
+    py: word.pinyin,
+    m: word.english,
+    pos: "personal",
+    r: "",
+    q: 0,
+    l: 0,
+  }));
+  const adventureCards: HskDictionaryWord[] = allVocabulary.map((word) => ({
+    id: word.id,
+    h: word.hanzi,
+    py: word.pinyin,
+    m: word.english,
+    pos: "adventure",
+    r: "",
+    q: 0,
+    l: 0,
+  }));
+  const allHsk = data ? data.levels.flatMap((group) => group.words) : [];
+  const allSavedCandidates = [...allHsk, ...adventureCards];
+  const deckWords = !data
+    ? []
+    : deck === "personal"
+      ? personalCards
+      : deck === "saved"
+        ? allSavedCandidates.filter((word) => favorites.includes(word.id))
+        : selectHskWords(data, level, "new");
+  useEffect(() => {
+    if (!data) return;
+    const allHskWords = data.levels.flatMap((group) => group.words);
+    const adventure = allVocabulary.map((word) => ({
+      id: word.id,
+      h: word.hanzi,
+      py: word.pinyin,
+      m: word.english,
+      pos: "adventure",
+      r: "",
+      q: 0,
+      l: 0,
+    }));
+    const base =
+      deck === "personal"
+        ? personalWords.map((word) => ({
+            id: word.id,
+            h: word.hanzi,
+            py: word.pinyin,
+            m: word.english,
+            pos: "personal",
+            r: "",
+            q: 0,
+            l: 0,
+          }))
+        : deck === "saved"
+          ? [...allHskWords, ...adventure].filter((word) =>
+              favoritesRef.current.includes(word.id),
+            )
+          : selectHskWords(data, level, "new");
+    const words = base.filter(
+      (word) =>
+        filter === "all" ||
+        (filter === "due"
+          ? isFlashcardDue(statsRef.current[word.id])
+          : filter === "saved"
+            ? favoritesRef.current.includes(word.id)
+            : flashcardStatus(statsRef.current[word.id]) === filter),
+    );
+    setRoundIds(
+      buildFlashcardRound(words, statsRef.current, 10).map((word) => word.id),
+    );
+    setIndex(0);
+    setRevealed(false);
+    setRatings({ again: 0, hard: 0, good: 0, easy: 0 });
+  }, [data, level, filter, roundVersion, deck, personalWords]);
+  const current = [...allHsk, ...adventureCards, ...personalCards].find(
+    (word) => word.id === roundIds[index],
+  );
+  const counts: Record<FlashcardStatus, number> = {
+    unseen: 0,
+    learning: 0,
+    mastered: 0,
+  };
+  for (const word of deckWords) counts[flashcardStatus(stats[word.id])]++;
+  const dueCount = deckWords.filter((word) =>
+    isFlashcardDue(stats[word.id]),
+  ).length;
+  const finished = roundIds.length > 0 && index >= roundIds.length;
+  const status = current ? flashcardStatus(stats[current.id]) : "unseen";
+  const deckLabel =
+    deck === "hsk"
+      ? `HSK ${level}`
+      : deck === "saved"
+        ? "SAVED WORDS"
+        : "MY OWN WORDS";
+  function answer(rating: FlashcardRating) {
+    if (!current) return;
+    rate(current.id, rating);
+    setRatings({ ...ratings, [rating]: ratings[rating] + 1 });
+    setIndex(index + 1);
+    setRevealed(false);
+  }
+  function restart() {
+    setRoundVersion(roundVersion + 1);
+  }
+  function chooseDeck(value: Deck) {
+    setDeck(value);
+    setFilter("all");
+  }
+  return (
+    <section className="learning-panel hsk-flashcard-panel">
+      <PanelTitle
+        eyebrow="FLASHCARD DECKS · SPACED REPETITION"
+        title="HSK, saved, and personal decks"
+        copy="Every rating sets a real due date. Personal words use the same demanding review schedule as verified HSK vocabulary."
+      />
+      {!data && !loadError && (
+        <div className="dictionary-loading" role="status">
+          <span />
+          <span />
+          <span />
+          <p>Preparing your flashcards…</p>
+        </div>
+      )}
+      {loadError && (
+        <div className="dictionary-load-error" role="alert">
+          <span>!</span>
+          <div>
+            <strong>Flashcards unavailable</strong>
+            <p>{loadError}</p>
+          </div>
+          <button
+            onClick={() => {
+              setLoadError("");
+              setLoadKey(loadKey + 1);
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {data && (
+        <>
+          <div className="flashcard-decks" aria-label="Flashcard deck">
+            <button
+              className={deck === "hsk" ? "active" : ""}
+              onClick={() => chooseDeck("hsk")}
+            >
+              <span>级</span>
+              <strong>HSK 1–6</strong>
+              <small>Verified course words</small>
+            </button>
+            <button
+              className={deck === "saved" ? "active" : ""}
+              onClick={() => chooseDeck("saved")}
+            >
+              <span>★</span>
+              <strong>Saved words</strong>
+              <small>{favorites.length} in My Library</small>
+            </button>
+            <button
+              className={deck === "personal" ? "active" : ""}
+              onClick={() => chooseDeck("personal")}
+            >
+              <span>我</span>
+              <strong>My own words</strong>
+              <small>{personalWords.length} added manually</small>
+            </button>
+          </div>
+          {deck === "hsk" && (
+            <div
+              className="hsk-level-picker flashcard-level-picker"
+              aria-label="Flashcard HSK level"
+            >
+              {[1, 2, 3, 4, 5, 6].map((item) => (
+                <button
+                  className={level === item ? "active" : ""}
+                  onClick={() => setLevel(item)}
+                  key={item}
+                >
+                  <span>HSK</span>
+                  <b>{item}</b>
+                  <small>
+                    {data.levels
+                      .find((group) => group.level === item)
+                      ?.words.length.toLocaleString() ?? 0}{" "}
+                    words
+                  </small>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flashcard-overview">
+            <article>
+              <small>{deckLabel} DECK</small>
+              <strong>{deckWords.length.toLocaleString()}</strong>
+              <span>available cards</span>
+            </article>
+            <article className="due">
+              <small>DUE NOW</small>
+              <strong>{dueCount}</strong>
+              <span>scheduled for review</span>
+            </article>
+            <article>
+              <small>LEARNING</small>
+              <strong>{counts.learning}</strong>
+              <span>building stability</span>
+            </article>
+            <article>
+              <small>MASTERED</small>
+              <strong>{counts.mastered}</strong>
+              <span>7+ day interval</span>
+            </article>
+            <article>
+              <small>UNSEEN</small>
+              <strong>{counts.unseen}</strong>
+              <span>ready to discover</span>
+            </article>
+          </div>
+          <div className="flashcard-filters" aria-label="Flashcard filters">
+            {(
+              [
+                ["all", "All cards"],
+                ["due", "Due now"],
+                ["unseen", "Unseen"],
+                ["learning", "Learning"],
+                ["mastered", "Mastered"],
+                ...(deck === "hsk" ? [["saved", "★ Saved"]] : []),
+              ] as [Filter, string][]
+            ).map(([id, label]) => (
+              <button
+                className={filter === id ? "active" : ""}
+                onClick={() => setFilter(id)}
+                key={id}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {finished ? (
+            <div className="flashcard-finish">
+              <span>成</span>
+              <p className="eyebrow">ROUND COMPLETE · {deckLabel}</p>
+              <h3>
+                {ratings.good + ratings.easy} strong · {ratings.hard} hard ·{" "}
+                {ratings.again} again
+              </h3>
+              <p>
+                Your ratings created new review dates. Mastery requires accurate
+                recall plus a stable interval of at least seven days.
+              </p>
+              <button onClick={restart}>Start another 10-card round →</button>
+            </div>
+          ) : current ? (
+            <>
+              <div className="flashcard-round-head">
+                <span>
+                  Card {index + 1} of {roundIds.length}
+                </span>
+                <div>
+                  <i style={{ width: `${(index / roundIds.length) * 100}%` }} />
+                </div>
+                <b className={`flashcard-status ${status}`}>{status}</b>
+              </div>
+              <article
+                className={`hsk-study-card ${revealed ? "revealed" : ""}`}
+              >
+                <header>
+                  <span>
+                    {current.l
+                      ? `HSK ${current.l}`
+                      : current.pos === "adventure"
+                        ? "ADVENTURE"
+                        : "MY WORD"}{" "}
+                    · {status.toUpperCase()}
+                  </span>
+                  <div>
+                    <button
+                      onClick={() => speak(current.h)}
+                      aria-label={`Play ${current.h}`}
+                    >
+                      ▶ Hear
+                    </button>
+                    {current.pos !== "personal" && (
+                      <button
+                        className={
+                          favorites.includes(current.id) ? "saved" : ""
+                        }
+                        onClick={() => toggleFavorite(current.id)}
+                        aria-label={`${favorites.includes(current.id) ? "Remove" : "Save"} ${current.h}`}
+                      >
+                        {favorites.includes(current.id) ? "★" : "☆"}
+                      </button>
+                    )}
+                  </div>
+                </header>
+                <button
+                  className="flashcard-face"
+                  onClick={() => setRevealed(true)}
+                  disabled={revealed}
+                >
+                  <strong>{current.h}</strong>
+                  {revealed ? (
+                    <>
+                      <span>{current.py || "Pinyin not added"}</span>
+                      <h3>{current.m}</h3>
+                      <p>
+                        {current.l
+                          ? `HSK ${current.l}${current.pos ? ` · ${current.pos}` : ""}${current.r ? ` · radical ${current.r}` : ""}`
+                          : current.pos === "adventure"
+                            ? "Adventure vocabulary · saved in My Library"
+                            : "Personal vocabulary · saved locally"}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <span>Think of the pronunciation and meaning</span>
+                      <p>Tap to reveal the answer</p>
+                    </>
+                  )}
+                </button>
+              </article>
+              <div className="flashcard-actions">
+                {!revealed ? (
+                  <button className="reveal" onClick={() => setRevealed(true)}>
+                    Reveal answer
+                  </button>
+                ) : (
+                  <>
+                    {(
+                      [
+                        ["again", "Again", "Forgot it"],
+                        ["hard", "Hard", "Barely recalled"],
+                        ["good", "Good", "Recalled well"],
+                        ["easy", "Easy", "Instant recall"],
+                      ] as [FlashcardRating, string, string][]
+                    ).map(([rating, label, copy]) => (
+                      <button
+                        className={rating}
+                        onClick={() => answer(rating)}
+                        key={rating}
+                      >
+                        <strong>{label}</strong>
+                        <small>
+                          {copy} ·{" "}
+                          {flashcardRatingPreview(stats[current.id], rating)}
+                        </small>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flashcard-finish empty">
+              <span>空</span>
+              <h3>No cards in this deck or filter</h3>
+              <p>
+                {deck === "personal"
+                  ? "Add a word in My Dictionary, then return here to practice it."
+                  : "Choose another deck, HSK level, or filter."}
+              </p>
+              <button onClick={() => setFilter("all")}>
+                Show all {deckLabel.toLowerCase()} cards
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
 }
 
-function HandwritingLookup({speak,addPersonalWord}:{speak:(v:string)=>void;addPersonalWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}){
-  const canvasRef=useRef<HTMLCanvasElement|null>(null);const drawing=useRef(false);const [strokes,setStrokes]=useState(0);const [data,setData]=useState<HskDictionaryData|null>(null);const [query,setQuery]=useState('');const [results,setResults]=useState<HskDictionaryWord[]>([]);const [scanning,setScanning]=useState(false);const [progress,setProgress]=useState(0);const [error,setError]=useState('');
-  useEffect(()=>{import('./hsk-vocabulary.json').then(module=>setData(module.default as HskDictionaryData)).catch(()=>setError('HSK dictionary could not be opened.'))},[]);
-  function point(event:React.PointerEvent<HTMLCanvasElement>){const canvas=canvasRef.current!;const rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*canvas.width/rect.width,y:(event.clientY-rect.top)*canvas.height/rect.height}}
-  function start(event:React.PointerEvent<HTMLCanvasElement>){const canvas=canvasRef.current!;const context=canvas.getContext('2d')!;const position=point(event);drawing.current=true;canvas.setPointerCapture(event.pointerId);context.beginPath();context.moveTo(position.x,position.y);context.lineCap='round';context.lineJoin='round';context.strokeStyle='#153f36';context.lineWidth=18;setStrokes(value=>value+1);setError('')}
-  function move(event:React.PointerEvent<HTMLCanvasElement>){if(!drawing.current)return;const context=canvasRef.current!.getContext('2d')!;const position=point(event);context.lineTo(position.x,position.y);context.stroke()}
-  function stop(){drawing.current=false}
-  function clear(){const canvas=canvasRef.current!;canvas.getContext('2d')!.clearRect(0,0,canvas.width,canvas.height);setStrokes(0);setQuery('');setResults([]);setError('')}
-  function search(value:string){setQuery(value);if(!data||!value.trim()){setResults([]);return}const words=data.levels.flatMap(group=>group.words);setResults(searchHskWords(words,value).slice(0,12))}
-  async function recognize(){const canvas=canvasRef.current;if(!canvas||!data||!strokes||scanning)return;setScanning(true);setProgress(0);setError('');try{const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('Canvas unavailable')),'image/png'));const Tesseract=await import('tesseract.js');const worker=await Tesseract.createWorker('chi_sim',Tesseract.OEM.LSTM_ONLY,{logger:message=>setProgress(Math.round((message.progress??0)*100))});try{await worker.setParameters({tessedit_pageseg_mode:Tesseract.PSM.SINGLE_CHAR});const recognition=await worker.recognize(blob);const detected=recognition.data.text.replace(/\s/g,'').slice(0,4);setQuery(detected);const allWords=data.levels.flatMap(group=>group.words);const matches=imageDictionaryMatches(detected,allWords,12);setResults(matches.length?matches:searchHskWords(allWords,detected).slice(0,12));if(!detected||!matches.length)setError('No confident match yet. Add a stroke, redraw larger, or type the candidate below.')}finally{await worker.terminate()}}catch{setError('Handwriting recognition needs the Chinese OCR model on first use. Check connection and try again.')}finally{setScanning(false)}}
-  return <section className="handwriting-lookup"><header><div><p className="eyebrow">HANDWRITING LOOKUP · 手写查词</p><h3>Draw a Hanzi, then find it in the HSK dictionary</h3><p>Write one large character at a time. Recognition runs in your browser; results can be heard and saved to My Library.</p></div><span>像 Pleco</span></header><div className="handwriting-lookup-grid"><div><div className="lookup-canvas-wrap"><span aria-hidden="true">田</span><canvas ref={canvasRef} width="620" height="380" onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop}/></div><div className="lookup-actions"><small>{strokes} stroke{strokes===1?'':'s'} drawn</small><button onClick={clear}>Clear</button><button className="primary" disabled={!strokes||scanning||!data} onClick={recognize}>{scanning?`Recognizing ${progress}%…`:'Find character →'}</button></div></div><div className="lookup-results"><label><span>OCR result or manual correction</span><input value={query} onChange={event=>search(event.target.value)} placeholder="例如：学 / xué / study"/></label>{error&&<p className="lookup-error">{error}</p>}{results.length?<div>{results.map(word=><article key={word.id}><button onClick={()=>speak(word.h)}>▶</button><p><strong>{word.h}</strong><span>{word.py}</span><small>HSK {word.l} · {word.m}</small></p><button onClick={()=>addPersonalWord({hanzi:word.h,pinyin:word.py,english:word.m})}>☆ Save</button></article>)}</div>:<div className="lookup-empty"><span>写</span><p>Draw a character and tap Find character. You can correct the OCR text manually if handwriting is ambiguous.</p></div>}</div></div><footer>Handwriting OCR can be imperfect—especially for cursive strokes. Candidate selection and pinyin search remain available as a fallback.</footer></section>
+function Dictionary({
+  favorites,
+  personalWords,
+  toggleFavorite,
+  addPersonalWord,
+  removePersonalWord,
+  speak,
+  award,
+}: {
+  favorites: string[];
+  personalWords: PersonalWord[];
+  toggleFavorite: (id: string) => void;
+  addPersonalWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+  removePersonalWord: (id: string) => void;
+  speak: (text: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [savedOnly, setSavedOnly] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState({ hanzi: "", pinyin: "", english: "" });
+  const [section, setSection] = useState<"hsk" | "personal" | "adventure">(
+    "hsk",
+  );
+  const [level, setLevel] = useState(1);
+  const [mode, setMode] = useState<HskDictionaryMode>("new");
+  const [visible, setVisible] = useState(60);
+  const [data, setData] = useState<HskDictionaryData | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [loadKey, setLoadKey] = useState(0);
+  const [practiceOpen, setPracticeOpen] = useState(false);
+  useEffect(() => {
+    let active = true;
+    import("./hsk-vocabulary.json")
+      .then((module) => {
+        if (active) setData(module.default as HskDictionaryData);
+      })
+      .catch(() => {
+        if (active)
+          setLoadError(
+            "The HSK vocabulary library could not be loaded. Please retry.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [loadKey]);
+  const needle = query.trim().toLowerCase();
+  const curated = allVocabulary.filter(
+    (word) =>
+      (!savedOnly || favorites.includes(word.id)) &&
+      (!needle ||
+        `${word.hanzi} ${word.pinyin} ${word.english}`
+          .toLowerCase()
+          .includes(needle)),
+  );
+  const personal = personalWords.filter(
+    (word) =>
+      !needle ||
+      `${word.hanzi} ${word.pinyin} ${word.english}`
+        .toLowerCase()
+        .includes(needle),
+  );
+  const selectedWords = data ? selectHskWords(data, level, mode) : [];
+  const filteredHsk = searchHskWords(
+    selectedWords,
+    query,
+    savedOnly,
+    favorites,
+  );
+  const coverage = hskCoverage(selectedWords, favorites);
+  const officialCount = data
+    ? mode === "new"
+      ? data.meta.officialNewCounts[level]
+      : data.meta.officialCumulativeCounts[level]
+    : 0;
+  const savedHsk = data
+    ? data.levels
+        .flatMap((group) => group.words)
+        .filter((word) => favorites.includes(word.id))
+    : [];
+  const practiceWords = savedHsk.slice(0, Math.min(8, savedHsk.length));
+  const practiceQuestions: DrillQuestion[] = practiceWords.map(
+    (word, index) => ({
+      prompt: `What does ${word.h} mean?`,
+      choices: [
+        word.m,
+        selectedWords[(index + 17) % Math.max(1, selectedWords.length)]?.m,
+        selectedWords[(index + 43) % Math.max(1, selectedWords.length)]?.m,
+      ].filter(
+        (value, i, values): value is string =>
+          !!value && values.indexOf(value) === i,
+      ),
+      answer: word.m,
+      explanation: `${word.h} · ${word.py} means “${word.m}.”`,
+    }),
+  );
+  function save() {
+    if (!draft.hanzi.trim() || !draft.english.trim()) return;
+    addPersonalWord({
+      hanzi: draft.hanzi.trim(),
+      pinyin: draft.pinyin.trim(),
+      english: draft.english.trim(),
+    });
+    setDraft({ hanzi: "", pinyin: "", english: "" });
+    setAdding(false);
+    setSection("personal");
+  }
+  function changeSection(next: typeof section) {
+    setSection(next);
+    setQuery("");
+    setSavedOnly(false);
+    setVisible(60);
+  }
+  function changeLevel(next: number) {
+    setLevel(next);
+    setVisible(60);
+  }
+  function changeMode(next: HskDictionaryMode) {
+    setMode(next);
+    setVisible(60);
+  }
+  return (
+    <section className="learning-panel dictionary-panel">
+      <PanelTitle
+        eyebrow="MY DICTIONARY · 生词本"
+        title="One organized home for every word"
+        copy="Browse verified HSK 3.0 levels, your own vocabulary, and words from Adventure."
+      />
+      <div
+        className="dictionary-sections"
+        role="tablist"
+        aria-label="Dictionary sections"
+      >
+        <button
+          role="tab"
+          aria-selected={section === "hsk"}
+          className={section === "hsk" ? "active" : ""}
+          onClick={() => changeSection("hsk")}
+        >
+          <span>级</span>
+          <div>
+            <strong>HSK Vocabulary</strong>
+            <small>Levels 1–6</small>
+          </div>
+        </button>
+        <button
+          role="tab"
+          aria-selected={section === "personal"}
+          className={section === "personal" ? "active" : ""}
+          onClick={() => changeSection("personal")}
+        >
+          <span>我</span>
+          <div>
+            <strong>My Own Words</strong>
+            <small>{personalWords.length} saved manually</small>
+          </div>
+        </button>
+        <button
+          role="tab"
+          aria-selected={section === "adventure"}
+          className={section === "adventure" ? "active" : ""}
+          onClick={() => changeSection("adventure")}
+        >
+          <span>旅</span>
+          <div>
+            <strong>Adventure Words</strong>
+            <small>{allVocabulary.length} curated words</small>
+          </div>
+        </button>
+      </div>
+      <div className="dictionary-tools">
+        <label>
+          <span>⌕</span>
+          <input
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setVisible(60);
+            }}
+            placeholder="Search Hanzi, pinyin, meaning, or word type…"
+          />
+        </label>
+        <button
+          className={savedOnly ? "active" : ""}
+          onClick={() => {
+            setSavedOnly(!savedOnly);
+            setVisible(60);
+          }}
+        >
+          ★ Saved ({favorites.length + personalWords.length})
+        </button>
+        <button onClick={() => setAdding(!adding)}>＋ Add word</button>
+      </div>
+      {adding && (
+        <div className="add-word-form">
+          <input
+            aria-label="Hanzi"
+            value={draft.hanzi}
+            onChange={(event) =>
+              setDraft({ ...draft, hanzi: event.target.value })
+            }
+            placeholder="汉字"
+          />
+          <input
+            aria-label="Pinyin"
+            value={draft.pinyin}
+            onChange={(event) =>
+              setDraft({ ...draft, pinyin: event.target.value })
+            }
+            placeholder="Pinyin"
+          />
+          <input
+            aria-label="English meaning"
+            value={draft.english}
+            onChange={(event) =>
+              setDraft({ ...draft, english: event.target.value })
+            }
+            placeholder="English meaning"
+          />
+          <button
+            disabled={!draft.hanzi.trim() || !draft.english.trim()}
+            onClick={save}
+          >
+            Save word
+          </button>
+        </div>
+      )}
+      {section === "hsk" && (
+        <>
+          {!data && !loadError && (
+            <div className="dictionary-loading" role="status">
+              <span />
+              <span />
+              <span />
+              <p>Loading the verified HSK vocabulary library…</p>
+            </div>
+          )}
+          {loadError && (
+            <div className="dictionary-load-error" role="alert">
+              <span>!</span>
+              <div>
+                <strong>Vocabulary library unavailable</strong>
+                <p>{loadError}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setLoadError("");
+                  setLoadKey(loadKey + 1);
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {data && (
+            <>
+              <div className="hsk-dictionary-head">
+                <div>
+                  <p className="eyebrow">
+                    GF0025-2021 · NORMALIZED SEARCH VIEW
+                  </p>
+                  <h3>Browse HSK 3.0 vocabulary</h3>
+                  <p>
+                    Choose one level, then show only words introduced there or
+                    every word accumulated through that level.
+                  </p>
+                </div>
+                <div>
+                  <span>
+                    <b>{filteredHsk.length}</b>matching entries
+                  </span>
+                  <span>
+                    <b>{coverage.count}</b>saved · {coverage.percent}%
+                  </span>
+                </div>
+              </div>
+              {savedHsk.length >= 3 && (
+                <div className="saved-practice-banner">
+                  <span>练</span>
+                  <div>
+                    <small>SAVED WORDS → ACTIVE RECALL</small>
+                    <strong>
+                      {savedHsk.length} HSK words ready to practice
+                    </strong>
+                    <p>
+                      Turn your dictionary collection into a short meaning quiz.
+                    </p>
+                  </div>
+                  <button onClick={() => setPracticeOpen(!practiceOpen)}>
+                    {practiceOpen ? "Close practice" : "Practice saved words →"}
+                  </button>
+                </div>
+              )}
+              {practiceOpen && practiceQuestions.length >= 3 && (
+                <div className="hsk-saved-practice">
+                  <div>
+                    <p className="eyebrow">
+                      PERSONAL DECK · {practiceQuestions.length} QUESTIONS
+                    </p>
+                    <h3>Practice words you chose</h3>
+                  </div>
+                  <ChoiceDrill
+                    label="Saved HSK vocabulary"
+                    questions={practiceQuestions}
+                    award={award}
+                    skill="Vocabulary"
+                  />
+                </div>
+              )}
+              <div className="hsk-level-picker" aria-label="HSK level">
+                {[1, 2, 3, 4, 5, 6].map((item) => (
+                  <button
+                    className={level === item ? "active" : ""}
+                    onClick={() => changeLevel(item)}
+                    key={item}
+                  >
+                    <span>HSK</span>
+                    <b>{item}</b>
+                    <small>
+                      {data.meta.officialCumulativeCounts[
+                        item
+                      ].toLocaleString()}{" "}
+                      official rows total
+                    </small>
+                  </button>
+                ))}
+              </div>
+              <div className="hsk-mode-switch">
+                <button
+                  className={mode === "new" ? "active" : ""}
+                  onClick={() => changeMode("new")}
+                >
+                  <span>NEW IN HSK {level}</span>
+                  <strong>Level {level} additions</strong>
+                  <small>
+                    {data.meta.officialNewCounts[level].toLocaleString()}{" "}
+                    official rows
+                  </small>
+                </button>
+                <button
+                  className={mode === "cumulative" ? "active" : ""}
+                  onClick={() => changeMode("cumulative")}
+                >
+                  <span>HSK 1 → {level}</span>
+                  <strong>All words through HSK {level}</strong>
+                  <small>
+                    {data.meta.officialCumulativeCounts[level].toLocaleString()}{" "}
+                    official rows
+                  </small>
+                </button>
+              </div>
+              <div className="hsk-library-summary">
+                <div>
+                  <span>{mode === "new" ? "新" : "全"}</span>
+                  <p>
+                    <small>
+                      {mode === "new"
+                        ? `WORDS INTRODUCED AT HSK ${level}`
+                        : `CUMULATIVE HSK 1–${level}`}
+                    </small>
+                    <strong>
+                      {selectedWords.length.toLocaleString()} normalized
+                      searchable entries
+                    </strong>
+                    <b>
+                      Official standard count: {officialCount.toLocaleString()}{" "}
+                      rows
+                    </b>
+                  </p>
+                </div>
+                <i>
+                  <em style={{ width: `${coverage.percent}%` }} />
+                </i>
+                <p>
+                  {coverage.count} saved for later · {coverage.percent}% of this
+                  view
+                </p>
+              </div>
+              {filteredHsk.length ? (
+                <>
+                  <div className="hsk-word-grid">
+                    {filteredHsk.slice(0, visible).map((word) => (
+                      <article key={word.id}>
+                        <button
+                          className="dictionary-audio"
+                          onClick={() => speak(word.h)}
+                          aria-label={`Play ${word.h}`}
+                        >
+                          ▶
+                        </button>
+                        <div>
+                          <strong>{word.h}</strong>
+                          <span>{word.py || "Pinyin unavailable"}</span>
+                          <b>{word.m}</b>
+                          <small>
+                            HSK {word.l}
+                            {word.pos ? ` · ${word.pos}` : ""}
+                            {word.r ? ` · radical ${word.r}` : ""}
+                          </small>
+                        </div>
+                        <button
+                          className={favorites.includes(word.id) ? "saved" : ""}
+                          onClick={() => toggleFavorite(word.id)}
+                          aria-label={`${favorites.includes(word.id) ? "Remove" : "Save"} ${word.h}`}
+                        >
+                          {favorites.includes(word.id) ? "★" : "☆"}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                  {visible < filteredHsk.length && (
+                    <button
+                      className="dictionary-load-more"
+                      onClick={() => setVisible(visible + 60)}
+                    >
+                      Show 60 more · {filteredHsk.length - visible} remaining
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="dictionary-empty">
+                  <span>词</span>
+                  <strong>No matching HSK words</strong>
+                  <p>
+                    Try another level, switch between new and cumulative, or
+                    clear your search.
+                  </p>
+                </div>
+              )}
+              <div className="hsk-source-note">
+                <span>源</span>
+                <p>
+                  <strong>Source & classification</strong>
+                  <small>
+                    Level metadata follows the official GF0025-2021 standard.
+                    Search entries normalize written variants, so visible entry
+                    totals can differ slightly from official row counts.
+                  </small>
+                </p>
+                <a
+                  href={data.meta.officialSource}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Official standard ↗
+                </a>
+                <a
+                  href={data.meta.datasetSource}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  MIT dataset ↗
+                </a>
+              </div>
+            </>
+          )}
+        </>
+      )}
+      {section === "personal" &&
+        (personal.length ? (
+          <>
+            <p className="dictionary-section-label">
+              MY OWN WORDS · {personal.length}
+            </p>
+            <div className="dictionary-list personal-list">
+              {personal.map((word) => (
+                <article key={word.id}>
+                  <button
+                    className="dictionary-audio"
+                    onClick={() => speak(word.hanzi)}
+                  >
+                    ▶
+                  </button>
+                  <div>
+                    <strong>{word.hanzi}</strong>
+                    <span>{word.pinyin || "—"}</span>
+                    <b>{word.english}</b>
+                    <small>Personal vocabulary · saved locally</small>
+                  </div>
+                  <button
+                    onClick={() => removePersonalWord(word.id)}
+                    aria-label={`Remove ${word.hanzi}`}
+                  >
+                    ×
+                  </button>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="dictionary-empty">
+            <span>我</span>
+            <strong>No personal words yet</strong>
+            <p>
+              Use “Add word” whenever you encounter useful Chinese in real life.
+            </p>
+          </div>
+        ))}
+      {section === "adventure" &&
+        (curated.length ? (
+          <>
+            <p className="dictionary-section-label">
+              ADVENTURE VOCABULARY · {curated.length}
+            </p>
+            <div className="dictionary-list">
+              {curated.map((word) => (
+                <article key={word.id}>
+                  <button
+                    className="dictionary-audio"
+                    onClick={() => speak(word.hanzi)}
+                  >
+                    ▶
+                  </button>
+                  <div>
+                    <strong>{word.hanzi}</strong>
+                    <span>{word.pinyin}</span>
+                    <b>{word.english}</b>
+                    <small>
+                      {word.chapter} · {word.example.hanzi}
+                    </small>
+                  </div>
+                  <button
+                    className={favorites.includes(word.id) ? "saved" : ""}
+                    onClick={() => toggleFavorite(word.id)}
+                    aria-label={`${favorites.includes(word.id) ? "Remove" : "Save"} ${word.hanzi}`}
+                  >
+                    {favorites.includes(word.id) ? "★" : "☆"}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="dictionary-empty">
+            <span>旅</span>
+            <strong>No matching Adventure words</strong>
+            <p>Try a broader search or turn off the saved-only filter.</p>
+          </div>
+        ))}
+    </section>
+  );
 }
 
-function HanziWritingPad({characters,speak,award}:{characters:{hanzi:string;pinyin:string;meaning:string}[];speak:(v:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){
-  const canvasRef=useRef<HTMLCanvasElement|null>(null);
-  const strokeRef=useRef<HTMLDivElement|null>(null);
-  const writerRef=useRef<HanziWriter|null>(null);
-  const drawing=useRef(false);
-  const [targetIndex,setTargetIndex]=useState(0);
-  const [strokes,setStrokes]=useState(0);
-  const [guide,setGuide]=useState(true);
-  const [result,setResult]=useState('');
-  const target=characters[targetIndex%characters.length];
-  useEffect(()=>{let active=true;import('hanzi-writer').then(module=>{if(!active||!strokeRef.current)return;strokeRef.current.innerHTML='';writerRef.current=module.default.create(strokeRef.current,target.hanzi,{width:150,height:150,padding:8,showOutline:true,strokeColor:'#174e42',radicalColor:'#e7a84e'});writerRef.current.animateCharacter()}).catch(()=>undefined);return()=>{active=false}},[target.hanzi]);
-  function point(event:React.PointerEvent<HTMLCanvasElement>){const canvas=canvasRef.current!;const rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*canvas.width/rect.width,y:(event.clientY-rect.top)*canvas.height/rect.height}}
-  function start(event:React.PointerEvent<HTMLCanvasElement>){const canvas=canvasRef.current!;const ctx=canvas.getContext('2d')!;const p=point(event);drawing.current=true;canvas.setPointerCapture(event.pointerId);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#174e42';ctx.lineWidth=14;setStrokes(value=>value+1);setResult('')}
-  function move(event:React.PointerEvent<HTMLCanvasElement>){if(!drawing.current)return;const ctx=canvasRef.current!.getContext('2d')!;const p=point(event);ctx.lineTo(p.x,p.y);ctx.stroke()}
-  function stop(){drawing.current=false}
-  function clear(){const canvas=canvasRef.current!;canvas.getContext('2d')!.clearRect(0,0,canvas.width,canvas.height);setStrokes(0);setResult('')}
-  function assess(correct:boolean){setResult(correct?'Looks recognizable — saved as Hanzi evidence.':'Saved for extra practice. Try once more while watching the guide.');award(`Handwriting ${target.hanzi}`,correct?12:5,'Hanzi',correct)}
-  function next(){clear();setTargetIndex(value=>(value+1)%characters.length)}
-  return <section className="hanzi-writing-lab"><header><div><p className="eyebrow">HANDWRITING PRACTICE · STROKE ORDER</p><h3>Write {target.hanzi} <span>{target.pinyin} · {target.meaning}</span></h3></div><button onClick={()=>speak(target.hanzi)}>▶ Hear</button></header><div className="stroke-order-guide"><div ref={strokeRef}/><p><strong>Animated stroke order</strong><small>Watch direction and sequence before drawing.</small><button onClick={()=>writerRef.current?.animateCharacter()}>Replay strokes →</button></p></div><div className="hanzi-canvas-wrap">{guide&&<span aria-hidden="true">{target.hanzi}</span>}<canvas ref={canvasRef} width="720" height="380" onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop}/></div><div className="hanzi-writing-actions"><span>{strokes} pen stroke{strokes===1?'':'s'}</span><button onClick={()=>setGuide(value=>!value)}>{guide?'Hide guide':'Show guide'}</button><button onClick={clear}>Clear</button><button onClick={next}>Next character →</button></div>{strokes>0&&<div className="hanzi-self-check"><p>Compare the overall shape, spacing, and component position. How did it look?</p><button onClick={()=>assess(false)}>Needs practice</button><button className="primary" onClick={()=>assess(true)}>Looks recognizable</button></div>}{result&&<p className="hanzi-writing-result">{result}</p>}<small>The animated reference uses verified character stroke data; recognition candidates still depend on clear handwriting.</small></section>;
+function LibraryBank({
+  favorites,
+  personalWords,
+  flashcardStats,
+  toggleFavorite,
+  removePersonalWord,
+  speak,
+  award,
+}: {
+  favorites: string[];
+  personalWords: PersonalWord[];
+  flashcardStats: Record<string, FlashcardStat>;
+  toggleFavorite: (id: string) => void;
+  removePersonalWord: (id: string) => void;
+  speak: (text: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  type SourceFilter = "all" | LibraryBankWord["source"];
+  type SortMode = "recent" | "hsk" | "hanzi";
+  const [data, setData] = useState<HskDictionaryData | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [loadKey, setLoadKey] = useState(0);
+  const [query, setQuery] = useState("");
+  const [source, setSource] = useState<SourceFilter>("all");
+  const [hsk, setHsk] = useState<number | "all">("all");
+  const [sort, setSort] = useState<SortMode>("recent");
+  const [practiceOpen, setPracticeOpen] = useState(false);
+  useEffect(() => {
+    let active = true;
+    import("./hsk-vocabulary.json")
+      .then((module) => {
+        if (active) setData(module.default as HskDictionaryData);
+      })
+      .catch(() => {
+        if (active)
+          setLoadError(
+            "Your saved HSK library could not be loaded. Please retry.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [loadKey]);
+  const hskWords = data ? data.levels.flatMap((group) => group.words) : [];
+  const bank = buildLibraryBank({
+    favoriteIds: favorites,
+    hskWords,
+    adventureWords: allVocabulary,
+    personalWords,
+  });
+  const counts = libraryBankCounts(bank);
+  const due = bank.filter(
+    (word) => word.source === "hsk" && isFlashcardDue(flashcardStats[word.id]),
+  ).length;
+  const mastered = bank.filter(
+    (word) =>
+      word.source === "hsk" &&
+      flashcardStatus(flashcardStats[word.id]) === "mastered",
+  ).length;
+  const visible = filterLibraryBank(bank, {
+    query,
+    source,
+    hsk: source === "adventure" || source === "personal" ? "all" : hsk,
+  }).sort((left, right) =>
+    sort === "hsk"
+      ? (left.hsk ?? 99) - (right.hsk ?? 99) ||
+        left.hanzi.localeCompare(right.hanzi, "zh")
+      : sort === "hanzi"
+        ? left.hanzi.localeCompare(right.hanzi, "zh")
+        : right.savedOrder - left.savedOrder,
+  );
+  const practiceWords = bank.slice(0, Math.min(10, bank.length));
+  const practiceQuestions: DrillQuestion[] = practiceWords.map(
+    (word, index) => ({
+      prompt: `What does ${word.hanzi} mean?`,
+      choices: [
+        word.meaning,
+        bank[(index + 3) % Math.max(1, bank.length)]?.meaning,
+        bank[(index + 7) % Math.max(1, bank.length)]?.meaning,
+      ].filter(
+        (value, itemIndex, values): value is string =>
+          !!value && values.indexOf(value) === itemIndex,
+      ),
+      answer: word.meaning,
+      explanation: `${word.hanzi} · ${word.pinyin || "pinyin not added"} means “${word.meaning}.”`,
+    }),
+  );
+  function remove(word: LibraryBankWord) {
+    if (word.source === "personal") removePersonalWord(word.id);
+    else toggleFavorite(word.id);
+  }
+  return (
+    <section className="learning-panel library-bank">
+      <PanelTitle
+        eyebrow="MY LIBRARY BANK · 我的词库"
+        title="Every saved word in one personal bank"
+        copy="Stars from Image Lookup, Smart Reader, My Dictionary, and Flashcards all arrive here automatically."
+      />
+      {!data && !loadError && (
+        <div className="dictionary-loading" role="status">
+          <span />
+          <span />
+          <span />
+          <p>Opening your personal word bank…</p>
+        </div>
+      )}
+      {loadError && (
+        <div className="dictionary-load-error" role="alert">
+          <span>!</span>
+          <div>
+            <strong>Library unavailable</strong>
+            <p>{loadError}</p>
+          </div>
+          <button
+            onClick={() => {
+              setLoadError("");
+              setLoadKey((value) => value + 1);
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {data && (
+        <>
+          <div className="library-bank-summary">
+            <article>
+              <span>藏</span>
+              <p>
+                <small>TOTAL SAVED</small>
+                <strong>{counts.total}</strong>
+                <b>words in your bank</b>
+              </p>
+            </article>
+            <article>
+              <span>级</span>
+              <p>
+                <small>HSK 1–6</small>
+                <strong>{counts.hsk}</strong>
+                <b>verified entries</b>
+              </p>
+            </article>
+            <article>
+              <span>复</span>
+              <p>
+                <small>DUE NOW</small>
+                <strong>{due}</strong>
+                <b>scheduled flashcards</b>
+              </p>
+            </article>
+            <article>
+              <span>成</span>
+              <p>
+                <small>MASTERED</small>
+                <strong>{mastered}</strong>
+                <b>stable 7+ day interval</b>
+              </p>
+            </article>
+          </div>
+          <div className="library-source-note">
+            <span>★</span>
+            <p>
+              <strong>One Save button, one bank</strong>
+              <small>
+                When you tap a star anywhere in Learn Center—including a word
+                found inside a photo—the same word is stored here. Data stays on
+                this device until you choose a sync provider.
+              </small>
+            </p>
+          </div>
+          <div className="library-tools">
+            <label>
+              <span>⌕</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search saved Hanzi, pinyin, or meaning…"
+              />
+            </label>
+            <select
+              aria-label="Sort library"
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortMode)}
+            >
+              <option value="recent">Recently saved</option>
+              <option value="hsk">HSK level</option>
+              <option value="hanzi">Hanzi A–Z</option>
+            </select>
+            <button
+              disabled={practiceQuestions.length < 3}
+              onClick={() => setPracticeOpen((value) => !value)}
+            >
+              {practiceOpen
+                ? "Close practice"
+                : `Practice ${Math.min(10, bank.length)} words →`}
+            </button>
+          </div>
+          <div className="library-source-filters">
+            {(
+              [
+                ["all", "All", counts.total],
+                ["hsk", "HSK", counts.hsk],
+                ["adventure", "Adventure", counts.adventure],
+                ["personal", "My own", counts.personal],
+              ] as [SourceFilter, string, number][]
+            ).map(([id, label, count]) => (
+              <button
+                className={source === id ? "active" : ""}
+                onClick={() => {
+                  setSource(id);
+                  if (id !== "hsk" && id !== "all") setHsk("all");
+                }}
+                key={id}
+              >
+                {label}
+                <b>{count}</b>
+              </button>
+            ))}
+          </div>
+          {(source === "all" || source === "hsk") && (
+            <div className="library-hsk-filters">
+              <button
+                className={hsk === "all" ? "active" : ""}
+                onClick={() => setHsk("all")}
+              >
+                All HSK
+              </button>
+              {[1, 2, 3, 4, 5, 6].map((level) => (
+                <button
+                  className={hsk === level ? "active" : ""}
+                  onClick={() => setHsk(level)}
+                  key={level}
+                >
+                  HSK {level}
+                  <b>{bank.filter((word) => word.hsk === level).length}</b>
+                </button>
+              ))}
+            </div>
+          )}
+          {practiceOpen && practiceQuestions.length >= 3 && (
+            <div className="library-practice">
+              <div>
+                <p className="eyebrow">ACTIVE RECALL · PERSONAL BANK</p>
+                <h3>Practice the words you chose to keep</h3>
+                <p>
+                  Wrong answers stay visible with an explanation before the next
+                  question.
+                </p>
+              </div>
+              <ChoiceDrill
+                label="My Library Bank"
+                questions={practiceQuestions}
+                award={award}
+                skill="Vocabulary"
+              />
+            </div>
+          )}
+          {visible.length ? (
+            <div className="library-word-grid">
+              {visible.map((word) => {
+                const status =
+                  word.source === "hsk"
+                    ? flashcardStatus(flashcardStats[word.id])
+                    : word.source;
+                const isDue =
+                  word.source === "hsk" &&
+                  isFlashcardDue(flashcardStats[word.id]);
+                return (
+                  <article key={word.id}>
+                    <header>
+                      <span className={`library-source ${word.source}`}>
+                        {word.source === "hsk"
+                          ? `HSK ${word.hsk}`
+                          : word.source === "adventure"
+                            ? "Adventure"
+                            : "My word"}
+                      </span>
+                      <button
+                        onClick={() => remove(word)}
+                        aria-label={`Remove ${word.hanzi} from library`}
+                      >
+                        ★
+                      </button>
+                    </header>
+                    <button
+                      className="library-word-audio"
+                      onClick={() => speak(word.hanzi)}
+                      aria-label={`Play ${word.hanzi}`}
+                    >
+                      ▶
+                    </button>
+                    <strong>{word.hanzi}</strong>
+                    <em>{word.pinyin || "Pinyin not added"}</em>
+                    <h3>{word.meaning}</h3>
+                    <footer>
+                      <span className={`${status} ${isDue ? "due" : ""}`}>
+                        {isDue ? "Due now" : status}
+                      </span>
+                      <small>{word.detail || "Saved vocabulary"}</small>
+                    </footer>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="library-empty">
+              <span>藏</span>
+              <h3>
+                {bank.length
+                  ? "No words match this filter"
+                  : "Your library is ready for its first word"}
+              </h3>
+              <p>
+                {bank.length
+                  ? "Try another HSK level, source, or search."
+                  : "Open Image Lookup, Smart Reader, Dictionary, or Flashcards and tap ☆ to save a word here."}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
 }
 
-function PinyinCenter({speak,award}:{speak:(v:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){
-  const tones=[['mā','妈','high and level'],['má','麻','rising'],['mǎ','马','dip then rise'],['mà','骂','sharp falling']];
-  const [pairId,setPairId]=useState('3-3');
-  const pair=tonePairs.find(item=>item.id===pairId)??tonePairs[0];
-  const basicQuestions:DrillQuestion[]=tones.slice(0,3).map(([pinyin,,shape])=>({prompt:`Which pinyin has a ${shape} tone?`,choices:tones.map(item=>item[0]),answer:pinyin,explanation:`${pinyin} uses the ${shape} contour.`}));
-  const pairQuestions:DrillQuestion[]=tonePairQuestions.map(question=>({prompt:question.prompt,choices:question.choices,answer:question.answer,explanation:question.explanation}));
-  return <section className="learning-panel pinyin-center"><PanelTitle eyebrow="PINYIN · 4×4 TONE-PAIR LAB" title="Hear tones in real word pairs" copy="Start with the four contours, then practice all sixteen two-syllable combinations and common tone sandhi."/><div className="tone-grid">{tones.map(([pinyin,hanzi,shape],index)=><button onClick={()=>speak(hanzi)} key={pinyin}><span>{index+1}</span><strong>{pinyin}</strong><b>{hanzi}</b><small>{shape}</small></button>)}</div><div className="tone-pair-layout"><div className="tone-pair-matrix" aria-label="Sixteen Mandarin tone pairs">{tonePairs.map(item=><button className={item.id===pair.id?'active':''} onClick={()=>setPairId(item.id)} key={item.id}><small>{item.id}</small><strong>{item.hanzi}</strong><span>{item.pinyin}</span></button>)}</div><article className="tone-pair-focus"><small>SELECTED TONE PAIR · {pair.id}</small><h3>{pair.hanzi}</h3><strong>{pair.pinyin}</strong><p>{pair.meaning}</p><button onClick={()=>speak(pair.hanzi)}>▶ Hear this pair</button><footer>{pair.note}</footer></article></div><div className="tone-sandhi-note"><span>3→2</span><p><strong>Third-tone sandhi</strong><small>In 你好, the first third tone is normally heard as a rising tone before the next third tone. The written marks stay nǐ hǎo.</small></p></div><p className="tone-tip">Browser speech helps you hear models. Precise tone scoring still requires acoustic recording analysis, so this lab reports recognition evidence only.</p><ChoiceDrill label="Tone-pair recognition" questions={pairQuestions} award={award} skill="Listening"/><ChoiceDrill label="Basic tone recognition" questions={basicQuestions} award={award} skill="Listening"/></section>;
-}
-
-function ReadingCenter({award,speak,favorites,toggleFavorite}:{award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void;speak:(v:string)=>void;favorites:string[];toggleFavorite:(id:string)=>void}){
-  const passages=[
-    {title:'A rainy morning',level:2,text:'今天早上下雨了，所以我坐地铁去大学。到了学校以后，我先去图书馆，然后跟同学一起上课。',pinyin:'Jīntiān zǎoshang xiàyǔ le, suǒyǐ wǒ zuò dìtiě qù dàxué. Dàole xuéxiào yǐhòu, wǒ xiān qù túshūguǎn, ránhòu gēn tóngxué yìqǐ shàngkè.',translation:'It rained this morning, so I took the subway to university. After arriving, I first went to the library, then attended class with a classmate.',question:{prompt:'Where did the narrator go first after arriving?',choices:['The library','The restaurant','The hotel'],answer:'The library',explanation:'先去图书馆 means “first went to the library.”'}},
-    {title:'At the hotel',level:2,text:'我下午到酒店。前台说房间还没准备好，所以我把行李放在大厅，然后出去吃饭。',pinyin:'Wǒ xiàwǔ dào jiǔdiàn. Qiántái shuō fángjiān hái méi zhǔnbèi hǎo, suǒyǐ wǒ bǎ xíngli fàng zài dàtīng, ránhòu chūqù chīfàn.',translation:'I arrived at the hotel in the afternoon. The room was not ready, so I left my luggage in the lobby and went out to eat.',question:{prompt:'Why was the luggage left in the lobby?',choices:['The room was not ready','It was too heavy','The hotel was closed'],answer:'The room was not ready',explanation:'房间还没准备好 means the room was not ready yet.'}},
-    {title:'A delayed meeting',level:3,text:'客户的飞机晚点了，会议改到下午三点。我们利用上午的时间重新检查了合同和报价。',pinyin:'Kèhù de fēijī wǎndiǎn le, huìyì gǎi dào xiàwǔ sān diǎn. Wǒmen lìyòng shàngwǔ de shíjiān chóngxīn jiǎnchá le hétóng hé bàojià.',translation:'The client’s flight was delayed, so the meeting moved to 3 p.m. We used the morning to recheck the contract and quotation.',question:{prompt:'What did the team check?',choices:['The contract and quotation','The hotel room','A train ticket'],answer:'The contract and quotation',explanation:'合同和报价 are the contract and quotation.'}},
-    {title:'Testing before release',level:4,text:'新版本发布以前，工程师发现接口返回的数据不稳定。团队决定先修复问题，再运行一次完整测试。',pinyin:'Xīn bǎnběn fābù yǐqián, gōngchéngshī fāxiàn jiēkǒu fǎnhuí de shùjù bù wěndìng. Tuánduì juédìng xiān xiūfù wèntí, zài yùnxíng yí cì wánzhěng cèshì.',translation:'Before releasing the new version, an engineer found unstable API data. The team decided to fix it first, then run a complete test.',question:{prompt:'What happens before the complete test?',choices:['The issue is fixed','The product is sold','The client signs'],answer:'The issue is fixed',explanation:'先修复问题，再运行测试 gives the sequence.'}},
-    {title:'A changing neighborhood',level:5,text:'这几年社区发生了明显的变化。虽然新的商店带来了便利，但是居民也担心租金上涨会影响老邻居。',pinyin:'Zhè jǐ nián shèqū fāshēng le míngxiǎn de biànhuà. Suīrán xīn de shāngdiàn dàilái le biànlì, dànshì jūmín yě dānxīn zūjīn shàngzhǎng huì yǐngxiǎng lǎo línjū.',translation:'The neighborhood has changed noticeably. New shops brought convenience, but residents worry rising rent will affect longtime neighbors.',question:{prompt:'What concerns the residents?',choices:['Rising rent','A late flight','University exams'],answer:'Rising rent',explanation:'居民担心租金上涨 explicitly states their concern.'}},
+function Dictation({
+  chapter,
+  speak,
+  award,
+}: {
+  chapter: Chapter;
+  speak: (text: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const items = [
+    chapter,
+    ...adventureChapters.filter((item) => item.id !== chapter.id),
   ];
-  const [data,setData]=useState<HskDictionaryData|null>(null);
-  const [loadError,setLoadError]=useState('');
-  const [retry,setRetry]=useState(0);
-  const [index,setIndex]=useState(0);
-  const [customText,setCustomText]=useState('');
-  const [personalMode,setPersonalMode]=useState(false);
-  const [showPinyin,setShowPinyin]=useState(true);
-  const [showTranslation,setShowTranslation]=useState(false);
-  const [selectedWord,setSelectedWord]=useState<HskDictionaryWord|null>(null);
-  useEffect(()=>{let active=true;import('./hsk-vocabulary.json').then(module=>{if(active)setData(module.default as HskDictionaryData)}).catch(()=>{if(active)setLoadError('The local HSK dictionary could not load. Try again.')});return()=>{active=false}},[retry]);
-  const passage=passages[index%passages.length];
-  const text=personalMode?customText:passage.text;
-  const words=data?data.levels.flatMap(group=>group.words):[];
-  const tokens=segmentChineseText(text,words);
-  const coverage=readerCoverage(tokens);
-  return <section className="learning-panel smart-reader"><PanelTitle eyebrow="SMART READER · TAP-TO-LOOKUP" title="Read Chinese without leaving the page" copy="Tap a known word for pinyin, meaning, HSK level, radical, audio, and saving. You can also paste your own Chinese text."/><div className="reader-source-tabs"><button className={!personalMode?'active':''} onClick={()=>setPersonalMode(false)}>Graded passages</button><button className={personalMode?'active':''} onClick={()=>setPersonalMode(true)}>My text</button></div>{!personalMode?<div className="reader-passage-picker">{passages.map((item,itemIndex)=><button className={itemIndex===index?'active':''} onClick={()=>{setIndex(itemIndex);setSelectedWord(null)}} key={item.title}><span>HSK {item.level}</span><strong>{item.title}</strong></button>)}</div>:<textarea className="reader-custom-text" value={customText} onChange={event=>{setCustomText(event.target.value);setSelectedWord(null)}} placeholder="Paste or type Chinese here… 例如：我今天坐地铁去学校。"/>}<div className="reader-controls"><button className={showPinyin?'active':''} onClick={()=>setShowPinyin(value=>!value)}>Pinyin {showPinyin?'on':'off'}</button>{!personalMode&&<button className={showTranslation?'active':''} onClick={()=>setShowTranslation(value=>!value)}>Translation {showTranslation?'on':'off'}</button>}<button onClick={()=>text&&speak(text)} disabled={!text}>▶ Read aloud</button><span>{data?`${coverage.percent}% dictionary coverage`:'Loading dictionary…'}</span></div>{loadError&&<div className="reader-error">{loadError}<button onClick={()=>{setLoadError('');setRetry(value=>value+1)}}>Retry</button></div>}<div className="reader-workspace"><article className="reader-text-card">{!text?<p className="reader-empty">Paste Chinese text above to start tap-to-lookup reading.</p>:<p className="reader-token-line">{tokens.map((token,tokenIndex)=>token.word?<button className={selectedWord?.id===token.word.id?'selected':''} onClick={()=>setSelectedWord(token.word!)} key={`${tokenIndex}-${token.text}`}><strong>{token.text}</strong>{showPinyin&&<small>{token.word.py}</small>}</button>:<span className={token.chinese?'unknown':''} key={`${tokenIndex}-${token.text}`}>{token.text}</span>)}</p>}{!personalMode&&showTranslation&&<p className="reader-translation">{passage.translation}</p>}<footer><span>{coverage.known}/{coverage.chinese} Chinese characters matched</span><small>Longest known words are matched first; unmatched characters remain readable.</small></footer></article><aside className="reader-lookup">{selectedWord?<><header><span>HSK {selectedWord.l}</span><button className={favorites.includes(selectedWord.id)?'saved':''} onClick={()=>toggleFavorite(selectedWord.id)}>{favorites.includes(selectedWord.id)?'★ Saved':'☆ Save'}</button></header><strong>{selectedWord.h}</strong><em>{selectedWord.py}</em><h3>{selectedWord.m}</h3><div><span><small>RADICAL</small><b>{selectedWord.r||'—'}</b></span><span><small>FREQUENCY RANK</small><b>{selectedWord.q<1_000_000?selectedWord.q:'—'}</b></span><span><small>WORD TYPE</small><b>{selectedWord.pos||'—'}</b></span></div><button className="primary" onClick={()=>speak(selectedWord.h)}>▶ Hear pronunciation</button></>:<><span className="reader-lookup-empty">点</span><h3>Tap a highlighted word</h3><p>Its lookup card will appear here without interrupting your reading.</p></>}</aside></div>{!personalMode&&<><details className="reader-reference"><summary>Full pinyin reference</summary><p>{passage.pinyin}</p></details><ChoiceDrill key={passage.title} label={`Smart reader: ${passage.title}`} questions={[passage.question]} award={award} skill="Reading" onNext={()=>setIndex(value=>(value+1)%passages.length)}/></>}<p className="reader-data-note">Lookup uses this project’s locally bundled, licensed HSK dataset. It does not copy Pleco dictionaries or send pasted text to a server.</p></section>;
+  const [index, setIndex] = useState(0);
+  const item = items[index % items.length];
+  const target = item.question.chinesePrompt;
+  const [answer, setAnswer] = useState("");
+  const [result, setResult] = useState<"correct" | "try" | "">("");
+  const clean = (value: string) => value.replace(/[\s，。！？,.!?]/g, "");
+  function check() {
+    const correct = clean(answer) === clean(target);
+    setResult(correct ? "correct" : "try");
+    award(`Dictation ${item.id}`, 18, "Listening", correct);
+  }
+  function next() {
+    setIndex((index + 1) % items.length);
+    setAnswer("");
+    setResult("");
+  }
+  return (
+    <section className="learning-panel dictation-panel">
+      <PanelTitle
+        eyebrow={`DICTATION · ${item.chinese} · ${index + 1}/${items.length}`}
+        title="Hear it, then type it"
+        copy="Replay the phrase as needed. A correct transcription unlocks the next question."
+      />
+      <button className="dictation-play" onClick={() => speak(target)}>
+        <span>▶</span>
+        <div>
+          <strong>Play dictation phrase</strong>
+          <small>Clear voice · punctuation is optional</small>
+        </div>
+      </button>
+      <label htmlFor="dictation-answer">What did you hear?</label>
+      <textarea
+        id="dictation-answer"
+        value={answer}
+        onChange={(event) => {
+          setAnswer(event.target.value);
+          setResult("");
+        }}
+        placeholder="用汉字写你听到的句子…"
+      />
+      <button className="primary" disabled={!answer.trim()} onClick={check}>
+        Check dictation
+      </button>
+      {result && (
+        <div className={`dictation-result ${result}`}>
+          <strong>
+            {result === "correct"
+              ? "✓ Perfect transcription"
+              : "Keep listening — compare the phrase"}
+          </strong>
+          <p>
+            {result === "correct" ? (
+              target
+            ) : (
+              <>
+                Correct phrase: <b>{target}</b>
+              </>
+            )}
+          </p>
+          {result === "correct" ? (
+            <button onClick={next}>Next question →</button>
+          ) : (
+            <button onClick={() => speak(target)}>▶ Hear it again</button>
+          )}
+        </div>
+      )}
+    </section>
+  );
 }
 
-function WorkbookResources({award}:{award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}){const [index,setIndex]=useState(0);const [entry,setEntry]=useState('');const [checked,setChecked]=useState(false);const task=workbookPrompts[index%workbookPrompts.length];const matched=task.keywords.filter(keyword=>entry.includes(keyword));const correct=matched.length===task.keywords.length;function check(){setChecked(true);award(`Workbook question ${index+1}`,12,'Grammar',correct)}function next(){setIndex((index+1)%workbookPrompts.length);setEntry('');setChecked(false)}return <section className="learning-panel"><PanelTitle eyebrow={`WORKBOOK · ${task.category.toUpperCase()} · ${index+1}/${workbookPrompts.length}`} title="Apply what you learn" copy="Write, compare with a natural model, print, and continue."/><div className="workbook-task"><label htmlFor="workbook-entry">{task.prompt}</label><textarea id="workbook-entry" value={entry} onChange={event=>{setEntry(event.target.value);setChecked(false)}} placeholder="用中文写…"/><div><button disabled={!entry.trim()} onClick={check}>Check workbook</button><button onClick={()=>window.print()}>Print workbook</button></div>{checked&&<div className={correct?'flow-feedback good':'flow-feedback try'}><p><strong>{correct?'✓ Required ideas included':`Include: ${task.keywords.filter(keyword=>!matched.includes(keyword)).join('、')}`}</strong><span>Natural model: {task.model}</span></p><button onClick={correct?next:()=>setChecked(false)}>{correct?'Next workbook question →':'Revise answer'}</button></div>}</div><div className="culture-grid"><article><small>CULTURE NOTE</small><strong>客气 · Polite modesty</strong><p>哪里哪里 can modestly reject praise, though younger speakers may simply say 谢谢.</p></article><article><small>FORMAL VS CASUAL</small><strong>您 vs 你</strong><p>Use 您 in formal service situations; 你 is normal with peers.</p></article><article><small>MODERN CHINESE</small><strong>没问题 · No problem</strong><p>A common neutral response meaning “no problem” or “sure.”</p></article></div><div className="resource-heading"><div><p className="eyebrow">CURATED EXTERNAL RESOURCES</p><h3>Continue with trusted learning tools</h3></div><span>Opens in a new tab</span></div><div className="resource-cards expanded">{curatedResources.map(resource=><a href={resource.url} target="_blank" rel="noreferrer" key={resource.title}><small>{resource.category.toUpperCase()}</small><strong>{resource.title}</strong><p>{resource.description}</p><b>Open resource ↗</b></a>)}</div></section>}
-
-function GamesCenter({chapter,path,speak,award}:{chapter:Chapter;path:PathId;speak:(v:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean,gameResult?:{score:number;total:number;mistakes?:GameMistake[]})=>void}) { const [game,setGame]=useState<'menu'|'match'|'sentence'|'memory'|'audio'|'rush'|'meaning'|'pinyin'|'tone'|'sentence-rush'|'hanzi-puzzle'|'battle'|'career'>('menu');const pack=pathPacks[path];const back=()=>setGame('menu'); if(game==='match')return <div className="game-with-back"><button onClick={back}>← Game Center</button><Practice chapter={chapter} speak={speak} award={()=>award('Word Match',20,'Vocabulary',true,{score:chapter.vocabulary.length,total:chapter.vocabulary.length})}/></div>; if(game==='sentence')return <SentenceBuilder chapter={chapter} back={back} award={()=>award('Sentence Builder',25,'Grammar',true,{score:1,total:1})}/>; if(game==='memory')return <MemoryCards chapter={chapter} back={back} award={()=>award('Memory Cards',25,'Vocabulary',true,{score:chapter.vocabulary.length,total:chapter.vocabulary.length})}/>; if(game==='audio')return <AudioDetective speak={speak} back={back} award={(score)=>award('Audio Detective',25,'Listening',score>=3,{score,total:4})}/>;if(game==='rush')return <WordRush back={back} finish={(score,total)=>award('Word Rush',30,'Vocabulary',score/total>=.6,{score,total})}/>;if(game==='meaning')return <ChoiceArena eyebrow="MEANING HUNTER · VOCABULARY" title="Meaning Hunter" chinese="寻义" copy="Track the exact Mandarin word across travel, study, work, and technology." questions={meaningHunterQuestions} speak={speak} back={back} finish={(score,total,mistakes)=>award('Meaning Hunter',30,'Vocabulary',score/total>=.6,{score,total,mistakes})}/>;if(game==='pinyin')return <ChoiceArena eyebrow="PINYIN CHALLENGE · SOUND MAP" title="Pinyin Challenge" chinese="拼音挑战" copy="Separate initials, finals, and tone marks without relying on guesswork." questions={pinyinChallengeQuestions} speak={speak} back={back} finish={(score,total,mistakes)=>award('Pinyin Challenge',30,'Listening',score/total>=.6,{score,total,mistakes})}/>;if(game==='tone')return <ChoiceArena eyebrow="TONE MASTER · VISUAL CONTOURS" title="Tone Master" chinese="声调大师" copy="Read tone marks and connect them to the four Mandarin pitch contours." questions={toneMasterQuestions} speak={speak} back={back} finish={(score,total,mistakes)=>award('Tone Master',30,'Listening',score/total>=.6,{score,total,mistakes})}/>;if(game==='sentence-rush')return <ChoiceArena eyebrow="SENTENCE SPEEDRUN · NATURAL ORDER" title="Sentence Speedrun" chinese="极速造句" copy="Recognize natural Mandarin order across eight real-world scenarios." questions={sentenceSpeedrunQuestions} speak={speak} back={back} timed finish={(score,total,mistakes)=>award('Sentence Speedrun',30,'Grammar',score/total>=.6,{score,total,mistakes})}/>;if(game==='hanzi-puzzle')return <ChoiceArena eyebrow="HANZI PUZZLE · COMPONENT LOGIC" title="Hanzi Puzzle" chinese="汉字拼图" copy="Find radicals and component relationships inside complete characters." questions={hanziPuzzleQuestions} speak={speak} back={back} finish={(score,total,mistakes)=>award('Hanzi Puzzle',30,'Hanzi',score/total>=.6,{score,total,mistakes})}/>;if(game==='battle')return <ChoiceArena eyebrow="FLASHCARD BATTLE · TEN CARDS" title="Flashcard Battle" chinese="卡片对战" copy="Protect three shields while recalling vocabulary from every learning world." questions={flashcardBattleQuestions} speak={speak} back={back} battle finish={(score,total,mistakes)=>award('Flashcard Battle',35,'Vocabulary',score/total>=.6,{score,total,mistakes})}/>;if(game==='career')return <CareerChallenge path={path} back={back} finish={(score,total)=>award(pack.gameTitle,35,path==='Computer Science'?'Grammar':'Speaking',score/total>=.66,{score,total})}/>; return <div className="page-wrap subpage game-center-page"><div className="game-center-hero"><span>游</span><div><p className="eyebrow">PLAY WITH PURPOSE · 12 PLAYABLE MODES</p><h1>Train one skill at a time</h1><p>Short, focused games turn recall, tones, grammar, and Hanzi into repeatable practice—not empty XP farming.</p></div><aside><b>12</b><small>learning modes</small><strong>Adaptive difficulty</strong></aside></div><div className="game-catalog"><GameCard symbol="拼" tone="coral" meta="RECOMMENDED · 3 MIN" title="Word Match" copy="Connect Hanzi, sound, and meaning." open={()=>setGame('match')}/><GameCard symbol="句" tone="jade" meta="PRODUCTION · 4 MIN" title="Sentence Builder" copy="Put Chinese words into natural order." open={()=>setGame('sentence')}/><GameCard symbol="忆" tone="gold" meta="MEMORY · 4 MIN" title="Memory Cards" copy="Find matching Hanzi and meanings." open={()=>setGame('memory')}/><GameCard symbol="速" tone="rush" meta="SPEED + COMBO · 45 SEC" title="Word Rush" copy="Build a combo under time pressure." open={()=>setGame('rush')}/><GameCard symbol="义" tone="teal" meta="VOCABULARY · 8 CLUES" title="Meaning Hunter" copy="Hunt for precise meanings across contexts." open={()=>setGame('meaning')}/><GameCard symbol="音" tone="sky" meta="PINYIN · 8 ROUNDS" title="Pinyin Challenge" copy="Choose accurate initials, finals, and tones." open={()=>setGame('pinyin')}/><GameCard symbol="调" tone="rose" meta="TONES · 8 ROUNDS" title="Tone Master" copy="Read and hear Mandarin tone contours." open={()=>setGame('tone')}/><GameCard symbol="声" tone="plum" meta="LISTENING · 4 CLUES" title="Audio Detective" copy="Hear a syllable and identify its tone." open={()=>setGame('audio')}/><GameCard symbol="竞" tone="amber" meta="GRAMMAR · TIMED" title="Sentence Speedrun" copy="Spot natural sentence order quickly." open={()=>setGame('sentence-rush')}/><GameCard symbol="部" tone="mint" meta="HANZI · 8 PUZZLES" title="Hanzi Puzzle" copy="Read radicals inside full characters." open={()=>setGame('hanzi-puzzle')}/><GameCard symbol="战" tone="red" meta="RECALL · 10 CARDS" title="Flashcard Battle" copy="Protect your shields through a mixed deck." open={()=>setGame('battle')}/><GameCard symbol="专" tone="career" meta={`${path.toUpperCase()} · SPECIALIZED`} title={pack.gameTitle} copy={pack.mission} open={()=>setGame('career')}/></div></div> }
-
-function GameCard({symbol,tone,meta,title,copy,open}:{symbol:string;tone:string;meta:string;title:string;copy:string;open:()=>void}){return <button className={`game-card game-${tone}`} data-symbol={symbol} onClick={open}><span className={`game-symbol ${tone}`}>{symbol}</span><div><small>{meta}</small><h2>{title}</h2><p>{copy}</p><b>Start game <i>→</i></b></div></button>}
-
-function GemHintBar({answer,audio,speak}:{answer:string;audio?:string;speak:(value:string,override?:number)=>void}){
-  const [pinyin,setPinyin]=useState(false);const [keyword,setKeyword]=useState(false);
-  const pinyinClue=allVocabulary.find(word=>answer.includes(word.hanzi))?.pinyin??textbookReviewWords.find(word=>answer.includes(word.hanzi))?.pinyin;
-  function pay(cost:number,label:string,action:()=>void){if(activeGemWallet.spend(cost,label))action()}
-  function removeWrong(){const wrong=[...document.querySelectorAll<HTMLButtonElement>('.choice-arena .arena-choices button:not(:disabled)')].find(button=>button.textContent!==answer&&!button.hidden);if(!wrong)return;pay(3,'One wrong choice removed',()=>{wrong.hidden=true})}
-  function slowAudio(){if(!audio)return;pay(3,'Slow audio hint',()=>speak(audio,.58))}
-  const hasChoices=typeof document!=='undefined'&&Boolean(document.querySelector('.choice-arena .arena-choices button:not(:disabled)'));
-  return <div className="gem-hint-bar"><span>◆ {activeGemWallet.balance}</span><button onClick={()=>pay(2,'Pinyin hint',()=>setPinyin(true))}>拼 Pinyin · 2</button><button disabled={!hasChoices} onClick={removeWrong}>−1 Wrong · 3</button><button disabled={!audio} onClick={slowAudio}>慢 Slow audio · 3</button><button onClick={()=>pay(2,'Keyword hint',()=>setKeyword(true))}>钥 Keyword · 2</button>{(pinyin||keyword)&&<p>{pinyin?`Pinyin clue: ${pinyinClue??'listen slowly and identify each tone'}. `:''}{keyword?`Key clue: ${answer.slice(0,Math.max(1,Math.ceil(answer.length/3)))}…`:''}</p>}</div>
+type RecognitionResult = {
+  results: { 0: { 0: { transcript: string; confidence: number } } };
+};
+type RecognitionEngine = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: RecognitionResult) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+};
+function textSimilarity(a: string, b: string) {
+  const left = [...a.replace(/[\s，。！？,.!?]/g, "")];
+  const right = [...b.replace(/[\s，。！？,.!?]/g, "")];
+  if (!left.length || !right.length) return 0;
+  let matches = 0;
+  let cursor = 0;
+  for (const char of left) {
+    const found = right.indexOf(char, cursor);
+    if (found >= 0) {
+      matches++;
+      cursor = found + 1;
+    }
+  }
+  return Math.round((matches / Math.max(left.length, right.length)) * 100);
+}
+function speechCharacterFeedback(target: string, heard: string) {
+  const clean = (value: string) => [...value.replace(/[\s，。！？,.!?]/g, "")];
+  const spoken = clean(heard);
+  let cursor = 0;
+  return clean(target).map((character) => {
+    const found = spoken.indexOf(character, cursor);
+    if (found < 0) return { character, matched: false };
+    cursor = found + 1;
+    return { character, matched: true };
+  });
 }
 
-function ChoiceArena({eyebrow,title,chinese,copy,questions,speak,back,finish,timed=false,battle=false}:{eyebrow:string;title:string;chinese:string;copy:string;questions:GameQuestion[];speak:(v:string)=>void;back:()=>void;finish:(score:number,total:number,mistakes:GameMistake[])=>void;timed?:boolean;battle?:boolean}){const [index,setIndex]=useState(0);const [selected,setSelected]=useState('');const [graded,setGraded]=useState(false);const [score,setScore]=useState(0);const [mistakes,setMistakes]=useState<GameMistake[]>([]);const [shields,setShields]=useState(3);const [done,setDone]=useState(false);const [saved,setSaved]=useState(false);const [startedAt,setStartedAt]=useState(()=>Date.now());const [elapsed,setElapsed]=useState(0);const question=questions[index];const rotation=(index*2+1)%question.choices.length;const choices=[...question.choices.slice(rotation),...question.choices.slice(0,rotation)];const correct=selected===question.answer;function check(){if(!selected||graded)return;setGraded(true);if(correct)setScore(value=>value+1);else{setMistakes(value=>[...value,{prompt:question.prompt,answer:selected,correction:question.answer,explanation:question.explanation}]);if(battle)setShields(value=>Math.max(0,value-1))}}function next(){if(index===questions.length-1){const duration=Math.max(1,Math.round((Date.now()-startedAt)/1000));setElapsed(duration);setDone(true);if(!saved){setSaved(true);finish(score,questions.length,mistakes)}}else{setIndex(value=>value+1);setSelected('');setGraded(false)}}function replay(){setIndex(0);setSelected('');setGraded(false);setScore(0);setMistakes([]);setShields(3);setDone(false);setSaved(false);setElapsed(0);setStartedAt(Date.now())}return <div className="page-wrap subpage"><button className="page-back" onClick={back}>← Game Center</button><div className="subpage-title"><p className="eyebrow">{eyebrow}</p><h1>{title} <span>{chinese}</span></h1><p>{copy}</p></div><section className="choice-arena">{!done?<><header><span>ROUND {index+1} / {questions.length}</span>{timed&&<b>Finish time is recorded</b>}{battle&&<div className="battle-shields" aria-label={`${shields} shields remaining`}>{[0,1,2].map(item=><i className={item<shields?'active':''} key={item}>◆</i>)}</div>}</header><div className="arena-progress"><i style={{width:`${(index+(graded?1:0))/questions.length*100}%`}}/></div><article><small>CHOOSE ONE ANSWER</small><h2>{question.prompt}</h2>{question.audioText&&<button className="arena-audio" onClick={()=>speak(question.audioText!)}>▶ Hear clue</button>}<div className="arena-choices">{choices.map(choice=><button disabled={graded} className={selected===choice?'selected':''} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!graded?<button className="arena-check" disabled={!selected} onClick={check}>Check answer</button>:<div className={correct?'arena-feedback good':'arena-feedback try'}><p><strong>{correct?'✓ Correct':`Answer: ${question.answer}`}</strong><span>{question.explanation}</span></p><button onClick={next}>{index===questions.length-1?'See results →':'Next challenge →'}</button></div>}</article></>:<div className="arena-result"><span>{score/Math.max(1,questions.length)>=.75?'胜':'练'}</span><p className="eyebrow">RESULT SAVED</p><h2>{score} / {questions.length} correct</h2><p>{Math.round(score/questions.length*100)}% accuracy{timed?` · ${elapsed} seconds`:''}{battle?` · ${shields} shields left`:''}</p><div><button onClick={back}>Back to games</button><button className="primary" onClick={replay}>Play again</button></div></div>}</section></div>}
-
-function SentenceBuilder({chapter,back,award}:{chapter:Chapter;back:()=>void;award:()=>void}) { const production=chapterLearningPacks[chapter.id as keyof typeof chapterLearningPacks].production;const target=production.target;const pieces=production.pieces;const [answer,setAnswer]=useState<string[]>([]);const [graded,setGraded]=useState(false);const [awarded,setAwarded]=useState(false);const correct=answer.join('')===target.join('');function check(){setGraded(true);if(correct&&!awarded){setAwarded(true);award()}}function retry(){setAnswer([]);setGraded(false)}return <div className="page-wrap subpage"><button className="page-back" onClick={back}>← Game Center</button><div className="subpage-title"><p className="eyebrow">SENTENCE PRODUCTION</p><h1>Sentence Builder <span>造句</span></h1><p>{production.prompt} · {production.translation}</p></div><section className="builder-panel"><div className="answer-zone">{answer.length?answer.map((piece,i)=><button disabled={graded} key={`${piece}-${i}`} onClick={()=>setAnswer(answer.filter((_,n)=>n!==i))}>{piece}</button>):<span>Tap the chunks below to build natural Chinese</span>}</div><div className="piece-bank">{pieces.map((piece,i)=><button disabled={graded||answer.includes(piece)} onClick={()=>setAnswer([...answer,piece])} key={`${piece}-${i}`}>{piece}</button>)}</div><button className="builder-check" disabled={answer.length!==target.length||graded} onClick={check}>Check sentence</button>{graded&&(correct?<div className="builder-success">✓ 很好！ {target.join('')} · The sentence is in a natural order.</div>:<div className="builder-result-try"><strong>Natural order: {target.join('')}</strong><p>Compare the pattern, then rebuild it from memory.</p><button onClick={retry}>Try again</button></div>)}</section></div> }
-
-function MemoryCards({chapter,back,award}:{chapter:Chapter;back:()=>void;award:()=>void}) {
-  const source=vocabularyNetworkCategories.find(category=>category.id===chapter.id)?.words??chapter.vocabulary;const [stage,setStage]=useState(1);const pairCount=[3,4,6][stage-1];const words=source.slice(0,pairCount);const cards=words.flatMap(word=>[{key:`${word.id}-h`,id:word.id,text:word.hanzi},{key:`${word.id}-e`,id:word.id,text:word.english}]);const [open,setOpen]=useState<string[]>([]);const [matched,setMatched]=useState<string[]>([]);const [seconds,setSeconds]=useState([50,45,40][stage-1]);const [failed,setFailed]=useState(false);const complete=matched.length===words.length;
-  useEffect(()=>{if(complete||failed)return;const timer=window.setInterval(()=>setSeconds(value=>{if(value<=1){window.clearInterval(timer);setFailed(true);return 0}return value-1}),1000);return()=>window.clearInterval(timer)},[stage,complete,failed]);
-  function flip(card:{key:string;id:string}){if(open.length===2||matched.includes(card.id)||open.includes(card.key)||failed)return;const next=[...open,card.key];setOpen(next);if(next.length===2){const first=cards.find(item=>item.key===next[0])!;if(first.id===card.id){setMatched([...matched,card.id]);setOpen([])}else window.setTimeout(()=>setOpen([]),650)}}
-  function restart(nextStage=stage){setStage(nextStage);setOpen([]);setMatched([]);setSeconds([50,45,40][nextStage-1]);setFailed(false)}
-  function advance(){if(stage===3){award();back()}else restart(stage+1)}
-  return <div className="page-wrap subpage"><button className="page-back" onClick={back}>← Game Center</button><div className="subpage-title"><p className="eyebrow">VISUAL MEMORY · STAGE {stage} OF 3</p><h1>Memory Cards <span>记忆卡</span></h1><p>Each stage adds more pairs and less time. Finish all three stages before the XP reward is saved.</p></div><div className="memory-stage-bar"><span><b>{seconds}s</b> remaining</span><div><i style={{width:`${(stage-1)/3*100+(complete?33:0)}%`}}/></div><strong>{matched.length}/{words.length} pairs</strong></div><section className={`memory-grid stage-${stage}`}>{cards.map(card=><button key={card.key} className={open.includes(card.key)||matched.includes(card.id)?'open':''} disabled={matched.includes(card.id)||failed} onClick={()=>flip(card)}><span>龙</span><strong>{card.text}</strong></button>)}</section>{failed&&<div className="memory-win failed"><strong>Time is up</strong><span>Accuracy matters more than random tapping.</span><button onClick={()=>restart()}>Retry stage {stage} →</button></div>}{complete&&<div className="memory-win"><strong>✓ Stage {stage} cleared</strong><span>{stage===3?'All difficulty stages complete · +25 XP':'The next stage adds more pairs and less time.'}</span><button onClick={advance}>{stage===3?'Save result & return':'Next harder stage →'}</button></div>}</div>
+function SpeakingCoach({
+  targets,
+  speak,
+  onResult,
+}: {
+  targets: string[];
+  speak: (v: string) => void;
+  onResult: (correct: boolean, index: number) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [confidence, setConfidence] = useState(0);
+  const [asrConfidence, setAsrConfidence] = useState(0);
+  const [error, setError] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [recordingUrl, setRecordingUrl] = useState("");
+  const recorder = useRef<MediaRecorder | null>(null);
+  const recordingChunks = useRef<Blob[]>([]);
+  const target = targets[index % targets.length];
+  const characters = speechCharacterFeedback(target, transcript);
+  const matchedCharacters = characters.filter((item) => item.matched).length;
+  const feedback = speakingFeedback(
+    confidence,
+    asrConfidence,
+    matchedCharacters,
+    characters.length,
+  );
+  useEffect(
+    () => () => {
+      if (recordingUrl) URL.revokeObjectURL(recordingUrl);
+      recorder.current?.stream.getTracks().forEach((track) => track.stop());
+    },
+    [recordingUrl],
+  );
+  async function toggleRecording() {
+    if (recording && recorder.current) {
+      recorder.current.stop();
+      setRecording(false);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const nextRecorder = new MediaRecorder(stream);
+      recordingChunks.current = [];
+      nextRecorder.ondataavailable = (event) => {
+        if (event.data.size) recordingChunks.current.push(event.data);
+      };
+      nextRecorder.onstop = () => {
+        if (recordingUrl) URL.revokeObjectURL(recordingUrl);
+        setRecordingUrl(URL.createObjectURL(new Blob(recordingChunks.current, { type: nextRecorder.mimeType })));
+        stream.getTracks().forEach((track) => track.stop());
+      };
+      recorder.current = nextRecorder;
+      nextRecorder.start();
+      setRecording(true);
+      setError("");
+    } catch {
+      setError("Recording needs microphone permission. You can still use device speech recognition.");
+    }
+  }
+  function start() {
+    const speechWindow = window as unknown as {
+      SpeechRecognition?: new () => RecognitionEngine;
+      webkitSpeechRecognition?: new () => RecognitionEngine;
+    };
+    const Engine =
+      speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!Engine) {
+      setError(
+        "Speech recognition is not available in this browser. You can still use Listen & Shadow.",
+      );
+      return;
+    }
+    const recognition = new Engine();
+    recognition.lang = "zh-CN";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (event) => {
+      const result = event.results[0][0];
+      const score = textSimilarity(result.transcript, target);
+      setTranscript(result.transcript);
+      setConfidence(score);
+      setAsrConfidence(Math.round(result.confidence * 100));
+      setListening(false);
+      onResult(score >= 65, index);
+    };
+    recognition.onerror = () => {
+      setError(
+        "Microphone recognition failed. Check browser microphone permission and try again.",
+      );
+      setListening(false);
+    };
+    recognition.onend = () => setListening(false);
+    setError("");
+    setTranscript("");
+    setAsrConfidence(0);
+    setListening(true);
+    try {
+      recognition.start();
+    } catch {
+      setError("The microphone is already active. Please try again.");
+      setListening(false);
+    }
+  }
+  function next() {
+    setIndex((index + 1) % targets.length);
+    setTranscript("");
+    setConfidence(0);
+    setAsrConfidence(0);
+    setError("");
+    if (recordingUrl) URL.revokeObjectURL(recordingUrl);
+    setRecordingUrl("");
+  }
+  return (
+    <section className="learning-panel speaking-coach">
+      <PanelTitle
+        eyebrow={`SPEAKING · PHRASE ${index + 1} OF ${targets.length}`}
+        title="Listen, shadow, then speak"
+        copy="A successful phrase match unlocks the next speaking question."
+      />
+      <div className="shadow-target">
+        <button onClick={() => speak(target)}>▶ Listen</button>
+        <strong>{target}</strong>
+        <span>
+          Repeat the phrase naturally. Focus on rhythm and clear syllables.
+        </span>
+      </div>
+      <button
+        className={`mic-button ${listening ? "listening" : ""}`}
+        onClick={start}
+        disabled={listening}
+      >
+        <span>{listening ? "●" : "◉"}</span>
+        {listening ? "Listening…" : "Start speaking"}
+      </button>
+      <div className="speaking-recording-tools">
+        <button className={recording ? "recording" : ""} onClick={toggleRecording}>
+          {recording ? "■ Stop personal recording" : "● Record for playback"}
+        </button>
+        <p>
+          Record separately, replay your own voice, then compare it with the model. The recording stays on this device.
+        </p>
+        {recordingUrl && <audio controls preload="metadata" src={recordingUrl} />}
+      </div>
+      {error && <p className="speech-error">{error}</p>}
+      {transcript && (
+        <div className="speech-result">
+          <small>I HEARD · RECOGNIZER CONFIDENCE {asrConfidence}%</small>
+          <strong>{transcript}</strong>
+          <div
+            className="speech-character-feedback"
+            aria-label="Recognized target characters"
+          >
+            {characters.map((item, itemIndex) => (
+              <span
+                className={item.matched ? "matched" : "missed"}
+                key={`${item.character}-${itemIndex}`}
+              >
+                {item.character}
+              </span>
+            ))}
+          </div>
+          <div>
+            <i style={{ width: `${confidence}%` }} />
+          </div>
+          <b>{confidence}% phrase coverage</b>
+          <div className="speaking-score-grid">
+            <span><small>PRONUNCIATION</small><strong>{feedback.pronunciation}%</strong></span>
+            <span><small>COMPLETENESS</small><strong>{feedback.completeness}%</strong></span>
+            <span><small>FLUENCY</small><strong>{feedback.fluency}%</strong></span>
+            <span><small>TONE PRACTICE</small><strong>{confidence >= 80 ? "Refine" : "Repeat"}</strong></span>
+          </div>
+          <p className="tone-practice-cue">{feedback.toneCue}</p>
+          <p>
+            {confidence >= 80
+              ? "Clear phrase match. Green characters were recognized in order; replay once more to refine tones."
+              : confidence >= 65
+                ? "Mostly recognized. Practice the highlighted characters, then continue or record once more."
+                : "Replay the model and repeat the characters marked in coral before trying again."}
+          </p>
+          {confidence >= 65 && (
+            <button className="next-speaking" onClick={next}>
+              Next question →
+            </button>
+          )}
+          <small className="speaking-limit">
+            This device recognizer measures phrase coverage, not
+            laboratory-grade tone contours. Tone scoring will require a
+            dedicated acoustic provider.
+          </small>
+        </div>
+      )}
+    </section>
+  );
 }
 
-function AudioDetective({speak,back,award}:{speak:(text:string)=>void;back:()=>void;award:(score:number)=>void}){const rounds=[{hanzi:'妈',pinyin:'mā',tone:1,shape:'high and level'},{hanzi:'麻',pinyin:'má',tone:2,shape:'rising'},{hanzi:'马',pinyin:'mǎ',tone:3,shape:'dip then rise'},{hanzi:'骂',pinyin:'mà',tone:4,shape:'sharp falling'}];const [index,setIndex]=useState(0);const [score,setScore]=useState(0);const [feedback,setFeedback]=useState('');const [done,setDone]=useState(false);function choose(tone:number){if(feedback)return;const correct=tone===rounds[index].tone;setScore(score+(correct?1:0));setFeedback(correct?'Correct':`Tone ${rounds[index].tone}: ${rounds[index].shape}`)}function next(){if(index===rounds.length-1){setDone(true);award(score)}else{setIndex(index+1);setFeedback('');window.setTimeout(()=>speak(rounds[index+1].hanzi),80)}}function replay(){setIndex(0);setScore(0);setFeedback('');setDone(false)}return <div className="page-wrap subpage"><button className="page-back" onClick={back}>← Game Center</button><div className="subpage-title"><p className="eyebrow">LISTENING GAME · TONES</p><h1>Audio Detective <span>听声辨调</span></h1><p>Listen without seeing pinyin, then identify the tone contour.</p></div><section className="audio-game">{!done?<><div className="audio-round"><small>CLUE {index+1} OF 4</small><button onClick={()=>speak(rounds[index].hanzi)}>▶</button><strong>Hear the syllable</strong><span>Replay as many times as you need</span></div><div className="tone-choices">{[1,2,3,4].map(tone=><button disabled={!!feedback} onClick={()=>choose(tone)} key={tone}><b>{tone}</b><span>{['¯ high','´ rising','ˇ dipping','` falling'][tone-1]}</span></button>)}</div>{feedback&&<div className={feedback==='Correct'?'audio-feedback good':'audio-feedback try'}><strong>{feedback==='Correct'?`✓ Correct — ${rounds[index].pinyin}`:feedback}</strong><button onClick={next}>{index===3?'See result':'Next clue →'}</button></div>}</>:<div className="audio-finish"><span>{score>=3?'听':'练'}</span><h2>{score}/4 tones identified</h2><p>{score>=3?'Sharp ears. You can distinguish the four basic tone shapes.':'Good start. Replay slowly and focus on pitch movement.'}</p><button className="primary" onClick={replay}>Play again</button></div>}</section></div>}
-
-function WordRush({back,finish}:{back:()=>void;finish:(score:number,total:number)=>void}){const [seconds,setSeconds]=useState(45);const [index,setIndex]=useState(0);const [score,setScore]=useState(0);const [attempts,setAttempts]=useState(0);const [combo,setCombo]=useState(0);const [bestCombo,setBestCombo]=useState(0);const [done,setDone]=useState(false);const word=allVocabulary[index%allVocabulary.length];const choices=[word.english,allVocabulary[(index+7)%allVocabulary.length].english,allVocabulary[(index+13)%allVocabulary.length].english];useEffect(()=>{if(done)return;const timer=window.setInterval(()=>setSeconds(value=>{if(value<=1){window.clearInterval(timer);setDone(true);return 0}return value-1}),1000);return()=>window.clearInterval(timer)},[done]);function choose(choice:string){if(done)return;const correct=choice===word.english;const nextCombo=correct?combo+1:0;setScore(score+(correct?1:0));setAttempts(attempts+1);setCombo(nextCombo);setBestCombo(Math.max(bestCombo,nextCombo));setIndex(index+1)}function claim(){finish(score,Math.max(1,attempts));back()}return <div className="page-wrap subpage"><button className="page-back" onClick={back}>← Game Center</button><div className="subpage-title"><p className="eyebrow">SPEED RECALL · HEALTHY LIMIT</p><h1>Word Rush <span>词语冲刺</span></h1><p>One 45-second round. Accuracy matters more than infinite grinding.</p></div><section className="rush-game">{!done?<><div className="rush-stats"><span><b>{seconds}</b>seconds</span><span><b>{score}/{attempts}</b>correct</span><span><b>×{combo}</b>combo</span></div><div className="rush-word"><small>CHOOSE THE MEANING</small><strong>{word.hanzi}</strong><span>{word.pinyin}</span></div><div className="rush-choices">{choices.map(choice=><button onClick={()=>choose(choice)} key={choice}>{choice}</button>)}</div></>:<div className="rush-result"><span>速</span><h2>{score} correct answers</h2><p>Accuracy {Math.round(score/Math.max(1,attempts)*100)}% · Best combo ×{bestCombo}</p><button className="primary" onClick={claim}>Save result →</button></div>}</section></div>}
-
-function CareerChallenge({path,back,finish}:{path:PathId;back:()=>void;finish:(score:number,total:number)=>void}){const pack=pathPacks[path];const [index,setIndex]=useState(0);const [selected,setSelected]=useState('');const [feedback,setFeedback]=useState('');const [score,setScore]=useState(0);const [done,setDone]=useState(false);const question=pack.gameQuestions[index];function check(){const correct=selected===question.answer;setFeedback(correct?'Correct':`Better answer: ${question.answer}`);if(correct)setScore(score+1)}function next(){if(index===pack.gameQuestions.length-1){setDone(true);finish(score,pack.gameQuestions.length)}else{setIndex(index+1);setSelected('');setFeedback('')}}return <div className="page-wrap subpage"><button className="page-back" onClick={back}>← Game Center</button><div className="subpage-title"><p className="eyebrow">SPECIALIZED GAME · {path.toUpperCase()}</p><h1>{pack.gameTitle} <span>专业挑战</span></h1><p>{pack.mission}</p></div><section className="career-game">{!done?<><div className="career-game-head"><span>{index+1}/{pack.gameQuestions.length}</span><i><em style={{width:`${(index+1)/pack.gameQuestions.length*100}%`}}/></i><b>{score} correct</b></div><h2>{question.prompt}</h2><div>{question.choices.map(choice=><button disabled={!!feedback} className={selected===choice?'selected':''} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!feedback?<button className="primary" disabled={!selected} onClick={check}>Check decision</button>:<div className={feedback==='Correct'?'flow-feedback good':'flow-feedback try'}><p><strong>{feedback==='Correct'?'✓ Strong professional choice':feedback}</strong><span>{question.explanation}</span></p><button onClick={next}>{index===pack.gameQuestions.length-1?'See report':'Next scenario →'}</button></div>}</>:<div className="career-result"><span>{path==='Computer Science'?'码':path==='International Business'?'商':'城'}</span><h2>{score}/{pack.gameQuestions.length} decisions correct</h2><p>Your result is saved to game history and skill progress.</p><button className="primary" onClick={back}>Return to games →</button></div>}</section></div>}
-
-function MajorStoryShelf({learning,speak}:{learning:LearningState;speak:(value:string)=>void}){
-  const packs=[['Computer Science','计算机科学','我们用算法解决复杂的问题。','Wǒmen yòng suànfǎ jiějué fùzá de wèntí.'],['Software Engineering','软件工程','团队先写测试，再发布新版本。','Tuánduì xiān xiě cèshì, zài fābù xīn bǎnběn.'],['Artificial Intelligence','人工智能','这个模型需要更准确的训练数据。','Zhège móxíng xūyào gèng zhǔnquè de xùnliàn shùjù.'],['Data Science','数据科学','分析结果显示用户习惯正在改变。','Fēnxī jiéguǒ xiǎnshì yònghù xíguàn zhèngzài gǎibiàn.'],['Cybersecurity','网络安全','工程师立刻修复了安全漏洞。','Gōngchéngshī lìkè xiūfù le ānquán lòudòng.'],['Engineering','工程','我们必须检查设备是否稳定。','Wǒmen bìxū jiǎnchá shèbèi shìfǒu wěndìng.'],['Business','商务','双方终于同意了新的合作条件。','Shuāngfāng zhōngyú tóngyì le xīn de hézuò tiáojiàn.'],['Medicine','医学','医生建议病人按时休息和吃药。','Yīshēng jiànyì bìngrén ànshí xiūxi hé chīyào.'],['Academic Research','学术研究','研究结果还需要更多证据支持。','Yánjiū jiéguǒ hái xūyào gèng duō zhèngjù zhīchí.'],['Tourism','旅游','导游带我们参观了古老的街区。','Dǎoyóu dài wǒmen cānguān le gǔlǎo de jiēqū.']] as const;
-  const [selected,setSelected]=useState<(typeof packs)[number][0]>('Computer Science');const current=packs.find(pack=>pack[0]===selected)??packs[0];const track=specializedTracks.find(item=>item.title===selected)??specializedTracks[0];const bonus=learning.inventory.unlockedStories.includes('tech-night');const scenes=[{label:'01 · SETTING',text:current[2],pinyin:current[3]},{label:'02 · CHALLENGE',text:track.words[0]?.example??current[2],pinyin:`Key word: ${track.words[0]?.hanzi} · ${track.words[0]?.pinyin}`},{label:'03 · RESPONSE',text:track.words[1]?.example??current[2],pinyin:`Key word: ${track.words[1]?.hanzi} · ${track.words[1]?.pinyin}`},{label:'04 · OUTCOME',text:track.words[2]?.example??current[2],pinyin:`Key word: ${track.words[2]?.hanzi} · ${track.words[2]?.pinyin}`}];
-  return <section className="major-story-shelf enriched"><header><div><p className="eyebrow">SPECIALIZED STORY WORLDS · 专业故事</p><h2>Chinese for your future field</h2><p>Choose a field, read a short situation, then study the vocabulary and sentences people actually use.</p></div><span>{bonus?'✓ Bonus endings unlocked':'◆ Bonus pack: 30 gems'}</span></header><div className="major-field-picker">{packs.map(pack=><button className={selected===pack[0]?'active':''} onClick={()=>setSelected(pack[0])} key={pack[0]}><span>{pack[1][0]}</span><strong>{pack[0]}</strong><small>{pack[1]}</small></button>)}</div><article className="major-story-hero"><button onClick={()=>speak(current[2])}>▶</button><p><small>{current[0].toUpperCase()} · HSK 4–6 STORY</small><strong>{current[2]}</strong><em>{current[3]}</em></p><b>{bonus?'Alternate ending available':'4-scene main story'}</b></article><div className="major-story-content"><section><header><p className="eyebrow">SHORT STORY · 情境故事</p><h3>A real day in {current[0]}</h3></header><div className="major-story-scenes">{scenes.map(scene=><button onClick={()=>speak(scene.text)} key={scene.label}><small>{scene.label}</small><strong>{scene.text}</strong><span>{scene.pinyin}</span><b>Listen ◖))</b></button>)}</div></section><aside><header><p className="eyebrow">KEY VOCABULARY · 关键词</p><h3>Words used in this story</h3></header><div className="major-key-words">{track.words.slice(0,6).map(word=><button onClick={()=>speak(word.hanzi)} key={word.hanzi}><strong>{word.hanzi}</strong><span>{word.pinyin}</span><small>{word.english}</small></button>)}</div></aside></div><section className="major-useful-sentences"><header><p className="eyebrow">FREQUENT SENTENCES · 常用句</p><h3>Useful examples for class, work, and daily communication</h3></header><div>{track.words.slice(0,6).map(word=><article key={`${word.hanzi}-example`}><button onClick={()=>speak(word.example)}>▶</button><p><strong>{word.example}</strong><small><b>{word.hanzi}</b> · {word.pinyin} · {word.english}</small></p></article>)}</div></section></section>
+function PlacementTest({
+  current,
+  close,
+  apply,
+}: {
+  current: number;
+  close: () => void;
+  apply: (level: number) => void;
+}) {
+  const questions = [
+    {
+      level: 1,
+      q: "What does 你好 mean?",
+      a: ["Hello", "Goodbye", "Thank you"],
+      correct: 0,
+    },
+    {
+      level: 2,
+      q: "Choose “I want to drink tea.”",
+      a: ["我想喝茶。", "我会开车。", "我在看书。"],
+      correct: 0,
+    },
+    {
+      level: 3,
+      q: "Choose the natural sentence.",
+      a: [
+        "虽然下雨，但是我还是去了。",
+        "下雨虽然我去了但是。",
+        "我但是去了虽然下雨。",
+      ],
+      correct: 0,
+    },
+    {
+      level: 4,
+      q: "“事半功倍” most closely means…",
+      a: [
+        "Half the work, twice the result",
+        "Work all night",
+        "A difficult decision",
+      ],
+      correct: 0,
+    },
+    {
+      level: 5,
+      q: "“他的话耐人寻味” suggests his words are…",
+      a: ["Worth reflecting on", "Very loud", "Easy to forget"],
+      correct: 0,
+    },
+    {
+      level: 6,
+      q: "“这项政策仍有待商榷” means the policy…",
+      a: [
+        "Still merits discussion",
+        "Has been cancelled",
+        "Is universally accepted",
+      ],
+      correct: 0,
+    },
+  ];
+  const [level, setLevel] = useState(Math.max(1, Math.min(4, current - 1)));
+  const [count, setCount] = useState(0);
+  const [results, setResults] = useState<{ level: number; correct: boolean }[]>(
+    [],
+  );
+  const [selected, setSelected] = useState<number | null>(null);
+  const [done, setDone] = useState(false);
+  const recommendation = recommendHsk(results);
+  const placement = placementDecision(results, level);
+  function submit() {
+    if (selected === null) return;
+    const correct = selected === questions[level - 1].correct;
+    const next = [...results, { level, correct }];
+    setResults(next);
+    const decision = placementDecision(next, level);
+    if (decision.stop) {
+      setDone(true);
+    } else {
+      setCount(count + 1);
+      setLevel(decision.nextLevel);
+      setSelected(null);
+    }
+  }
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Adaptive placement test"
+    >
+      <section className="placement-modal">
+        <header>
+          <div>
+            <p className="eyebrow">ADAPTIVE PLACEMENT</p>
+            <h2>
+              {done
+                ? "Your recommendation"
+                : `Question ${count + 1} · HSK ${level} adaptive difficulty`}
+            </h2>
+          </div>
+          <button onClick={close}>×</button>
+        </header>
+        {!done ? (
+          <div className="placement-body">
+            <div className="placement-track">
+              <i style={{ width: `${Math.min(100, ((count + 1) / 7) * 100)}%` }} />
+            </div>
+            <h3>{questions[level - 1].q}</h3>
+            <div>
+              {questions[level - 1].a.map((answer, index) => (
+                <button
+                  className={selected === index ? "selected" : ""}
+                  onClick={() => setSelected(index)}
+                  key={answer}
+                >
+                  {answer}
+                </button>
+              ))}
+            </div>
+            <button
+              className="placement-next"
+              disabled={selected === null}
+              onClick={submit}
+            >
+              Submit answer →
+            </button>
+          </div>
+        ) : (
+          <div className="placement-result">
+            <span>
+              {["🌱", "🌿", "🌳", "🚀", "🔥", "🏆"][recommendation - 1]}
+            </span>
+            <p className="eyebrow">RECOMMENDED STARTING TRACK</p>
+            <h3>HSK {recommendation}</h3>
+            <p>
+              Based on {results.filter((result) => result.correct).length}{" "}
+              correct answers across adaptive difficulty. You can change tracks
+              anytime.
+            </p>
+            <div className="placement-confidence">
+              <span><small>CONFIDENCE</small><strong>{placement.confidence}%</strong></span>
+              <span><small>QUESTIONS USED</small><strong>{results.length}</strong></span>
+              <span><small>LEVELS TESTED</small><strong>{new Set(results.map((result) => result.level)).size}</strong></span>
+            </div>
+            <small className="placement-stop-note">
+              The test stops early when your answers form a stable pattern; uncertain results receive more questions, up to seven.
+            </small>
+            <button onClick={() => apply(recommendation)}>
+              Start HSK {recommendation}
+            </button>
+            <button className="secondary-choice" onClick={close}>
+              Keep HSK {current}
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }
 
-function TextbookStories({profile,learning,speak,award,addPersonalWord}:{profile:Profile|null;learning:LearningState;speak:(v:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void;addPersonalWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}){
-  const [mode,setMode]=useState<'stories'|'words'>('stories');const [level,setLevel]=useState(profile?.hsk??1);const [volume,setVolume]=useState<'all'|'上'|'下'>('all');const [storyId,setStoryId]=useState('');const [scene,setScene]=useState(0);const [choice,setChoice]=useState('');const [done,setDone]=useState(false);const selectedCollection=textbookWordCollections.find(collection=>collection.level===level)!;const story=completeTextbookStoryLibrary.find(item=>item.id===storyId);
-  function open(id:string){setStoryId(id);setScene(0);setChoice('');setDone(false)}
-  function answer(value:string){setChoice(value);const correct=value===story?.question.answer;setDone(true);if(story)award(`Story ${story.id}`,30,'Reading',correct)}
-  if(story){const current=story.scenes[scene];return <div className="page-wrap story-page"><button className="page-back" onClick={()=>setStoryId('')}>← Story Library</button><div className="subpage-title"><p className="eyebrow">TEXTBOOK-ALIGNED ORIGINAL READER · HSK {story.hsk}</p><h1>{story.title} <span>{story.chinese}</span></h1><p>{story.summary}</p></div><section className="story-stage"><div className="story-scene"><span className="scene-number">0{scene+1}</span><button onClick={()=>speak(current.zh)} aria-label="Play story audio">◖)) Listen</button><h2>{current.zh}</h2><p className="pinyin">{current.py}</p><p>{current.en}</p></div>{scene<story.scenes.length-1?<div className="story-navigation"><button disabled={scene===0} onClick={()=>setScene(scene-1)}>← Previous sentence</button><button className="story-next" onClick={()=>setScene(scene+1)}>Continue story →</button></div>:!done?<><button className="story-previous-final" onClick={()=>setScene(scene-1)}>← Previous sentence</button><div className="story-choices"><small>{story.question.prompt.toUpperCase()}</small>{story.question.choices.map(option=><button onClick={()=>answer(option)} key={option}><strong>{option}</strong></button>)}</div></>:<div className={`story-result ${choice===story.question.answer?'good':'try'}`}><strong>{choice===story.question.answer?'✓ Correct · +30 XP':`Better response: ${story.question.answer}`}</strong><p>{story.question.explanation}</p><button onClick={()=>open(story.id)}>Read again</button><button onClick={()=>setStoryId('')}>Choose another story</button></div>}</section><aside className="story-note"><span>本</span><div><small>CONTENT METHOD</small><strong>Aligned to HSK Standard Course {story.hsk}</strong><p>The topic and level come from the supplied course books. The practice story is original and is not an official exam passage.</p></div></aside></div>}
-  const questions=selectedCollection.words.slice(0,8).map((word,index)=>({prompt:`What does ${word.hanzi} mean?`,choices:[word.english,selectedCollection.words[(index+3)%selectedCollection.words.length].english,selectedCollection.words[(index+6)%selectedCollection.words.length].english],answer:word.english,explanation:`${word.hanzi} (${word.pinyin}) means ${word.english}. It appears with the lesson theme “${word.lesson}”.`}));
-  const filteredStories=completeTextbookStoryLibrary.filter(item=>item.hsk===level&&(volume==='all'||item.volume===volume));
-  return <div className="page-wrap story-page"><div className="subpage-title"><p className="eyebrow">TEXTBOOK LIBRARY · HSK 1–6</p><h1>{mode==='stories'?'Learn through stories':'Learn through new words'} <span>{mode==='stories'?'故事世界':'生词世界'}</span></h1><p>Built from the supplied HSK Standard Course textbooks and workbooks: verified lesson topics, original graded practice, and clearly labeled learning evidence.</p></div><div className="story-mode-switch"><button className={mode==='stories'?'active':''} onClick={()=>setMode('stories')}><span>故</span><div><strong>Learn through stories</strong><small>{completeTextbookStoryLibrary.length} interactive readers</small></div></button><button className={mode==='words'?'active':''} onClick={()=>setMode('words')}><span>词</span><div><strong>Learn through new words</strong><small>Course-book vocabulary by HSK level</small></div></button></div><div className="story-level-summary interactive">{[1,2,3,4,5,6].map(item=><button className={`${item===level?'selected ':''}${item<=(profile?.hsk??1)?'active':''}`} onClick={()=>{setLevel(item);setVolume('all')}} key={item}><b>HSK {item}</b><small>{mode==='stories'?`${completeTextbookStoryLibrary.filter(storyItem=>storyItem.hsk===item).length} readers`:`${textbookWordCollections.find(collection=>collection.level===item)?.words.length??0} words`}</small></button>)}</div>{mode==='stories'?<>{level>=4&&<div className="story-volume-filter" aria-label={`HSK ${level} textbook volume`}><button className={volume==='all'?'active':''} onClick={()=>setVolume('all')}>All lessons <small>{completeTextbookStoryLibrary.filter(item=>item.hsk===level).length}</small></button><button className={volume==='上'?'active':''} onClick={()=>setVolume('上')}>HSK {level} 上 <small>{completeTextbookStoryLibrary.filter(item=>item.hsk===level&&item.volume==='上').length}</small></button><button className={volume==='下'?'active':''} onClick={()=>setVolume('下')}>HSK {level} 下 <small>{completeTextbookStoryLibrary.filter(item=>item.hsk===level&&item.volume==='下').length}</small></button></div>}<div className="textbook-source-banner"><span>核</span><p><strong>{completeTextbookStoryLibrary.length} textbook-aligned original readers</strong><small>Complete lesson-title coverage for HSK 4 上/下, HSK 5 上/下, and HSK 6 上/下. Wording is original practice rather than copied textbook passages.</small></p></div><div className="story-library">{filteredStories.map(item=>{const unlocked=item.hsk<=(profile?.hsk??1);return <button className={unlocked?'':'stretch'} onClick={()=>open(item.id)} key={item.id}><span>{item.lesson||item.hsk}</span><div><small>{item.volume==='精选'?`STANDARD COURSE TOPIC · HSK ${item.hsk}`:`HSK ${item.hsk} ${item.volume} · LESSON ${item.lesson}`}</small><h2>{item.title}</h2><b>{item.chinese}</b><p>{item.summary}</p><strong>{unlocked?'Read story →':'Preview higher-level reader →'}</strong></div></button>})}</div></>:<><div className="textbook-word-head"><div><p className="eyebrow">{selectedCollection.book.toUpperCase()}</p><h2>{selectedCollection.note}</h2></div><span>{selectedCollection.words.length} verified lesson words</span></div><div className="textbook-word-grid">{selectedCollection.words.map(word=>{const saved=learning.personalWords.some(item=>item.hanzi===word.hanzi);return <article key={`${level}-${word.hanzi}`}><button onClick={()=>speak(word.hanzi)} aria-label={`Hear ${word.hanzi}`}>▶</button><strong>{word.hanzi}</strong><em>{word.pinyin}</em><h3>{word.english}</h3><small>From topic: {word.lesson}</small><button disabled={saved} onClick={()=>addPersonalWord({hanzi:word.hanzi,pinyin:word.pinyin,english:word.english})}>{saved?'★ Saved to My Library':'☆ Save word'}</button></article>})}</div><section className="textbook-word-practice"><div><p className="eyebrow">ACTIVE RECALL · HSK {level}</p><h2>Practice this book’s new words</h2><p>Answers feed your Vocabulary evidence and mistake review.</p></div><ChoiceDrill label={`Textbook HSK ${level} new words`} questions={questions} award={award} skill="Vocabulary"/></section></>}</div>
+function HanziCenter({
+  speak,
+  award,
+  addPersonalWord,
+}: {
+  speak: (v: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+  addPersonalWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  const [selected, setSelected] = useState(0);
+  const family = radicalFamilies[selected];
+  const questions: DrillQuestion[] = radicalFamilies.map((item, index) => {
+    const choices = Array.from(
+      { length: 4 },
+      (_, offset) =>
+        radicalFamilies[(index + offset * 3) % radicalFamilies.length].radical,
+    );
+    return {
+      prompt: `Which radical carries the meaning “${item.meaning}”?`,
+      choices,
+      answer: item.radical,
+      explanation: `${item.radical}${item.variant ? ` / ${item.variant}` : ""} signals ${item.meaning}. ${item.hint}`,
+    };
+  });
+  return (
+    <section className="learning-panel hanzi-center">
+      <PanelTitle
+        eyebrow="HANZI · RADICAL + WRITING LAB"
+        title="Build characters from meaning and motion"
+        copy="Study component families, write characters by hand, then prove recognition across an eight-question challenge."
+      />
+      <div className="radical-overview">
+        <article>
+          <span>部</span>
+          <p>
+            <small>RADICAL FAMILIES</small>
+            <strong>{radicalFamilies.length}</strong>
+            <b>24 linked example characters</b>
+          </p>
+        </article>
+        <article>
+          <span>写</span>
+          <p>
+            <small>WRITING CANVAS</small>
+            <strong>∞</strong>
+            <b>repeat with self-check</b>
+          </p>
+        </article>
+        <article>
+          <span>练</span>
+          <p>
+            <small>ACTIVE CHALLENGE</small>
+            <strong>{questions.length}</strong>
+            <b>questions with explanations</b>
+          </p>
+        </article>
+      </div>
+      <div className="radical-skill-tree" aria-label="Radical families">
+        {radicalFamilies.map((item, index) => (
+          <button
+            className={selected === index ? "active" : ""}
+            onClick={() => setSelected(index)}
+            key={item.radical}
+          >
+            <span>{item.radical}</span>
+            {item.variant && <em>{item.variant}</em>}
+            <strong>{item.meaning}</strong>
+            <small>
+              {index < 2
+                ? "Foundation"
+                : index < 5
+                  ? "Developing"
+                  : "Expanding"}
+            </small>
+          </button>
+        ))}
+      </div>
+      <article className="radical-family-card">
+        <header>
+          <button
+            onClick={() => speak(family.radical)}
+            aria-label={`Play ${family.radical}`}
+          >
+            ▶
+          </button>
+          <div>
+            <small>SELECTED COMPONENT FAMILY</small>
+            <h3>
+              {family.radical}
+              {family.variant && <span> → {family.variant}</span>}
+            </h3>
+            <p>{family.meaning}</p>
+          </div>
+        </header>
+        <div className="radical-character-chain">
+          {family.characters.map((character) => (
+            <button
+              onClick={() => speak(character.hanzi)}
+              key={character.hanzi}
+            >
+              <strong>{character.hanzi}</strong>
+              <span>{character.pinyin}</span>
+              <small>{character.meaning}</small>
+            </button>
+          ))}
+        </div>
+        <footer>
+          <strong>Shape clue</strong>
+          <p>{family.hint}</p>
+        </footer>
+      </article>
+      <HandwritingLookup speak={speak} addPersonalWord={addPersonalWord} />
+      <HanziWritingPad
+        characters={family.characters}
+        speak={speak}
+        award={award}
+      />
+      <div className="hanzi-memory">
+        <strong>Component memory</strong>
+        <p>
+          木 is a tree. Two 木 form 林, a grove; three form 森, a forest.
+          Repeated shapes often strengthen the original idea.
+        </p>
+      </div>
+      <ChoiceDrill
+        key={`radical-${selected}`}
+        label="Hanzi radical"
+        questions={questions}
+        award={award}
+        skill="Hanzi"
+      />
+    </section>
+  );
 }
 
-function Stories({profile,learning,speak,award}:{profile:Profile|null;learning:LearningState;speak:(v:string)=>void;award:(label:string,points?:number,skill?:LearningEvent['skill'],correct?:boolean)=>void}) {const available=[...hskGradedStories,...storyLibrary].filter(story=>story.path==='All'||story.path===(profile?.path??'General'));const [storyId,setStoryId]=useState('');const [scene,setScene]=useState(0);const [choice,setChoice]=useState('');const [done,setDone]=useState(false);const story=available.find(item=>item.id===storyId);function open(id:string){setStoryId(id);setScene(0);setChoice('');setDone(false)}function answer(value:string){setChoice(value);const correct=value===story?.question.answer;setDone(true);if(story)award(`Story ${story.id}`,30,'Reading',correct)}if(!story)return <div className="page-wrap story-page"><div className="subpage-title"><p className="eyebrow">STORY LIBRARY · HSK 1–6</p><h1>Learn through stories <span>故事世界</span></h1><p>{hskGradedStories.length} graded readers plus personalized Adventure stories. Higher-level readers unlock as your HSK track grows.</p></div><div className="story-level-summary">{[1,2,3,4,5,6].map(level=><span className={level<=(profile?.hsk??3)?'active':''} key={level}><b>HSK {level}</b><small>{hskGradedStories.filter(item=>item.hsk===level).length} readers</small></span>)}</div><div className="story-library">{available.map(item=>{const graded=item.id.startsWith('reader-hsk');const unlocked=graded?item.hsk<=(profile?.hsk??3):item.path==='All'||learning.bossWins.length>0;return <button disabled={!unlocked} className={unlocked?'':'locked'} onClick={()=>open(item.id)} key={item.id}><span>{unlocked?(graded?item.hsk:item.path==='All'?'文':item.path==='Computer Science'?'码':'商'):'锁'}</span><div><small>{graded?'GRADED READER':item.path.toUpperCase()} · HSK {item.hsk}</small><h2>{item.title}</h2><b>{item.chinese}</b><p>{item.summary}</p><strong>{unlocked?'Read story →':graded?`Choose HSK ${item.hsk} to unlock`:'Clear an Adventure boss to unlock'}</strong></div></button>})}</div></div>;const current=story.scenes[scene];return <div className="page-wrap story-page"><button className="page-back" onClick={()=>setStoryId('')}>← Story Library</button><div className="subpage-title"><p className="eyebrow">INTERACTIVE STORY · HSK-STYLE {story.hsk}</p><h1>{story.title} <span>{story.chinese}</span></h1><p>{story.summary}</p></div><section className="story-stage"><div className="story-scene"><span className="scene-number">0{scene+1}</span><button onClick={()=>speak(current.zh)} aria-label="Play story audio">◖)) Listen</button><h2>{current.zh}</h2><p className="pinyin">{current.py}</p><p>{current.en}</p></div>{scene<story.scenes.length-1?<button className="story-next" onClick={()=>setScene(scene+1)}>Continue story →</button>:!done?<div className="story-choices"><small>{story.question.prompt.toUpperCase()}</small>{story.question.choices.map(option=><button onClick={()=>answer(option)} key={option}><strong>{option}</strong></button>)}</div>:<div className={`story-result ${choice===story.question.answer?'good':'try'}`}><strong>{choice===story.question.answer?'✓ Natural choice · +30 XP':`Better response: ${story.question.answer}`}</strong><p>{story.question.explanation}</p><button onClick={()=>open(story.id)}>Read again</button><button onClick={()=>setStoryId('')}>Choose another story</button></div>}</section><aside className="story-note"><span>{story.path==='Computer Science'?'码':story.path==='International Business'?'商':'文'}</span><div><small>CONTEXT NOTE</small><strong>{story.id.startsWith('reader-hsk')?`HSK ${story.hsk} graded Chinese`:`${story.path} Chinese`}</strong><p>{story.id.startsWith('reader-hsk')?'Sentence length, grammar, and decisions rise gradually across HSK levels.':'Vocabulary and decisions are connected to your selected learning path.'}</p></div></aside></div> }
+function HandwritingLookup({
+  speak,
+  addPersonalWord,
+}: {
+  speak: (v: string) => void;
+  addPersonalWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawing = useRef(false);
+  const [strokes, setStrokes] = useState(0);
+  const [data, setData] = useState<HskDictionaryData | null>(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<HskDictionaryWord[]>([]);
+  const [scanning, setScanning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    import("./hsk-vocabulary.json")
+      .then((module) => setData(module.default as HskDictionaryData))
+      .catch(() => setError("HSK dictionary could not be opened."));
+  }, []);
+  function point(event: React.PointerEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) * canvas.width) / rect.width,
+      y: ((event.clientY - rect.top) * canvas.height) / rect.height,
+    };
+  }
+  function start(event: React.PointerEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current!;
+    const context = canvas.getContext("2d")!;
+    const position = point(event);
+    drawing.current = true;
+    canvas.setPointerCapture(event.pointerId);
+    context.beginPath();
+    context.moveTo(position.x, position.y);
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = "#153f36";
+    context.lineWidth = 18;
+    setStrokes((value) => value + 1);
+    setError("");
+  }
+  function move(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!drawing.current) return;
+    const context = canvasRef.current!.getContext("2d")!;
+    const position = point(event);
+    context.lineTo(position.x, position.y);
+    context.stroke();
+  }
+  function stop() {
+    drawing.current = false;
+  }
+  function clear() {
+    const canvas = canvasRef.current!;
+    canvas.getContext("2d")!.clearRect(0, 0, canvas.width, canvas.height);
+    setStrokes(0);
+    setQuery("");
+    setResults([]);
+    setError("");
+  }
+  function search(value: string) {
+    setQuery(value);
+    if (!data || !value.trim()) {
+      setResults([]);
+      return;
+    }
+    const words = data.levels.flatMap((group) => group.words);
+    setResults(searchHskWords(words, value).slice(0, 12));
+  }
+  async function recognize() {
+    const canvas = canvasRef.current;
+    if (!canvas || !data || !strokes || scanning) return;
+    setScanning(true);
+    setProgress(0);
+    setError("");
+    try {
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob(
+          (value) =>
+            value ? resolve(value) : reject(new Error("Canvas unavailable")),
+          "image/png",
+        ),
+      );
+      const Tesseract = await import("tesseract.js");
+      const worker = await Tesseract.createWorker(
+        "chi_sim",
+        Tesseract.OEM.LSTM_ONLY,
+        {
+          logger: (message) =>
+            setProgress(Math.round((message.progress ?? 0) * 100)),
+        },
+      );
+      try {
+        await worker.setParameters({
+          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_CHAR,
+        });
+        const recognition = await worker.recognize(blob);
+        const detected = recognition.data.text.replace(/\s/g, "").slice(0, 4);
+        setQuery(detected);
+        const allWords = data.levels.flatMap((group) => group.words);
+        const matches = imageDictionaryMatches(detected, allWords, 12);
+        setResults(
+          matches.length
+            ? matches
+            : searchHskWords(allWords, detected).slice(0, 12),
+        );
+        if (!detected || !matches.length)
+          setError(
+            "No confident match yet. Add a stroke, redraw larger, or type the candidate below.",
+          );
+      } finally {
+        await worker.terminate();
+      }
+    } catch {
+      setError(
+        "Handwriting recognition needs the Chinese OCR model on first use. Check connection and try again.",
+      );
+    } finally {
+      setScanning(false);
+    }
+  }
+  return (
+    <section className="handwriting-lookup">
+      <header>
+        <div>
+          <p className="eyebrow">HANDWRITING LOOKUP · 手写查词</p>
+          <h3>Draw a Hanzi, then find it in the HSK dictionary</h3>
+          <p>
+            Write one large character at a time. Recognition runs in your
+            browser; results can be heard and saved to My Library.
+          </p>
+        </div>
+        <span>像 Pleco</span>
+      </header>
+      <div className="handwriting-lookup-grid">
+        <div>
+          <div className="lookup-canvas-wrap">
+            <span aria-hidden="true">田</span>
+            <canvas
+              ref={canvasRef}
+              width="620"
+              height="380"
+              onPointerDown={start}
+              onPointerMove={move}
+              onPointerUp={stop}
+              onPointerCancel={stop}
+              onPointerLeave={stop}
+            />
+          </div>
+          <div className="lookup-actions">
+            <small>
+              {strokes} stroke{strokes === 1 ? "" : "s"} drawn
+            </small>
+            <button onClick={clear}>Clear</button>
+            <button
+              className="primary"
+              disabled={!strokes || scanning || !data}
+              onClick={recognize}
+            >
+              {scanning ? `Recognizing ${progress}%…` : "Find character →"}
+            </button>
+          </div>
+        </div>
+        <div className="lookup-results">
+          <label>
+            <span>OCR result or manual correction</span>
+            <input
+              value={query}
+              onChange={(event) => search(event.target.value)}
+              placeholder="例如：学 / xué / study"
+            />
+          </label>
+          {error && <p className="lookup-error">{error}</p>}
+          {results.length ? (
+            <div>
+              {results.map((word) => (
+                <article key={word.id}>
+                  <button onClick={() => speak(word.h)}>▶</button>
+                  <p>
+                    <strong>{word.h}</strong>
+                    <span>{word.py}</span>
+                    <small>
+                      HSK {word.l} · {word.m}
+                    </small>
+                  </p>
+                  <button
+                    onClick={() =>
+                      addPersonalWord({
+                        hanzi: word.h,
+                        pinyin: word.py,
+                        english: word.m,
+                      })
+                    }
+                  >
+                    ☆ Save
+                  </button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="lookup-empty">
+              <span>写</span>
+              <p>
+                Draw a character and tap Find character. You can correct the OCR
+                text manually if handwriting is ambiguous.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+      <footer>
+        Handwriting OCR can be imperfect—especially for cursive strokes.
+        Candidate selection and pinyin search remain available as a fallback.
+      </footer>
+    </section>
+  );
+}
 
-function Review({learning,rate,rateMistake,speak,openChapter,addPersonalWord}:{learning:LearningState;rate:(wordId:string,rating:ReviewRating)=>void;rateMistake:(mistakeId:string,correct:boolean)=>void;speak:(v:string)=>void;openChapter:(id:string)=>void;addPersonalWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}) {
-  type MistakeFilter='all'|'due'|'learning'|'mastered';
-  const [tab,setTab]=useState<'queue'|'mistakes'>(learning.inventory.mistakeBoosters>0?'mistakes':'queue');
-  const [data,setData]=useState<HskDictionaryData|null>(null);
-  const [loadError,setLoadError]=useState('');
-  const [reviewLevel,setReviewLevel]=useState<number|'all'>('all');
-  const [queue,setQueue]=useState<string[]>([]);
-  const [answer,setAnswer]=useState('');
-  const [graded,setGraded]=useState(false);
-  const [correct,setCorrect]=useState(false);
-  const [mistakeFilter,setMistakeFilter]=useState<MistakeFilter>('all');
-  const reviewCardsAtLoad=useRef(learning.reviewCards);
-  const dueErrors=dueMistakes(learning.mistakes);
-  const visibleMistakes=learning.mistakes.filter(mistake=>mistakeFilter==='all'||(mistakeFilter==='due'?dueErrors.some(item=>item.id===mistake.id):mistakeFilter==='mastered'?(mistake.mastery??5)>=85:(mistake.mastery??5)<85)).sort((a,b)=>(b.errorCount??1)-(a.errorCount??1));
-  const allWords=data?.levels.flatMap(group=>group.words)??[];
-  const wordById=new Map(allWords.map(word=>[word.id,word]));
-  const word=wordById.get(queue[0]);
-  const card=word?learning.reviewCards[word.id]:undefined;
+function HanziWritingPad({
+  characters,
+  speak,
+  award,
+}: {
+  characters: { hanzi: string; pinyin: string; meaning: string }[];
+  speak: (v: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const strokeRef = useRef<HTMLDivElement | null>(null);
+  const writerRef = useRef<HanziWriter | null>(null);
+  const drawing = useRef(false);
+  const [targetIndex, setTargetIndex] = useState(0);
+  const [strokes, setStrokes] = useState(0);
+  const [guide, setGuide] = useState(true);
+  const [result, setResult] = useState("");
+  const target = characters[targetIndex % characters.length];
+  useEffect(() => {
+    let active = true;
+    import("hanzi-writer")
+      .then((module) => {
+        if (!active || !strokeRef.current) return;
+        strokeRef.current.innerHTML = "";
+        writerRef.current = module.default.create(
+          strokeRef.current,
+          target.hanzi,
+          {
+            width: 150,
+            height: 150,
+            padding: 8,
+            showOutline: true,
+            strokeColor: "#174e42",
+            radicalColor: "#e7a84e",
+          },
+        );
+        writerRef.current.animateCharacter();
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [target.hanzi]);
+  function point(event: React.PointerEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) * canvas.width) / rect.width,
+      y: ((event.clientY - rect.top) * canvas.height) / rect.height,
+    };
+  }
+  function start(event: React.PointerEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
+    const p = point(event);
+    drawing.current = true;
+    canvas.setPointerCapture(event.pointerId);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#174e42";
+    ctx.lineWidth = 14;
+    setStrokes((value) => value + 1);
+    setResult("");
+  }
+  function move(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!drawing.current) return;
+    const ctx = canvasRef.current!.getContext("2d")!;
+    const p = point(event);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  function stop() {
+    drawing.current = false;
+  }
+  function clear() {
+    const canvas = canvasRef.current!;
+    canvas.getContext("2d")!.clearRect(0, 0, canvas.width, canvas.height);
+    setStrokes(0);
+    setResult("");
+  }
+  function assess(correct: boolean) {
+    setResult(
+      correct
+        ? "Looks recognizable — saved as Hanzi evidence."
+        : "Saved for extra practice. Try once more while watching the guide.",
+    );
+    award(`Handwriting ${target.hanzi}`, correct ? 12 : 5, "Hanzi", correct);
+  }
+  function next() {
+    clear();
+    setTargetIndex((value) => (value + 1) % characters.length);
+  }
+  return (
+    <section className="hanzi-writing-lab">
+      <header>
+        <div>
+          <p className="eyebrow">HANDWRITING PRACTICE · STROKE ORDER</p>
+          <h3>
+            Write {target.hanzi}{" "}
+            <span>
+              {target.pinyin} · {target.meaning}
+            </span>
+          </h3>
+        </div>
+        <button onClick={() => speak(target.hanzi)}>▶ Hear</button>
+      </header>
+      <div className="stroke-order-guide">
+        <div ref={strokeRef} />
+        <p>
+          <strong>Animated stroke order</strong>
+          <small>Watch direction and sequence before drawing.</small>
+          <button onClick={() => writerRef.current?.animateCharacter()}>
+            Replay strokes →
+          </button>
+        </p>
+      </div>
+      <div className="hanzi-canvas-wrap">
+        {guide && <span aria-hidden="true">{target.hanzi}</span>}
+        <canvas
+          ref={canvasRef}
+          width="720"
+          height="380"
+          onPointerDown={start}
+          onPointerMove={move}
+          onPointerUp={stop}
+          onPointerCancel={stop}
+          onPointerLeave={stop}
+        />
+      </div>
+      <div className="hanzi-writing-actions">
+        <span>
+          {strokes} pen stroke{strokes === 1 ? "" : "s"}
+        </span>
+        <button onClick={() => setGuide((value) => !value)}>
+          {guide ? "Hide guide" : "Show guide"}
+        </button>
+        <button onClick={clear}>Clear</button>
+        <button onClick={next}>Next character →</button>
+      </div>
+      {strokes > 0 && (
+        <div className="hanzi-self-check">
+          <p>
+            Compare the overall shape, spacing, and component position. How did
+            it look?
+          </p>
+          <button onClick={() => assess(false)}>Needs practice</button>
+          <button className="primary" onClick={() => assess(true)}>
+            Looks recognizable
+          </button>
+        </div>
+      )}
+      {result && <p className="hanzi-writing-result">{result}</p>}
+      <small>
+        The animated reference uses verified character stroke data; recognition
+        candidates still depend on clear handwriting.
+      </small>
+    </section>
+  );
+}
 
-  useEffect(()=>{let active=true;import('./hsk-vocabulary.json').then(module=>{if(!active)return;const loaded=module.default as HskDictionaryData;const due=new Set(dueReviewIds(reviewCardsAtLoad.current));const bank=loaded.levels.flatMap(group=>group.words);setData(loaded);setQueue([...bank.filter(item=>due.has(item.id)),...bank.filter(item=>!due.has(item.id))].map(item=>item.id))}).catch(()=>{if(active)setLoadError('The complete HSK review bank could not load. Please retry.')});return()=>{active=false}},[]);
+function PinyinCenter({
+  speak,
+  award,
+}: {
+  speak: (v: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const tones = [
+    ["mā", "妈", "high and level"],
+    ["má", "麻", "rising"],
+    ["mǎ", "马", "dip then rise"],
+    ["mà", "骂", "sharp falling"],
+  ];
+  const [pairId, setPairId] = useState("3-3");
+  const pair = tonePairs.find((item) => item.id === pairId) ?? tonePairs[0];
+  const basicQuestions: DrillQuestion[] = tones
+    .slice(0, 3)
+    .map(([pinyin, , shape]) => ({
+      prompt: `Which pinyin has a ${shape} tone?`,
+      choices: tones.map((item) => item[0]),
+      answer: pinyin,
+      explanation: `${pinyin} uses the ${shape} contour.`,
+    }));
+  const pairQuestions: DrillQuestion[] = tonePairQuestions.map((question) => ({
+    prompt: question.prompt,
+    choices: question.choices,
+    answer: question.answer,
+    explanation: question.explanation,
+  }));
+  return (
+    <section className="learning-panel pinyin-center">
+      <PanelTitle
+        eyebrow="PINYIN · 4×4 TONE-PAIR LAB"
+        title="Hear tones in real word pairs"
+        copy="Start with the four contours, then practice all sixteen two-syllable combinations and common tone sandhi."
+      />
+      <div className="tone-grid">
+        {tones.map(([pinyin, hanzi, shape], index) => (
+          <button onClick={() => speak(hanzi)} key={pinyin}>
+            <span>{index + 1}</span>
+            <strong>{pinyin}</strong>
+            <b>{hanzi}</b>
+            <small>{shape}</small>
+          </button>
+        ))}
+      </div>
+      <div className="tone-pair-layout">
+        <div
+          className="tone-pair-matrix"
+          aria-label="Sixteen Mandarin tone pairs"
+        >
+          {tonePairs.map((item) => (
+            <button
+              className={item.id === pair.id ? "active" : ""}
+              onClick={() => setPairId(item.id)}
+              key={item.id}
+            >
+              <small>{item.id}</small>
+              <strong>{item.hanzi}</strong>
+              <span>{item.pinyin}</span>
+            </button>
+          ))}
+        </div>
+        <article className="tone-pair-focus">
+          <small>SELECTED TONE PAIR · {pair.id}</small>
+          <h3>{pair.hanzi}</h3>
+          <strong>{pair.pinyin}</strong>
+          <p>{pair.meaning}</p>
+          <button onClick={() => speak(pair.hanzi)}>▶ Hear this pair</button>
+          <footer>{pair.note}</footer>
+        </article>
+      </div>
+      <div className="tone-sandhi-note">
+        <span>3→2</span>
+        <p>
+          <strong>Third-tone sandhi</strong>
+          <small>
+            In 你好, the first third tone is normally heard as a rising tone
+            before the next third tone. The written marks stay nǐ hǎo.
+          </small>
+        </p>
+      </div>
+      <p className="tone-tip">
+        Browser speech helps you hear models. Precise tone scoring still
+        requires acoustic recording analysis, so this lab reports recognition
+        evidence only.
+      </p>
+      <ChoiceDrill
+        label="Tone-pair recognition"
+        questions={pairQuestions}
+        award={award}
+        skill="Listening"
+      />
+      <ChoiceDrill
+        label="Basic tone recognition"
+        questions={basicQuestions}
+        award={award}
+        skill="Listening"
+      />
+    </section>
+  );
+}
 
-  function chooseLevel(level:number|'all'){setReviewLevel(level);if(data){const bank=data.levels.filter(group=>level==='all'||group.level===level).flatMap(group=>group.words);const due=new Set(dueReviewIds(learning.reviewCards));setQueue([...bank.filter(item=>due.has(item.id)),...bank.filter(item=>!due.has(item.id))].map(item=>item.id))}setAnswer('');setGraded(false);setCorrect(false)}
-  function checkAnswer(){if(!word||!answer.trim()||graded)return;const matched=recallMatches(answer,word.m);setCorrect(matched);setGraded(true);rate(word.id,matched?'good':'again')}
-  function nextWord(){if(!word)return;setQueue(current=>advanceRecallQueue(current,word.id,correct));setAnswer('');setGraded(false);setCorrect(false)}
+function ReadingCenter({
+  award,
+  speak,
+  favorites,
+  toggleFavorite,
+}: {
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+  speak: (v: string) => void;
+  favorites: string[];
+  toggleFavorite: (id: string) => void;
+}) {
+  const passages = [
+    {
+      title: "A rainy morning",
+      level: 2,
+      text: "今天早上下雨了，所以我坐地铁去大学。到了学校以后，我先去图书馆，然后跟同学一起上课。",
+      pinyin:
+        "Jīntiān zǎoshang xiàyǔ le, suǒyǐ wǒ zuò dìtiě qù dàxué. Dàole xuéxiào yǐhòu, wǒ xiān qù túshūguǎn, ránhòu gēn tóngxué yìqǐ shàngkè.",
+      translation:
+        "It rained this morning, so I took the subway to university. After arriving, I first went to the library, then attended class with a classmate.",
+      question: {
+        prompt: "Where did the narrator go first after arriving?",
+        choices: ["The library", "The restaurant", "The hotel"],
+        answer: "The library",
+        explanation: "先去图书馆 means “first went to the library.”",
+      },
+    },
+    {
+      title: "At the hotel",
+      level: 2,
+      text: "我下午到酒店。前台说房间还没准备好，所以我把行李放在大厅，然后出去吃饭。",
+      pinyin:
+        "Wǒ xiàwǔ dào jiǔdiàn. Qiántái shuō fángjiān hái méi zhǔnbèi hǎo, suǒyǐ wǒ bǎ xíngli fàng zài dàtīng, ránhòu chūqù chīfàn.",
+      translation:
+        "I arrived at the hotel in the afternoon. The room was not ready, so I left my luggage in the lobby and went out to eat.",
+      question: {
+        prompt: "Why was the luggage left in the lobby?",
+        choices: [
+          "The room was not ready",
+          "It was too heavy",
+          "The hotel was closed",
+        ],
+        answer: "The room was not ready",
+        explanation: "房间还没准备好 means the room was not ready yet.",
+      },
+    },
+    {
+      title: "A delayed meeting",
+      level: 3,
+      text: "客户的飞机晚点了，会议改到下午三点。我们利用上午的时间重新检查了合同和报价。",
+      pinyin:
+        "Kèhù de fēijī wǎndiǎn le, huìyì gǎi dào xiàwǔ sān diǎn. Wǒmen lìyòng shàngwǔ de shíjiān chóngxīn jiǎnchá le hétóng hé bàojià.",
+      translation:
+        "The client’s flight was delayed, so the meeting moved to 3 p.m. We used the morning to recheck the contract and quotation.",
+      question: {
+        prompt: "What did the team check?",
+        choices: [
+          "The contract and quotation",
+          "The hotel room",
+          "A train ticket",
+        ],
+        answer: "The contract and quotation",
+        explanation: "合同和报价 are the contract and quotation.",
+      },
+    },
+    {
+      title: "Testing before release",
+      level: 4,
+      text: "新版本发布以前，工程师发现接口返回的数据不稳定。团队决定先修复问题，再运行一次完整测试。",
+      pinyin:
+        "Xīn bǎnběn fābù yǐqián, gōngchéngshī fāxiàn jiēkǒu fǎnhuí de shùjù bù wěndìng. Tuánduì juédìng xiān xiūfù wèntí, zài yùnxíng yí cì wánzhěng cèshì.",
+      translation:
+        "Before releasing the new version, an engineer found unstable API data. The team decided to fix it first, then run a complete test.",
+      question: {
+        prompt: "What happens before the complete test?",
+        choices: [
+          "The issue is fixed",
+          "The product is sold",
+          "The client signs",
+        ],
+        answer: "The issue is fixed",
+        explanation: "先修复问题，再运行测试 gives the sequence.",
+      },
+    },
+    {
+      title: "A changing neighborhood",
+      level: 5,
+      text: "这几年社区发生了明显的变化。虽然新的商店带来了便利，但是居民也担心租金上涨会影响老邻居。",
+      pinyin:
+        "Zhè jǐ nián shèqū fāshēng le míngxiǎn de biànhuà. Suīrán xīn de shāngdiàn dàilái le biànlì, dànshì jūmín yě dānxīn zūjīn shàngzhǎng huì yǐngxiǎng lǎo línjū.",
+      translation:
+        "The neighborhood has changed noticeably. New shops brought convenience, but residents worry rising rent will affect longtime neighbors.",
+      question: {
+        prompt: "What concerns the residents?",
+        choices: ["Rising rent", "A late flight", "University exams"],
+        answer: "Rising rent",
+        explanation: "居民担心租金上涨 explicitly states their concern.",
+      },
+    },
+  ];
+  const [data, setData] = useState<HskDictionaryData | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const [index, setIndex] = useState(0);
+  const [customText, setCustomText] = useState("");
+  const [personalMode, setPersonalMode] = useState(false);
+  const [showPinyin, setShowPinyin] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<HskDictionaryWord | null>(
+    null,
+  );
+  useEffect(() => {
+    let active = true;
+    import("./hsk-vocabulary.json")
+      .then((module) => {
+        if (active) setData(module.default as HskDictionaryData);
+      })
+      .catch(() => {
+        if (active)
+          setLoadError("The local HSK dictionary could not load. Try again.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [retry]);
+  const passage = passages[index % passages.length];
+  const text = personalMode ? customText : passage.text;
+  const words = data ? data.levels.flatMap((group) => group.words) : [];
+  const tokens = segmentChineseText(text, words);
+  const coverage = readerCoverage(tokens);
+  return (
+    <section className="learning-panel smart-reader">
+      <PanelTitle
+        eyebrow="SMART READER · TAP-TO-LOOKUP"
+        title="Read Chinese without leaving the page"
+        copy="Tap a known word for pinyin, meaning, HSK level, radical, audio, and saving. You can also paste your own Chinese text."
+      />
+      <div className="reader-source-tabs">
+        <button
+          className={!personalMode ? "active" : ""}
+          onClick={() => setPersonalMode(false)}
+        >
+          Graded passages
+        </button>
+        <button
+          className={personalMode ? "active" : ""}
+          onClick={() => setPersonalMode(true)}
+        >
+          My text
+        </button>
+      </div>
+      {!personalMode ? (
+        <div className="reader-passage-picker">
+          {passages.map((item, itemIndex) => (
+            <button
+              className={itemIndex === index ? "active" : ""}
+              onClick={() => {
+                setIndex(itemIndex);
+                setSelectedWord(null);
+              }}
+              key={item.title}
+            >
+              <span>HSK {item.level}</span>
+              <strong>{item.title}</strong>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <textarea
+          className="reader-custom-text"
+          value={customText}
+          onChange={(event) => {
+            setCustomText(event.target.value);
+            setSelectedWord(null);
+          }}
+          placeholder="Paste or type Chinese here… 例如：我今天坐地铁去学校。"
+        />
+      )}
+      <div className="reader-controls">
+        <button
+          className={showPinyin ? "active" : ""}
+          onClick={() => setShowPinyin((value) => !value)}
+        >
+          Pinyin {showPinyin ? "on" : "off"}
+        </button>
+        {!personalMode && (
+          <button
+            className={showTranslation ? "active" : ""}
+            onClick={() => setShowTranslation((value) => !value)}
+          >
+            Translation {showTranslation ? "on" : "off"}
+          </button>
+        )}
+        <button onClick={() => text && speak(text)} disabled={!text}>
+          ▶ Read aloud
+        </button>
+        <span>
+          {data
+            ? `${coverage.percent}% dictionary coverage`
+            : "Loading dictionary…"}
+        </span>
+      </div>
+      {loadError && (
+        <div className="reader-error">
+          {loadError}
+          <button
+            onClick={() => {
+              setLoadError("");
+              setRetry((value) => value + 1);
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      <div className="reader-workspace">
+        <article className="reader-text-card">
+          {!text ? (
+            <p className="reader-empty">
+              Paste Chinese text above to start tap-to-lookup reading.
+            </p>
+          ) : (
+            <p className="reader-token-line">
+              {tokens.map((token, tokenIndex) =>
+                token.word ? (
+                  <button
+                    className={
+                      selectedWord?.id === token.word.id ? "selected" : ""
+                    }
+                    onClick={() => setSelectedWord(token.word!)}
+                    key={`${tokenIndex}-${token.text}`}
+                  >
+                    <strong>{token.text}</strong>
+                    {showPinyin && <small>{token.word.py}</small>}
+                  </button>
+                ) : (
+                  <span
+                    className={token.chinese ? "unknown" : ""}
+                    key={`${tokenIndex}-${token.text}`}
+                  >
+                    {token.text}
+                  </span>
+                ),
+              )}
+            </p>
+          )}
+          {!personalMode && showTranslation && (
+            <p className="reader-translation">{passage.translation}</p>
+          )}
+          <footer>
+            <span>
+              {coverage.known}/{coverage.chinese} Chinese characters matched
+            </span>
+            <small>
+              Longest known words are matched first; unmatched characters remain
+              readable.
+            </small>
+          </footer>
+        </article>
+        <aside className="reader-lookup">
+          {selectedWord ? (
+            <>
+              <header>
+                <span>HSK {selectedWord.l}</span>
+                <button
+                  className={favorites.includes(selectedWord.id) ? "saved" : ""}
+                  onClick={() => toggleFavorite(selectedWord.id)}
+                >
+                  {favorites.includes(selectedWord.id) ? "★ Saved" : "☆ Save"}
+                </button>
+              </header>
+              <strong>{selectedWord.h}</strong>
+              <em>{selectedWord.py}</em>
+              <h3>{selectedWord.m}</h3>
+              <div>
+                <span>
+                  <small>RADICAL</small>
+                  <b>{selectedWord.r || "—"}</b>
+                </span>
+                <span>
+                  <small>FREQUENCY RANK</small>
+                  <b>{selectedWord.q < 1_000_000 ? selectedWord.q : "—"}</b>
+                </span>
+                <span>
+                  <small>WORD TYPE</small>
+                  <b>{selectedWord.pos || "—"}</b>
+                </span>
+              </div>
+              <button className="primary" onClick={() => speak(selectedWord.h)}>
+                ▶ Hear pronunciation
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="reader-lookup-empty">点</span>
+              <h3>Tap a highlighted word</h3>
+              <p>
+                Its lookup card will appear here without interrupting your
+                reading.
+              </p>
+            </>
+          )}
+        </aside>
+      </div>
+      {!personalMode && (
+        <>
+          <details className="reader-reference">
+            <summary>Full pinyin reference</summary>
+            <p>{passage.pinyin}</p>
+          </details>
+          <ChoiceDrill
+            key={passage.title}
+            label={`Smart reader: ${passage.title}`}
+            questions={[passage.question]}
+            award={award}
+            skill="Reading"
+            onNext={() => setIndex((value) => (value + 1) % passages.length)}
+          />
+        </>
+      )}
+      <p className="reader-data-note">
+        Lookup uses this project’s locally bundled, licensed HSK dataset. It
+        does not copy Pleco dictionaries or send pasted text to a server.
+      </p>
+    </section>
+  );
+}
 
-  return <div className="page-wrap subpage review-page"><div className="subpage-title"><p className="eyebrow">ACTIVE RECALL · COMPLETE HSK 1–6 BANK</p><h1>Review & mistakes <span>复习</span></h1><p>Answer before seeing the meaning. A wrong answer moves to the back of this session so it returns after other words.</p></div><div className="tabs"><button className={tab==='queue'?'active':''} onClick={()=>setTab('queue')}>HSK word review <b>{allWords.length||'…'}</b></button><button className={tab==='mistakes'?'active':''} onClick={()=>setTab('mistakes')}>错题本 Mistakes <b>{dueErrors.length} due</b></button></div>{tab==='queue'&&<><div className="review-hsk-filter"><button className={reviewLevel==='all'?'active':''} onClick={()=>chooseLevel('all')}>All HSK <b>{allWords.length||'…'}</b></button>{[1,2,3,4,5,6].map(level=><button className={reviewLevel===level?'active':''} onClick={()=>chooseLevel(level)} key={level}>HSK {level}<b>{data?.levels.find(group=>group.level===level)?.words.length??'…'}</b></button>)}</div><div className="review-bank-note"><span>全</span><p><strong>{data?`${allWords.length.toLocaleString()} categorized HSK entries ready`:'Loading the complete HSK 1–6 bank…'}</strong><small>Choose a level for a focused deck. Completed words leave the session; missed words return at the end.</small></p><b>{queue.length.toLocaleString()} left</b></div>{loadError?<div className="dictionary-load-error" role="alert"><span>!</span><div><strong>Review bank unavailable</strong><p>{loadError}</p></div></div>:word?<><div className="mastery-strip"><span>HSK {word.l} · Mastery {card?.mastery??10}%</span><div><i style={{width:`${card?.mastery??10}%`}}/></div><b>{card?.repetitions??0} reviews</b></div><section className="recall-card"><button className="audio" onClick={()=>speak(word.h)} aria-label={`Play ${word.h}`}>◖))</button><small>WHAT DOES THIS WORD MEAN?</small><strong>{word.h}</strong><span>{word.py}</span><label htmlFor="recall-answer">Type the English meaning from memory</label><div className="recall-answer-row"><input id="recall-answer" value={answer} disabled={graded} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>{if(event.key==='Enter')checkAnswer()}} placeholder="Your answer…" autoComplete="off"/><button disabled={!answer.trim()||graded} onClick={checkAnswer}>Check answer</button></div>{graded&&<div className={`recall-feedback ${correct?'good':'try'}`}><span>{correct?'✓':'↺'}</span><p><strong>{correct?'Correct recall':`Answer: ${word.m}`}</strong><small>{correct?'This word leaves today’s queue and follows its spaced schedule.':'Your answer was shown only after checking. This word has moved to the back of the session.'}</small>{word.pos&&<b>Word type: {word.pos}{word.r?` · Radical: ${word.r}`:''}</b>}</p><button onClick={nextWord}>{correct?'Next word →':'Continue; test me again later →'}</button></div>}</section></>:data?<EmptyReview/>:null}</>}{tab==='mistakes'&&(learning.mistakes.length?<><div className="mistake-overview"><article><small>DUE NOW</small><strong>{dueErrors.length}</strong><span>targeted reviews</span></article><article><small>TOTAL ERRORS</small><strong>{learning.mistakes.reduce((sum,mistake)=>sum+(mistake.errorCount??1),0)}</strong><span>across {learning.mistakes.length} patterns</span></article><article><small>RECOVERED</small><strong>{learning.mistakes.filter(mistake=>(mistake.mastery??5)>=85).length}</strong><span>strong across time</span></article></div><div className="mistake-training-note"><span>5×</span><p><strong>Five-angle correction cycle</strong><small>Meaning, correct response, missing-word context, explanation, and final recall. A failed recall remains in the learning queue.</small></p></div><div className="mistake-filters">{([['all','All mistakes'],['due','Due now'],['learning','Still learning'],['mastered','Recovered']] as [MistakeFilter,string][]).map(([id,label])=><button className={mistakeFilter===id?'active':''} onClick={()=>setMistakeFilter(id)} key={id}>{label}</button>)}</div>{visibleMistakes.length?<div className="mistake-list enhanced">{visibleMistakes.map((mistake,itemIndex)=><MistakePracticeCard mistake={mistake} alternatives={learning.mistakes.filter(item=>item.id!==mistake.id).map(item=>item.correction)} rate={rateMistake} openChapter={openChapter} saveCorrection={addPersonalWord} key={mistake.id??itemIndex}/>)}</div>:<div className="empty-card compact"><span>好</span><h2>No mistakes in this filter</h2><p>Choose another view or continue learning to create new evidence.</p></div>}</>:<div className="empty-card"><span>好</span><h2>No saved mistakes yet</h2><p>Wrong lesson and game answers will appear here for five-angle correction practice.</p></div>)}</div>
+function WorkbookResources({
+  award,
+}: {
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [entry, setEntry] = useState("");
+  const [checked, setChecked] = useState(false);
+  const task = workbookPrompts[index % workbookPrompts.length];
+  const matched = task.keywords.filter((keyword) => entry.includes(keyword));
+  const correct = matched.length === task.keywords.length;
+  function check() {
+    setChecked(true);
+    award(`Workbook question ${index + 1}`, 12, "Grammar", correct);
+  }
+  function next() {
+    setIndex((index + 1) % workbookPrompts.length);
+    setEntry("");
+    setChecked(false);
+  }
+  return (
+    <section className="learning-panel">
+      <PanelTitle
+        eyebrow={`WORKBOOK · ${task.category.toUpperCase()} · ${index + 1}/${workbookPrompts.length}`}
+        title="Apply what you learn"
+        copy="Write, compare with a natural model, print, and continue."
+      />
+      <div className="workbook-task">
+        <label htmlFor="workbook-entry">{task.prompt}</label>
+        <textarea
+          id="workbook-entry"
+          value={entry}
+          onChange={(event) => {
+            setEntry(event.target.value);
+            setChecked(false);
+          }}
+          placeholder="用中文写…"
+        />
+        <div>
+          <button disabled={!entry.trim()} onClick={check}>
+            Check workbook
+          </button>
+          <button onClick={() => window.print()}>Print workbook</button>
+        </div>
+        {checked && (
+          <div className={correct ? "flow-feedback good" : "flow-feedback try"}>
+            <p>
+              <strong>
+                {correct
+                  ? "✓ Required ideas included"
+                  : `Include: ${task.keywords.filter((keyword) => !matched.includes(keyword)).join("、")}`}
+              </strong>
+              <span>Natural model: {task.model}</span>
+            </p>
+            <button onClick={correct ? next : () => setChecked(false)}>
+              {correct ? "Next workbook question →" : "Revise answer"}
+            </button>
+          </div>
+        )}
+      </div>
+      <div className="culture-grid">
+        <article>
+          <small>CULTURE NOTE</small>
+          <strong>客气 · Polite modesty</strong>
+          <p>
+            哪里哪里 can modestly reject praise, though younger speakers may
+            simply say 谢谢.
+          </p>
+        </article>
+        <article>
+          <small>FORMAL VS CASUAL</small>
+          <strong>您 vs 你</strong>
+          <p>Use 您 in formal service situations; 你 is normal with peers.</p>
+        </article>
+        <article>
+          <small>MODERN CHINESE</small>
+          <strong>没问题 · No problem</strong>
+          <p>A common neutral response meaning “no problem” or “sure.”</p>
+        </article>
+      </div>
+      <div className="resource-heading">
+        <div>
+          <p className="eyebrow">CURATED EXTERNAL RESOURCES</p>
+          <h3>Continue with trusted learning tools</h3>
+        </div>
+        <span>Opens in a new tab</span>
+      </div>
+      <div className="resource-cards expanded">
+        {curatedResources.map((resource) => (
+          <a
+            href={resource.url}
+            target="_blank"
+            rel="noreferrer"
+            key={resource.title}
+          >
+            <small>{resource.category.toUpperCase()}</small>
+            <strong>{resource.title}</strong>
+            <p>{resource.description}</p>
+            <b>Open resource ↗</b>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function GamesCenter({
+  chapter,
+  path,
+  speak,
+  award,
+  practiceChanged,
+}: {
+  chapter: Chapter;
+  path: PathId;
+  speak: (v: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+    gameResult?: { score: number; total: number; mistakes?: GameMistake[] },
+  ) => void;
+  practiceChanged: (open: boolean) => void;
+}) {
+  const [game, setGame] = useState<
+    | "menu"
+    | "match"
+    | "sentence"
+    | "memory"
+    | "audio"
+    | "rush"
+    | "meaning"
+    | "pinyin"
+    | "tone"
+    | "sentence-rush"
+    | "hanzi-puzzle"
+    | "battle"
+    | "career"
+  >("menu");
+  useEffect(() => {
+    practiceChanged(game !== "menu");
+    return () => practiceChanged(false);
+  }, [game, practiceChanged]);
+  const pack = pathPacks[path];
+  const back = () => setGame("menu");
+  if (game === "match")
+    return (
+      <div className="game-with-back">
+        <button onClick={back}>← Game Center</button>
+        <Practice
+          chapter={chapter}
+          speak={speak}
+          award={() =>
+            award("Word Match", 20, "Vocabulary", true, {
+              score: chapter.vocabulary.length,
+              total: chapter.vocabulary.length,
+            })
+          }
+        />
+      </div>
+    );
+  if (game === "sentence")
+    return (
+      <SentenceBuilder
+        chapter={chapter}
+        back={back}
+        award={() =>
+          award("Sentence Builder", 25, "Grammar", true, { score: 1, total: 1 })
+        }
+      />
+    );
+  if (game === "memory")
+    return (
+      <MemoryCards
+        chapter={chapter}
+        back={back}
+        award={() =>
+          award("Memory Cards", 25, "Vocabulary", true, {
+            score: chapter.vocabulary.length,
+            total: chapter.vocabulary.length,
+          })
+        }
+      />
+    );
+  if (game === "audio")
+    return (
+      <AudioDetective
+        speak={speak}
+        back={back}
+        award={(score) =>
+          award("Audio Detective", 25, "Listening", score >= 3, {
+            score,
+            total: 4,
+          })
+        }
+      />
+    );
+  if (game === "rush")
+    return (
+      <WordRush
+        back={back}
+        finish={(score, total) =>
+          award("Word Rush", 30, "Vocabulary", score / total >= 0.6, {
+            score,
+            total,
+          })
+        }
+      />
+    );
+  if (game === "meaning")
+    return (
+      <ChoiceArena
+        eyebrow="MEANING HUNTER · VOCABULARY"
+        title="Meaning Hunter"
+        chinese="寻义"
+        copy="Track the exact Mandarin word across travel, study, work, and technology."
+        questions={meaningHunterQuestions}
+        speak={speak}
+        back={back}
+        finish={(score, total, mistakes) =>
+          award("Meaning Hunter", 30, "Vocabulary", score / total >= 0.6, {
+            score,
+            total,
+            mistakes,
+          })
+        }
+      />
+    );
+  if (game === "pinyin")
+    return (
+      <ChoiceArena
+        eyebrow="PINYIN CHALLENGE · SOUND MAP"
+        title="Pinyin Challenge"
+        chinese="拼音挑战"
+        copy="Separate initials, finals, and tone marks without relying on guesswork."
+        questions={pinyinChallengeQuestions}
+        speak={speak}
+        back={back}
+        finish={(score, total, mistakes) =>
+          award("Pinyin Challenge", 30, "Listening", score / total >= 0.6, {
+            score,
+            total,
+            mistakes,
+          })
+        }
+      />
+    );
+  if (game === "tone")
+    return (
+      <ChoiceArena
+        eyebrow="TONE MASTER · VISUAL CONTOURS"
+        title="Tone Master"
+        chinese="声调大师"
+        copy="Read tone marks and connect them to the four Mandarin pitch contours."
+        questions={toneMasterQuestions}
+        speak={speak}
+        back={back}
+        finish={(score, total, mistakes) =>
+          award("Tone Master", 30, "Listening", score / total >= 0.6, {
+            score,
+            total,
+            mistakes,
+          })
+        }
+      />
+    );
+  if (game === "sentence-rush")
+    return (
+      <ChoiceArena
+        eyebrow="SENTENCE SPEEDRUN · NATURAL ORDER"
+        title="Sentence Speedrun"
+        chinese="极速造句"
+        copy="Recognize natural Mandarin order across eight real-world scenarios."
+        questions={sentenceSpeedrunQuestions}
+        speak={speak}
+        back={back}
+        timed
+        finish={(score, total, mistakes) =>
+          award("Sentence Speedrun", 30, "Grammar", score / total >= 0.6, {
+            score,
+            total,
+            mistakes,
+          })
+        }
+      />
+    );
+  if (game === "hanzi-puzzle")
+    return (
+      <ChoiceArena
+        eyebrow="HANZI PUZZLE · COMPONENT LOGIC"
+        title="Hanzi Puzzle"
+        chinese="汉字拼图"
+        copy="Find radicals and component relationships inside complete characters."
+        questions={hanziPuzzleQuestions}
+        speak={speak}
+        back={back}
+        finish={(score, total, mistakes) =>
+          award("Hanzi Puzzle", 30, "Hanzi", score / total >= 0.6, {
+            score,
+            total,
+            mistakes,
+          })
+        }
+      />
+    );
+  if (game === "battle")
+    return (
+      <ChoiceArena
+        eyebrow="FLASHCARD BATTLE · TEN CARDS"
+        title="Flashcard Battle"
+        chinese="卡片对战"
+        copy="Protect three shields while recalling vocabulary from every learning world."
+        questions={flashcardBattleQuestions}
+        speak={speak}
+        back={back}
+        battle
+        finish={(score, total, mistakes) =>
+          award("Flashcard Battle", 35, "Vocabulary", score / total >= 0.6, {
+            score,
+            total,
+            mistakes,
+          })
+        }
+      />
+    );
+  if (game === "career")
+    return (
+      <CareerChallenge
+        path={path}
+        back={back}
+        finish={(score, total) =>
+          award(
+            pack.gameTitle,
+            35,
+            path === "Computer Science" ? "Grammar" : "Speaking",
+            score / total >= 0.66,
+            { score, total },
+          )
+        }
+      />
+    );
+  return (
+    <div className="page-wrap subpage game-center-page">
+      <div className="game-center-hero">
+        <span>游</span>
+        <div>
+          <p className="eyebrow">PLAY WITH PURPOSE · 12 PLAYABLE MODES</p>
+          <h1>Train one skill at a time</h1>
+          <p>
+            Short, focused games turn recall, tones, grammar, and Hanzi into
+            repeatable practice—not empty XP farming.
+          </p>
+        </div>
+        <aside>
+          <b>12</b>
+          <small>learning modes</small>
+          <strong>Adaptive difficulty</strong>
+        </aside>
+      </div>
+      <div className="game-catalog">
+        <GameCard
+          symbol="拼"
+          tone="coral"
+          meta="RECOMMENDED · 3 MIN"
+          title="Word Match"
+          copy="Connect Hanzi, sound, and meaning."
+          open={() => setGame("match")}
+        />
+        <GameCard
+          symbol="句"
+          tone="jade"
+          meta="PRODUCTION · 4 MIN"
+          title="Sentence Builder"
+          copy="Put Chinese words into natural order."
+          open={() => setGame("sentence")}
+        />
+        <GameCard
+          symbol="忆"
+          tone="gold"
+          meta="MEMORY · 4 MIN"
+          title="Memory Cards"
+          copy="Find matching Hanzi and meanings."
+          open={() => setGame("memory")}
+        />
+        <GameCard
+          symbol="速"
+          tone="rush"
+          meta="SPEED + COMBO · 45 SEC"
+          title="Word Rush"
+          copy="Build a combo under time pressure."
+          open={() => setGame("rush")}
+        />
+        <GameCard
+          symbol="义"
+          tone="teal"
+          meta="VOCABULARY · 8 CLUES"
+          title="Meaning Hunter"
+          copy="Hunt for precise meanings across contexts."
+          open={() => setGame("meaning")}
+        />
+        <GameCard
+          symbol="音"
+          tone="sky"
+          meta="PINYIN · 8 ROUNDS"
+          title="Pinyin Challenge"
+          copy="Choose accurate initials, finals, and tones."
+          open={() => setGame("pinyin")}
+        />
+        <GameCard
+          symbol="调"
+          tone="rose"
+          meta="TONES · 8 ROUNDS"
+          title="Tone Master"
+          copy="Read and hear Mandarin tone contours."
+          open={() => setGame("tone")}
+        />
+        <GameCard
+          symbol="声"
+          tone="plum"
+          meta="LISTENING · 4 CLUES"
+          title="Audio Detective"
+          copy="Hear a syllable and identify its tone."
+          open={() => setGame("audio")}
+        />
+        <GameCard
+          symbol="竞"
+          tone="amber"
+          meta="GRAMMAR · TIMED"
+          title="Sentence Speedrun"
+          copy="Spot natural sentence order quickly."
+          open={() => setGame("sentence-rush")}
+        />
+        <GameCard
+          symbol="部"
+          tone="mint"
+          meta="HANZI · 8 PUZZLES"
+          title="Hanzi Puzzle"
+          copy="Read radicals inside full characters."
+          open={() => setGame("hanzi-puzzle")}
+        />
+        <GameCard
+          symbol="战"
+          tone="red"
+          meta="RECALL · 10 CARDS"
+          title="Flashcard Battle"
+          copy="Protect your shields through a mixed deck."
+          open={() => setGame("battle")}
+        />
+        <GameCard
+          symbol="专"
+          tone="career"
+          meta={`${path.toUpperCase()} · SPECIALIZED`}
+          title={pack.gameTitle}
+          copy={pack.mission}
+          open={() => setGame("career")}
+        />
+      </div>
+    </div>
+  );
+}
+
+function GameCard({
+  symbol,
+  tone,
+  meta,
+  title,
+  copy,
+  open,
+}: {
+  symbol: string;
+  tone: string;
+  meta: string;
+  title: string;
+  copy: string;
+  open: () => void;
+}) {
+  return (
+    <button
+      className={`game-card game-${tone}`}
+      data-symbol={symbol}
+      onClick={open}
+    >
+      <span className={`game-symbol ${tone}`}>{symbol}</span>
+      <div>
+        <small>{meta}</small>
+        <h2>{title}</h2>
+        <p>{copy}</p>
+        <b>
+          Start game <i>→</i>
+        </b>
+      </div>
+    </button>
+  );
+}
+
+function GemHintBar({
+  answer,
+  audio,
+  speak,
+}: {
+  answer: string;
+  audio?: string;
+  speak: (value: string, override?: number) => void;
+}) {
+  const [pinyin, setPinyin] = useState(false);
+  const [keyword, setKeyword] = useState(false);
+  const pinyinClue =
+    allVocabulary.find((word) => answer.includes(word.hanzi))?.pinyin ??
+    textbookReviewWords.find((word) => answer.includes(word.hanzi))?.pinyin;
+  function pay(cost: number, label: string, action: () => void) {
+    if (activeGemWallet.spend(cost, label)) action();
+  }
+  function removeWrong() {
+    const wrong = [
+      ...document.querySelectorAll<HTMLButtonElement>(
+        ".choice-arena .arena-choices button:not(:disabled)",
+      ),
+    ].find((button) => button.textContent !== answer && !button.hidden);
+    if (!wrong) return;
+    pay(3, "One wrong choice removed", () => {
+      wrong.hidden = true;
+    });
+  }
+  function slowAudio() {
+    if (!audio) return;
+    pay(3, "Slow audio hint", () => speak(audio, 0.58));
+  }
+  const hasChoices =
+    typeof document !== "undefined" &&
+    Boolean(
+      document.querySelector(
+        ".choice-arena .arena-choices button:not(:disabled)",
+      ),
+    );
+  return (
+    <div className="gem-hint-bar">
+      <span>◆ {activeGemWallet.balance}</span>
+      <button onClick={() => pay(2, "Pinyin hint", () => setPinyin(true))}>
+        拼 Pinyin · 2
+      </button>
+      <button disabled={!hasChoices} onClick={removeWrong}>
+        −1 Wrong · 3
+      </button>
+      <button disabled={!audio} onClick={slowAudio}>
+        慢 Slow audio · 3
+      </button>
+      <button onClick={() => pay(2, "Keyword hint", () => setKeyword(true))}>
+        钥 Keyword · 2
+      </button>
+      {(pinyin || keyword) && (
+        <p>
+          {pinyin
+            ? `Pinyin clue: ${pinyinClue ?? "listen slowly and identify each tone"}. `
+            : ""}
+          {keyword
+            ? `Key clue: ${answer.slice(0, Math.max(1, Math.ceil(answer.length / 3)))}…`
+            : ""}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ChoiceArena({
+  eyebrow,
+  title,
+  chinese,
+  copy,
+  questions,
+  speak,
+  back,
+  finish,
+  timed = false,
+  battle = false,
+}: {
+  eyebrow: string;
+  title: string;
+  chinese: string;
+  copy: string;
+  questions: GameQuestion[];
+  speak: (v: string) => void;
+  back: () => void;
+  finish: (score: number, total: number, mistakes: GameMistake[]) => void;
+  timed?: boolean;
+  battle?: boolean;
+}) {
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [graded, setGraded] = useState(false);
+  const [score, setScore] = useState(0);
+  const [mistakes, setMistakes] = useState<GameMistake[]>([]);
+  const [shields, setShields] = useState(3);
+  const [done, setDone] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [startedAt, setStartedAt] = useState(() => Date.now());
+  const [elapsed, setElapsed] = useState(0);
+  const question = questions[index];
+  const rotation = (index * 2 + 1) % question.choices.length;
+  const choices = [
+    ...question.choices.slice(rotation),
+    ...question.choices.slice(0, rotation),
+  ];
+  const correct = selected === question.answer;
+  function check() {
+    if (!selected || graded) return;
+    setGraded(true);
+    if (correct) setScore((value) => value + 1);
+    else {
+      setMistakes((value) => [
+        ...value,
+        {
+          prompt: question.prompt,
+          answer: selected,
+          correction: question.answer,
+          explanation: question.explanation,
+        },
+      ]);
+      if (battle) setShields((value) => Math.max(0, value - 1));
+    }
+  }
+  function next() {
+    if (index === questions.length - 1) {
+      const duration = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+      setElapsed(duration);
+      setDone(true);
+      if (!saved) {
+        setSaved(true);
+        finish(score, questions.length, mistakes);
+      }
+    } else {
+      setIndex((value) => value + 1);
+      setSelected("");
+      setGraded(false);
+    }
+  }
+  function replay() {
+    setIndex(0);
+    setSelected("");
+    setGraded(false);
+    setScore(0);
+    setMistakes([]);
+    setShields(3);
+    setDone(false);
+    setSaved(false);
+    setElapsed(0);
+    setStartedAt(Date.now());
+  }
+  return (
+    <div className="page-wrap subpage">
+      <button className="page-back" onClick={back}>
+        ← Game Center
+      </button>
+      <div className="subpage-title">
+        <p className="eyebrow">{eyebrow}</p>
+        <h1>
+          {title} <span>{chinese}</span>
+        </h1>
+        <p>{copy}</p>
+      </div>
+      <section className="choice-arena">
+        {!done ? (
+          <>
+            <header>
+              <span>
+                ROUND {index + 1} / {questions.length}
+              </span>
+              {timed && <b>Finish time is recorded</b>}
+              {battle && (
+                <div
+                  className="battle-shields"
+                  aria-label={`${shields} shields remaining`}
+                >
+                  {[0, 1, 2].map((item) => (
+                    <i className={item < shields ? "active" : ""} key={item}>
+                      ◆
+                    </i>
+                  ))}
+                </div>
+              )}
+            </header>
+            <div className="arena-progress">
+              <i
+                style={{
+                  width: `${((index + (graded ? 1 : 0)) / questions.length) * 100}%`,
+                }}
+              />
+            </div>
+            <article>
+              <small>CHOOSE ONE ANSWER</small>
+              <h2>{question.prompt}</h2>
+              {question.audioText && (
+                <button
+                  className="arena-audio"
+                  onClick={() => speak(question.audioText!)}
+                >
+                  ▶ Hear clue
+                </button>
+              )}
+              <div className="arena-choices">
+                {choices.map((choice) => (
+                  <button
+                    disabled={graded}
+                    className={selected === choice ? "selected" : ""}
+                    onClick={() => setSelected(choice)}
+                    key={choice}
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
+              {!graded ? (
+                <button
+                  className="arena-check"
+                  disabled={!selected}
+                  onClick={check}
+                >
+                  Check answer
+                </button>
+              ) : (
+                <div
+                  className={
+                    correct ? "arena-feedback good" : "arena-feedback try"
+                  }
+                >
+                  <p>
+                    <strong>
+                      {correct ? "✓ Correct" : `Answer: ${question.answer}`}
+                    </strong>
+                    <span>{question.explanation}</span>
+                  </p>
+                  <button onClick={next}>
+                    {index === questions.length - 1
+                      ? "See results →"
+                      : "Next challenge →"}
+                  </button>
+                </div>
+              )}
+            </article>
+          </>
+        ) : (
+          <div className="arena-result">
+            <span>
+              {score / Math.max(1, questions.length) >= 0.75 ? "胜" : "练"}
+            </span>
+            <p className="eyebrow">RESULT SAVED</p>
+            <h2>
+              {score} / {questions.length} correct
+            </h2>
+            <p>
+              {Math.round((score / questions.length) * 100)}% accuracy
+              {timed ? ` · ${elapsed} seconds` : ""}
+              {battle ? ` · ${shields} shields left` : ""}
+            </p>
+            <div>
+              <button onClick={back}>Back to games</button>
+              <button className="primary" onClick={replay}>
+                Play again
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function SentenceBuilder({
+  chapter,
+  back,
+  award,
+}: {
+  chapter: Chapter;
+  back: () => void;
+  award: () => void;
+}) {
+  const production =
+    chapterLearningPacks[chapter.id as keyof typeof chapterLearningPacks]
+      .production;
+  const target = production.target;
+  const pieces = production.pieces;
+  const [answer, setAnswer] = useState<string[]>([]);
+  const [graded, setGraded] = useState(false);
+  const [awarded, setAwarded] = useState(false);
+  const correct = answer.join("") === target.join("");
+  function check() {
+    setGraded(true);
+    if (correct && !awarded) {
+      setAwarded(true);
+      award();
+    }
+  }
+  function retry() {
+    setAnswer([]);
+    setGraded(false);
+  }
+  return (
+    <div className="page-wrap subpage">
+      <button className="page-back" onClick={back}>
+        ← Game Center
+      </button>
+      <div className="subpage-title">
+        <p className="eyebrow">SENTENCE PRODUCTION</p>
+        <h1>
+          Sentence Builder <span>造句</span>
+        </h1>
+        <p>
+          {production.prompt} · {production.translation}
+        </p>
+      </div>
+      <section className="builder-panel">
+        <div className="answer-zone">
+          {answer.length ? (
+            answer.map((piece, i) => (
+              <button
+                disabled={graded}
+                key={`${piece}-${i}`}
+                onClick={() => setAnswer(answer.filter((_, n) => n !== i))}
+              >
+                {piece}
+              </button>
+            ))
+          ) : (
+            <span>Tap the chunks below to build natural Chinese</span>
+          )}
+        </div>
+        <div className="piece-bank">
+          {pieces.map((piece, i) => (
+            <button
+              disabled={graded || answer.includes(piece)}
+              onClick={() => setAnswer([...answer, piece])}
+              key={`${piece}-${i}`}
+            >
+              {piece}
+            </button>
+          ))}
+        </div>
+        <button
+          className="builder-check"
+          disabled={answer.length !== target.length || graded}
+          onClick={check}
+        >
+          Check sentence
+        </button>
+        {graded &&
+          (correct ? (
+            <div className="builder-success">
+              ✓ 很好！ {target.join("")} · The sentence is in a natural order.
+            </div>
+          ) : (
+            <div className="builder-result-try">
+              <strong>Natural order: {target.join("")}</strong>
+              <p>Compare the pattern, then rebuild it from memory.</p>
+              <button onClick={retry}>Try again</button>
+            </div>
+          ))}
+      </section>
+    </div>
+  );
+}
+
+function MemoryCards({
+  chapter,
+  back,
+  award,
+}: {
+  chapter: Chapter;
+  back: () => void;
+  award: () => void;
+}) {
+  const source =
+    vocabularyNetworkCategories.find((category) => category.id === chapter.id)
+      ?.words ?? chapter.vocabulary;
+  const [stage, setStage] = useState(1);
+  const pairCount = [3, 4, 6][stage - 1];
+  const words = source.slice(0, pairCount);
+  const cards = words.flatMap((word) => [
+    { key: `${word.id}-h`, id: word.id, text: word.hanzi },
+    { key: `${word.id}-e`, id: word.id, text: word.english },
+  ]);
+  const [open, setOpen] = useState<string[]>([]);
+  const [matched, setMatched] = useState<string[]>([]);
+  const [seconds, setSeconds] = useState([50, 45, 40][stage - 1]);
+  const [failed, setFailed] = useState(false);
+  const complete = matched.length === words.length;
+  useEffect(() => {
+    if (complete || failed) return;
+    const timer = window.setInterval(
+      () =>
+        setSeconds((value) => {
+          if (value <= 1) {
+            window.clearInterval(timer);
+            setFailed(true);
+            return 0;
+          }
+          return value - 1;
+        }),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [stage, complete, failed]);
+  function flip(card: { key: string; id: string }) {
+    if (
+      open.length === 2 ||
+      matched.includes(card.id) ||
+      open.includes(card.key) ||
+      failed
+    )
+      return;
+    const next = [...open, card.key];
+    setOpen(next);
+    if (next.length === 2) {
+      const first = cards.find((item) => item.key === next[0])!;
+      if (first.id === card.id) {
+        setMatched([...matched, card.id]);
+        setOpen([]);
+      } else window.setTimeout(() => setOpen([]), 650);
+    }
+  }
+  function restart(nextStage = stage) {
+    setStage(nextStage);
+    setOpen([]);
+    setMatched([]);
+    setSeconds([50, 45, 40][nextStage - 1]);
+    setFailed(false);
+  }
+  function advance() {
+    if (stage === 3) {
+      award();
+      back();
+    } else restart(stage + 1);
+  }
+  return (
+    <div className="page-wrap subpage">
+      <button className="page-back" onClick={back}>
+        ← Game Center
+      </button>
+      <div className="subpage-title">
+        <p className="eyebrow">VISUAL MEMORY · STAGE {stage} OF 3</p>
+        <h1>
+          Memory Cards <span>记忆卡</span>
+        </h1>
+        <p>
+          Each stage adds more pairs and less time. Finish all three stages
+          before the XP reward is saved.
+        </p>
+      </div>
+      <div className="memory-stage-bar">
+        <span>
+          <b>{seconds}s</b> remaining
+        </span>
+        <div>
+          <i
+            style={{
+              width: `${((stage - 1) / 3) * 100 + (complete ? 33 : 0)}%`,
+            }}
+          />
+        </div>
+        <strong>
+          {matched.length}/{words.length} pairs
+        </strong>
+      </div>
+      <section className={`memory-grid stage-${stage}`}>
+        {cards.map((card) => (
+          <button
+            key={card.key}
+            className={
+              open.includes(card.key) || matched.includes(card.id) ? "open" : ""
+            }
+            disabled={matched.includes(card.id) || failed}
+            onClick={() => flip(card)}
+          >
+            <span>龙</span>
+            <strong>{card.text}</strong>
+          </button>
+        ))}
+      </section>
+      {failed && (
+        <div className="memory-win failed">
+          <strong>Time is up</strong>
+          <span>Accuracy matters more than random tapping.</span>
+          <button onClick={() => restart()}>Retry stage {stage} →</button>
+        </div>
+      )}
+      {complete && (
+        <div className="memory-win">
+          <strong>✓ Stage {stage} cleared</strong>
+          <span>
+            {stage === 3
+              ? "All difficulty stages complete · +25 XP"
+              : "The next stage adds more pairs and less time."}
+          </span>
+          <button onClick={advance}>
+            {stage === 3 ? "Save result & return" : "Next harder stage →"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AudioDetective({
+  speak,
+  back,
+  award,
+}: {
+  speak: (text: string) => void;
+  back: () => void;
+  award: (score: number) => void;
+}) {
+  const rounds = [
+    { hanzi: "妈", pinyin: "mā", tone: 1, shape: "high and level" },
+    { hanzi: "麻", pinyin: "má", tone: 2, shape: "rising" },
+    { hanzi: "马", pinyin: "mǎ", tone: 3, shape: "dip then rise" },
+    { hanzi: "骂", pinyin: "mà", tone: 4, shape: "sharp falling" },
+  ];
+  const [index, setIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [done, setDone] = useState(false);
+  function choose(tone: number) {
+    if (feedback) return;
+    const correct = tone === rounds[index].tone;
+    setScore(score + (correct ? 1 : 0));
+    setFeedback(
+      correct
+        ? "Correct"
+        : `Tone ${rounds[index].tone}: ${rounds[index].shape}`,
+    );
+  }
+  function next() {
+    if (index === rounds.length - 1) {
+      setDone(true);
+      award(score);
+    } else {
+      setIndex(index + 1);
+      setFeedback("");
+      window.setTimeout(() => speak(rounds[index + 1].hanzi), 80);
+    }
+  }
+  function replay() {
+    setIndex(0);
+    setScore(0);
+    setFeedback("");
+    setDone(false);
+  }
+  return (
+    <div className="page-wrap subpage">
+      <button className="page-back" onClick={back}>
+        ← Game Center
+      </button>
+      <div className="subpage-title">
+        <p className="eyebrow">LISTENING GAME · TONES</p>
+        <h1>
+          Audio Detective <span>听声辨调</span>
+        </h1>
+        <p>Listen without seeing pinyin, then identify the tone contour.</p>
+      </div>
+      <section className="audio-game">
+        {!done ? (
+          <>
+            <div className="audio-round">
+              <small>CLUE {index + 1} OF 4</small>
+              <button onClick={() => speak(rounds[index].hanzi)}>▶</button>
+              <strong>Hear the syllable</strong>
+              <span>Replay as many times as you need</span>
+            </div>
+            <div className="tone-choices">
+              {[1, 2, 3, 4].map((tone) => (
+                <button
+                  disabled={!!feedback}
+                  onClick={() => choose(tone)}
+                  key={tone}
+                >
+                  <b>{tone}</b>
+                  <span>
+                    {["¯ high", "´ rising", "ˇ dipping", "` falling"][tone - 1]}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {feedback && (
+              <div
+                className={
+                  feedback === "Correct"
+                    ? "audio-feedback good"
+                    : "audio-feedback try"
+                }
+              >
+                <strong>
+                  {feedback === "Correct"
+                    ? `✓ Correct — ${rounds[index].pinyin}`
+                    : feedback}
+                </strong>
+                <button onClick={next}>
+                  {index === 3 ? "See result" : "Next clue →"}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="audio-finish">
+            <span>{score >= 3 ? "听" : "练"}</span>
+            <h2>{score}/4 tones identified</h2>
+            <p>
+              {score >= 3
+                ? "Sharp ears. You can distinguish the four basic tone shapes."
+                : "Good start. Replay slowly and focus on pitch movement."}
+            </p>
+            <button className="primary" onClick={replay}>
+              Play again
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function WordRush({
+  back,
+  finish,
+}: {
+  back: () => void;
+  finish: (score: number, total: number) => void;
+}) {
+  const [seconds, setSeconds] = useState(45);
+  const [index, setIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [done, setDone] = useState(false);
+  const word = allVocabulary[index % allVocabulary.length];
+  const choices = [
+    word.english,
+    allVocabulary[(index + 7) % allVocabulary.length].english,
+    allVocabulary[(index + 13) % allVocabulary.length].english,
+  ];
+  useEffect(() => {
+    if (done) return;
+    const timer = window.setInterval(
+      () =>
+        setSeconds((value) => {
+          if (value <= 1) {
+            window.clearInterval(timer);
+            setDone(true);
+            return 0;
+          }
+          return value - 1;
+        }),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [done]);
+  function choose(choice: string) {
+    if (done) return;
+    const correct = choice === word.english;
+    const nextCombo = correct ? combo + 1 : 0;
+    setScore(score + (correct ? 1 : 0));
+    setAttempts(attempts + 1);
+    setCombo(nextCombo);
+    setBestCombo(Math.max(bestCombo, nextCombo));
+    setIndex(index + 1);
+  }
+  function claim() {
+    finish(score, Math.max(1, attempts));
+    back();
+  }
+  return (
+    <div className="page-wrap subpage">
+      <button className="page-back" onClick={back}>
+        ← Game Center
+      </button>
+      <div className="subpage-title">
+        <p className="eyebrow">SPEED RECALL · HEALTHY LIMIT</p>
+        <h1>
+          Word Rush <span>词语冲刺</span>
+        </h1>
+        <p>
+          One 45-second round. Accuracy matters more than infinite grinding.
+        </p>
+      </div>
+      <section className="rush-game">
+        {!done ? (
+          <>
+            <div className="rush-stats">
+              <span>
+                <b>{seconds}</b>seconds
+              </span>
+              <span>
+                <b>
+                  {score}/{attempts}
+                </b>
+                correct
+              </span>
+              <span>
+                <b>×{combo}</b>combo
+              </span>
+            </div>
+            <div className="rush-word">
+              <small>CHOOSE THE MEANING</small>
+              <strong>{word.hanzi}</strong>
+              <span>{word.pinyin}</span>
+            </div>
+            <div className="rush-choices">
+              {choices.map((choice) => (
+                <button onClick={() => choose(choice)} key={choice}>
+                  {choice}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="rush-result">
+            <span>速</span>
+            <h2>{score} correct answers</h2>
+            <p>
+              Accuracy {Math.round((score / Math.max(1, attempts)) * 100)}% ·
+              Best combo ×{bestCombo}
+            </p>
+            <button className="primary" onClick={claim}>
+              Save result →
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function CareerChallenge({
+  path,
+  back,
+  finish,
+}: {
+  path: PathId;
+  back: () => void;
+  finish: (score: number, total: number) => void;
+}) {
+  const pack = pathPacks[path];
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+  const question = pack.gameQuestions[index];
+  function check() {
+    const correct = selected === question.answer;
+    setFeedback(correct ? "Correct" : `Better answer: ${question.answer}`);
+    if (correct) setScore(score + 1);
+  }
+  function next() {
+    if (index === pack.gameQuestions.length - 1) {
+      setDone(true);
+      finish(score, pack.gameQuestions.length);
+    } else {
+      setIndex(index + 1);
+      setSelected("");
+      setFeedback("");
+    }
+  }
+  return (
+    <div className="page-wrap subpage">
+      <button className="page-back" onClick={back}>
+        ← Game Center
+      </button>
+      <div className="subpage-title">
+        <p className="eyebrow">SPECIALIZED GAME · {path.toUpperCase()}</p>
+        <h1>
+          {pack.gameTitle} <span>专业挑战</span>
+        </h1>
+        <p>{pack.mission}</p>
+      </div>
+      <section className="career-game">
+        {!done ? (
+          <>
+            <div className="career-game-head">
+              <span>
+                {index + 1}/{pack.gameQuestions.length}
+              </span>
+              <i>
+                <em
+                  style={{
+                    width: `${((index + 1) / pack.gameQuestions.length) * 100}%`,
+                  }}
+                />
+              </i>
+              <b>{score} correct</b>
+            </div>
+            <h2>{question.prompt}</h2>
+            <div>
+              {question.choices.map((choice) => (
+                <button
+                  disabled={!!feedback}
+                  className={selected === choice ? "selected" : ""}
+                  onClick={() => setSelected(choice)}
+                  key={choice}
+                >
+                  {choice}
+                </button>
+              ))}
+            </div>
+            {!feedback ? (
+              <button className="primary" disabled={!selected} onClick={check}>
+                Check decision
+              </button>
+            ) : (
+              <div
+                className={
+                  feedback === "Correct"
+                    ? "flow-feedback good"
+                    : "flow-feedback try"
+                }
+              >
+                <p>
+                  <strong>
+                    {feedback === "Correct"
+                      ? "✓ Strong professional choice"
+                      : feedback}
+                  </strong>
+                  <span>{question.explanation}</span>
+                </p>
+                <button onClick={next}>
+                  {index === pack.gameQuestions.length - 1
+                    ? "See report"
+                    : "Next scenario →"}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="career-result">
+            <span>
+              {path === "Computer Science"
+                ? "码"
+                : path === "International Business"
+                  ? "商"
+                  : "城"}
+            </span>
+            <h2>
+              {score}/{pack.gameQuestions.length} decisions correct
+            </h2>
+            <p>Your result is saved to game history and skill progress.</p>
+            <button className="primary" onClick={back}>
+              Return to games →
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function MajorStoryShelf({
+  learning,
+  speak,
+}: {
+  learning: LearningState;
+  speak: (value: string) => void;
+}) {
+  const packs = [
+    [
+      "Computer Science",
+      "计算机科学",
+      "我们用算法解决复杂的问题。",
+      "Wǒmen yòng suànfǎ jiějué fùzá de wèntí.",
+    ],
+    [
+      "Software Engineering",
+      "软件工程",
+      "团队先写测试，再发布新版本。",
+      "Tuánduì xiān xiě cèshì, zài fābù xīn bǎnběn.",
+    ],
+    [
+      "Artificial Intelligence",
+      "人工智能",
+      "这个模型需要更准确的训练数据。",
+      "Zhège móxíng xūyào gèng zhǔnquè de xùnliàn shùjù.",
+    ],
+    [
+      "Data Science",
+      "数据科学",
+      "分析结果显示用户习惯正在改变。",
+      "Fēnxī jiéguǒ xiǎnshì yònghù xíguàn zhèngzài gǎibiàn.",
+    ],
+    [
+      "Cybersecurity",
+      "网络安全",
+      "工程师立刻修复了安全漏洞。",
+      "Gōngchéngshī lìkè xiūfù le ānquán lòudòng.",
+    ],
+    [
+      "Engineering",
+      "工程",
+      "我们必须检查设备是否稳定。",
+      "Wǒmen bìxū jiǎnchá shèbèi shìfǒu wěndìng.",
+    ],
+    [
+      "Business",
+      "商务",
+      "双方终于同意了新的合作条件。",
+      "Shuāngfāng zhōngyú tóngyì le xīn de hézuò tiáojiàn.",
+    ],
+    [
+      "Medicine",
+      "医学",
+      "医生建议病人按时休息和吃药。",
+      "Yīshēng jiànyì bìngrén ànshí xiūxi hé chīyào.",
+    ],
+    [
+      "Academic Research",
+      "学术研究",
+      "研究结果还需要更多证据支持。",
+      "Yánjiū jiéguǒ hái xūyào gèng duō zhèngjù zhīchí.",
+    ],
+    [
+      "Tourism",
+      "旅游",
+      "导游带我们参观了古老的街区。",
+      "Dǎoyóu dài wǒmen cānguān le gǔlǎo de jiēqū.",
+    ],
+  ] as const;
+  const [selected, setSelected] =
+    useState<(typeof packs)[number][0]>("Computer Science");
+  const current = packs.find((pack) => pack[0] === selected) ?? packs[0];
+  const track =
+    specializedTracks.find((item) => item.title === selected) ??
+    specializedTracks[0];
+  const bonus = learning.inventory.unlockedStories.includes("tech-night");
+  const scenes = [
+    { label: "01 · SETTING", text: current[2], pinyin: current[3] },
+    {
+      label: "02 · CHALLENGE",
+      text: track.words[0]?.example ?? current[2],
+      pinyin: `Key word: ${track.words[0]?.hanzi} · ${track.words[0]?.pinyin}`,
+    },
+    {
+      label: "03 · RESPONSE",
+      text: track.words[1]?.example ?? current[2],
+      pinyin: `Key word: ${track.words[1]?.hanzi} · ${track.words[1]?.pinyin}`,
+    },
+    {
+      label: "04 · OUTCOME",
+      text: track.words[2]?.example ?? current[2],
+      pinyin: `Key word: ${track.words[2]?.hanzi} · ${track.words[2]?.pinyin}`,
+    },
+  ];
+  return (
+    <section className="major-story-shelf enriched">
+      <header>
+        <div>
+          <p className="eyebrow">SPECIALIZED STORY WORLDS · 专业故事</p>
+          <h2>Chinese for your future field</h2>
+          <p>
+            Choose a field, read a short situation, then study the vocabulary
+            and sentences people actually use.
+          </p>
+        </div>
+        <span>
+          {bonus ? "✓ Bonus endings unlocked" : "◆ Bonus pack: 30 gems"}
+        </span>
+      </header>
+      <div className="major-field-picker">
+        {packs.map((pack) => (
+          <button
+            className={selected === pack[0] ? "active" : ""}
+            onClick={() => setSelected(pack[0])}
+            key={pack[0]}
+          >
+            <span>{pack[1][0]}</span>
+            <strong>{pack[0]}</strong>
+            <small>{pack[1]}</small>
+          </button>
+        ))}
+      </div>
+      <article className="major-story-hero">
+        <button onClick={() => speak(current[2])}>▶</button>
+        <p>
+          <small>{current[0].toUpperCase()} · HSK 4–6 STORY</small>
+          <strong>{current[2]}</strong>
+          <em>{current[3]}</em>
+        </p>
+        <b>{bonus ? "Alternate ending available" : "4-scene main story"}</b>
+      </article>
+      <div className="major-story-content">
+        <section>
+          <header>
+            <p className="eyebrow">SHORT STORY · 情境故事</p>
+            <h3>A real day in {current[0]}</h3>
+          </header>
+          <div className="major-story-scenes">
+            {scenes.map((scene) => (
+              <button onClick={() => speak(scene.text)} key={scene.label}>
+                <small>{scene.label}</small>
+                <strong>{scene.text}</strong>
+                <span>{scene.pinyin}</span>
+                <b>Listen ◖))</b>
+              </button>
+            ))}
+          </div>
+        </section>
+        <aside>
+          <header>
+            <p className="eyebrow">KEY VOCABULARY · 关键词</p>
+            <h3>Words used in this story</h3>
+          </header>
+          <div className="major-key-words">
+            {track.words.slice(0, 6).map((word) => (
+              <button onClick={() => speak(word.hanzi)} key={word.hanzi}>
+                <strong>{word.hanzi}</strong>
+                <span>{word.pinyin}</span>
+                <small>{word.english}</small>
+              </button>
+            ))}
+          </div>
+        </aside>
+      </div>
+      <section className="major-useful-sentences">
+        <header>
+          <p className="eyebrow">FREQUENT SENTENCES · 常用句</p>
+          <h3>Useful examples for class, work, and daily communication</h3>
+        </header>
+        <div>
+          {track.words.slice(0, 6).map((word) => (
+            <article key={`${word.hanzi}-example`}>
+              <button onClick={() => speak(word.example)}>▶</button>
+              <p>
+                <strong>{word.example}</strong>
+                <small>
+                  <b>{word.hanzi}</b> · {word.pinyin} · {word.english}
+                </small>
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function TextbookStories({
+  profile,
+  learning,
+  speak,
+  award,
+  addPersonalWord,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+  speak: (v: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+  addPersonalWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  const [mode, setMode] = useState<"stories" | "words">("stories");
+  const [level, setLevel] = useState(profile?.hsk ?? 1);
+  const [volume, setVolume] = useState<"all" | "上" | "下">("all");
+  const [storyId, setStoryId] = useState("");
+  const [scene, setScene] = useState(0);
+  const [choice, setChoice] = useState("");
+  const [done, setDone] = useState(false);
+  const selectedCollection = textbookWordCollections.find(
+    (collection) => collection.level === level,
+  )!;
+  const story = completeTextbookStoryLibrary.find(
+    (item) => item.id === storyId,
+  );
+  function open(id: string) {
+    setStoryId(id);
+    setScene(0);
+    setChoice("");
+    setDone(false);
+  }
+  function answer(value: string) {
+    setChoice(value);
+    const correct = value === story?.question.answer;
+    setDone(true);
+    if (story) award(`Story ${story.id}`, 30, "Reading", correct);
+  }
+  if (story) {
+    const current = story.scenes[scene];
+    return (
+      <div className="page-wrap story-page">
+        <button className="page-back" onClick={() => setStoryId("")}>
+          ← Story Library
+        </button>
+        <div className="subpage-title">
+          <p className="eyebrow">
+            TEXTBOOK-ALIGNED ORIGINAL READER · HSK {story.hsk}
+          </p>
+          <h1>
+            {story.title} <span>{story.chinese}</span>
+          </h1>
+          <p>{story.summary}</p>
+        </div>
+        <section className="story-stage">
+          <div className="story-scene">
+            <span className="scene-number">0{scene + 1}</span>
+            <button
+              onClick={() => speak(current.zh)}
+              aria-label="Play story audio"
+            >
+              ◖)) Listen
+            </button>
+            <h2>{current.zh}</h2>
+            <p className="pinyin">{current.py}</p>
+            <p>{current.en}</p>
+          </div>
+          {scene < story.scenes.length - 1 ? (
+            <div className="story-navigation">
+              <button
+                disabled={scene === 0}
+                onClick={() => setScene(scene - 1)}
+              >
+                ← Previous sentence
+              </button>
+              <button
+                className="story-next"
+                onClick={() => setScene(scene + 1)}
+              >
+                Continue story →
+              </button>
+            </div>
+          ) : !done ? (
+            <>
+              <button
+                className="story-previous-final"
+                onClick={() => setScene(scene - 1)}
+              >
+                ← Previous sentence
+              </button>
+              <div className="story-choices">
+                <small>{story.question.prompt.toUpperCase()}</small>
+                {story.question.choices.map((option) => (
+                  <button onClick={() => answer(option)} key={option}>
+                    <strong>{option}</strong>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div
+              className={`story-result ${choice === story.question.answer ? "good" : "try"}`}
+            >
+              <strong>
+                {choice === story.question.answer
+                  ? "✓ Correct · +30 XP"
+                  : `Better response: ${story.question.answer}`}
+              </strong>
+              <p>{story.question.explanation}</p>
+              <button onClick={() => open(story.id)}>Read again</button>
+              <button onClick={() => setStoryId("")}>
+                Choose another story
+              </button>
+            </div>
+          )}
+        </section>
+        <aside className="story-note">
+          <span>本</span>
+          <div>
+            <small>CONTENT METHOD</small>
+            <strong>Aligned to HSK Standard Course {story.hsk}</strong>
+            <p>
+              The topic and level come from the supplied course books. The
+              practice story is original and is not an official exam passage.
+            </p>
+          </div>
+        </aside>
+      </div>
+    );
+  }
+  const questions = selectedCollection.words
+    .slice(0, 8)
+    .map((word, index) => ({
+      prompt: `What does ${word.hanzi} mean?`,
+      choices: [
+        word.english,
+        selectedCollection.words[(index + 3) % selectedCollection.words.length]
+          .english,
+        selectedCollection.words[(index + 6) % selectedCollection.words.length]
+          .english,
+      ],
+      answer: word.english,
+      explanation: `${word.hanzi} (${word.pinyin}) means ${word.english}. It appears with the lesson theme “${word.lesson}”.`,
+    }));
+  const filteredStories = completeTextbookStoryLibrary.filter(
+    (item) =>
+      item.hsk === level && (volume === "all" || item.volume === volume),
+  );
+  return (
+    <div className="page-wrap story-page">
+      <div className="subpage-title">
+        <p className="eyebrow">TEXTBOOK LIBRARY · HSK 1–6</p>
+        <h1>
+          {mode === "stories"
+            ? "Learn through stories"
+            : "Learn through new words"}{" "}
+          <span>{mode === "stories" ? "故事世界" : "生词世界"}</span>
+        </h1>
+        <p>
+          Built from the supplied HSK Standard Course textbooks and workbooks:
+          verified lesson topics, original graded practice, and clearly labeled
+          learning evidence.
+        </p>
+      </div>
+      <div className="story-mode-switch">
+        <button
+          className={mode === "stories" ? "active" : ""}
+          onClick={() => setMode("stories")}
+        >
+          <span>故</span>
+          <div>
+            <strong>Learn through stories</strong>
+            <small>
+              {completeTextbookStoryLibrary.length} interactive readers
+            </small>
+          </div>
+        </button>
+        <button
+          className={mode === "words" ? "active" : ""}
+          onClick={() => setMode("words")}
+        >
+          <span>词</span>
+          <div>
+            <strong>Learn through new words</strong>
+            <small>Course-book vocabulary by HSK level</small>
+          </div>
+        </button>
+      </div>
+      <div className="story-level-summary interactive">
+        {[1, 2, 3, 4, 5, 6].map((item) => (
+          <button
+            className={`${item === level ? "selected " : ""}${item <= (profile?.hsk ?? 1) ? "active" : ""}`}
+            onClick={() => {
+              setLevel(item);
+              setVolume("all");
+            }}
+            key={item}
+          >
+            <b>HSK {item}</b>
+            <small>
+              {mode === "stories"
+                ? `${completeTextbookStoryLibrary.filter((storyItem) => storyItem.hsk === item).length} readers`
+                : `${textbookWordCollections.find((collection) => collection.level === item)?.words.length ?? 0} words`}
+            </small>
+          </button>
+        ))}
+      </div>
+      {mode === "stories" ? (
+        <>
+          {level >= 4 && (
+            <div
+              className="story-volume-filter"
+              aria-label={`HSK ${level} textbook volume`}
+            >
+              <button
+                className={volume === "all" ? "active" : ""}
+                onClick={() => setVolume("all")}
+              >
+                All lessons{" "}
+                <small>
+                  {
+                    completeTextbookStoryLibrary.filter(
+                      (item) => item.hsk === level,
+                    ).length
+                  }
+                </small>
+              </button>
+              <button
+                className={volume === "上" ? "active" : ""}
+                onClick={() => setVolume("上")}
+              >
+                HSK {level} 上{" "}
+                <small>
+                  {
+                    completeTextbookStoryLibrary.filter(
+                      (item) => item.hsk === level && item.volume === "上",
+                    ).length
+                  }
+                </small>
+              </button>
+              <button
+                className={volume === "下" ? "active" : ""}
+                onClick={() => setVolume("下")}
+              >
+                HSK {level} 下{" "}
+                <small>
+                  {
+                    completeTextbookStoryLibrary.filter(
+                      (item) => item.hsk === level && item.volume === "下",
+                    ).length
+                  }
+                </small>
+              </button>
+            </div>
+          )}
+          <div className="textbook-source-banner">
+            <span>核</span>
+            <p>
+              <strong>
+                {completeTextbookStoryLibrary.length} textbook-aligned original
+                readers
+              </strong>
+              <small>
+                Complete lesson-title coverage for HSK 4 上/下, HSK 5 上/下, and
+                HSK 6 上/下. Wording is original practice rather than copied
+                textbook passages.
+              </small>
+            </p>
+          </div>
+          <div className="story-library">
+            {filteredStories.map((item) => {
+              const unlocked = item.hsk <= (profile?.hsk ?? 1);
+              return (
+                <button
+                  className={unlocked ? "" : "stretch"}
+                  onClick={() => open(item.id)}
+                  key={item.id}
+                >
+                  <span>{item.lesson || item.hsk}</span>
+                  <div>
+                    <small>
+                      {item.volume === "精选"
+                        ? `STANDARD COURSE TOPIC · HSK ${item.hsk}`
+                        : `HSK ${item.hsk} ${item.volume} · LESSON ${item.lesson}`}
+                    </small>
+                    <h2>{item.title}</h2>
+                    <b>{item.chinese}</b>
+                    <p>{item.summary}</p>
+                    <strong>
+                      {unlocked
+                        ? "Read story →"
+                        : "Preview higher-level reader →"}
+                    </strong>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="textbook-word-head">
+            <div>
+              <p className="eyebrow">{selectedCollection.book.toUpperCase()}</p>
+              <h2>{selectedCollection.note}</h2>
+            </div>
+            <span>{selectedCollection.words.length} verified lesson words</span>
+          </div>
+          <div className="textbook-word-grid">
+            {selectedCollection.words.map((word) => {
+              const saved = learning.personalWords.some(
+                (item) => item.hanzi === word.hanzi,
+              );
+              return (
+                <article key={`${level}-${word.hanzi}`}>
+                  <button
+                    onClick={() => speak(word.hanzi)}
+                    aria-label={`Hear ${word.hanzi}`}
+                  >
+                    ▶
+                  </button>
+                  <strong>{word.hanzi}</strong>
+                  <em>{word.pinyin}</em>
+                  <h3>{word.english}</h3>
+                  <small>From topic: {word.lesson}</small>
+                  <button
+                    disabled={saved}
+                    onClick={() =>
+                      addPersonalWord({
+                        hanzi: word.hanzi,
+                        pinyin: word.pinyin,
+                        english: word.english,
+                      })
+                    }
+                  >
+                    {saved ? "★ Saved to My Library" : "☆ Save word"}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+          <section className="textbook-word-practice">
+            <div>
+              <p className="eyebrow">ACTIVE RECALL · HSK {level}</p>
+              <h2>Practice this book’s new words</h2>
+              <p>Answers feed your Vocabulary evidence and mistake review.</p>
+            </div>
+            <ChoiceDrill
+              label={`Textbook HSK ${level} new words`}
+              questions={questions}
+              award={award}
+              skill="Vocabulary"
+            />
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Stories({
+  profile,
+  learning,
+  speak,
+  award,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+  speak: (v: string) => void;
+  award: (
+    label: string,
+    points?: number,
+    skill?: LearningEvent["skill"],
+    correct?: boolean,
+  ) => void;
+}) {
+  const available = [...hskGradedStories, ...storyLibrary].filter(
+    (story) =>
+      story.path === "All" || story.path === (profile?.path ?? "General"),
+  );
+  const [storyId, setStoryId] = useState("");
+  const [scene, setScene] = useState(0);
+  const [choice, setChoice] = useState("");
+  const [done, setDone] = useState(false);
+  const story = available.find((item) => item.id === storyId);
+  function open(id: string) {
+    setStoryId(id);
+    setScene(0);
+    setChoice("");
+    setDone(false);
+  }
+  function answer(value: string) {
+    setChoice(value);
+    const correct = value === story?.question.answer;
+    setDone(true);
+    if (story) award(`Story ${story.id}`, 30, "Reading", correct);
+  }
+  if (!story)
+    return (
+      <div className="page-wrap story-page">
+        <div className="subpage-title">
+          <p className="eyebrow">STORY LIBRARY · HSK 1–6</p>
+          <h1>
+            Learn through stories <span>故事世界</span>
+          </h1>
+          <p>
+            {hskGradedStories.length} graded readers plus personalized Adventure
+            stories. Higher-level readers unlock as your HSK track grows.
+          </p>
+        </div>
+        <div className="story-level-summary">
+          {[1, 2, 3, 4, 5, 6].map((level) => (
+            <span
+              className={level <= (profile?.hsk ?? 3) ? "active" : ""}
+              key={level}
+            >
+              <b>HSK {level}</b>
+              <small>
+                {hskGradedStories.filter((item) => item.hsk === level).length}{" "}
+                readers
+              </small>
+            </span>
+          ))}
+        </div>
+        <div className="story-library">
+          {available.map((item) => {
+            const graded = item.id.startsWith("reader-hsk");
+            const unlocked = graded
+              ? item.hsk <= (profile?.hsk ?? 3)
+              : item.path === "All" || learning.bossWins.length > 0;
+            return (
+              <button
+                disabled={!unlocked}
+                className={unlocked ? "" : "locked"}
+                onClick={() => open(item.id)}
+                key={item.id}
+              >
+                <span>
+                  {unlocked
+                    ? graded
+                      ? item.hsk
+                      : item.path === "All"
+                        ? "文"
+                        : item.path === "Computer Science"
+                          ? "码"
+                          : "商"
+                    : "锁"}
+                </span>
+                <div>
+                  <small>
+                    {graded ? "GRADED READER" : item.path.toUpperCase()} · HSK{" "}
+                    {item.hsk}
+                  </small>
+                  <h2>{item.title}</h2>
+                  <b>{item.chinese}</b>
+                  <p>{item.summary}</p>
+                  <strong>
+                    {unlocked
+                      ? "Read story →"
+                      : graded
+                        ? `Choose HSK ${item.hsk} to unlock`
+                        : "Clear an Adventure boss to unlock"}
+                  </strong>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  const current = story.scenes[scene];
+  return (
+    <div className="page-wrap story-page">
+      <button className="page-back" onClick={() => setStoryId("")}>
+        ← Story Library
+      </button>
+      <div className="subpage-title">
+        <p className="eyebrow">INTERACTIVE STORY · HSK-STYLE {story.hsk}</p>
+        <h1>
+          {story.title} <span>{story.chinese}</span>
+        </h1>
+        <p>{story.summary}</p>
+      </div>
+      <section className="story-stage">
+        <div className="story-scene">
+          <span className="scene-number">0{scene + 1}</span>
+          <button
+            onClick={() => speak(current.zh)}
+            aria-label="Play story audio"
+          >
+            ◖)) Listen
+          </button>
+          <h2>{current.zh}</h2>
+          <p className="pinyin">{current.py}</p>
+          <p>{current.en}</p>
+        </div>
+        {scene < story.scenes.length - 1 ? (
+          <button className="story-next" onClick={() => setScene(scene + 1)}>
+            Continue story →
+          </button>
+        ) : !done ? (
+          <div className="story-choices">
+            <small>{story.question.prompt.toUpperCase()}</small>
+            {story.question.choices.map((option) => (
+              <button onClick={() => answer(option)} key={option}>
+                <strong>{option}</strong>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div
+            className={`story-result ${choice === story.question.answer ? "good" : "try"}`}
+          >
+            <strong>
+              {choice === story.question.answer
+                ? "✓ Natural choice · +30 XP"
+                : `Better response: ${story.question.answer}`}
+            </strong>
+            <p>{story.question.explanation}</p>
+            <button onClick={() => open(story.id)}>Read again</button>
+            <button onClick={() => setStoryId("")}>Choose another story</button>
+          </div>
+        )}
+      </section>
+      <aside className="story-note">
+        <span>
+          {story.path === "Computer Science"
+            ? "码"
+            : story.path === "International Business"
+              ? "商"
+              : "文"}
+        </span>
+        <div>
+          <small>CONTEXT NOTE</small>
+          <strong>
+            {story.id.startsWith("reader-hsk")
+              ? `HSK ${story.hsk} graded Chinese`
+              : `${story.path} Chinese`}
+          </strong>
+          <p>
+            {story.id.startsWith("reader-hsk")
+              ? "Sentence length, grammar, and decisions rise gradually across HSK levels."
+              : "Vocabulary and decisions are connected to your selected learning path."}
+          </p>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function Review({
+  profile,
+  learning,
+  rate,
+  rateMistake,
+  speak,
+  openChapter,
+  addPersonalWord,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+  rate: (wordId: string, rating: ReviewRating) => void;
+  rateMistake: (mistakeId: string, correct: boolean) => void;
+  speak: (v: string) => void;
+  openChapter: (id: string) => void;
+  addPersonalWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  type MistakeFilter = "all" | "due" | "learning" | "mastered";
+  const [tab, setTab] = useState<"queue" | "mistakes">(
+    learning.inventory.mistakeBoosters > 0 ? "mistakes" : "queue",
+  );
+  const [data, setData] = useState<HskDictionaryData | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [reviewLevel, setReviewLevel] = useState<number | "all">("all");
+  const unlockedHsk = useMemo(() => Array.from({ length: profile?.hsk ?? 1 }, (_, index) => index + 1), [profile?.hsk]);
+  const unlockedAdventure = useMemo(() => adventureChapters.slice(0, Math.min(adventureChapters.length, learning.completed.length + 1)), [learning.completed.length]);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [selectedHsk, setSelectedHsk] = useState<number[]>(unlockedHsk);
+  const [selectedAdventure, setSelectedAdventure] = useState<string[]>(unlockedAdventure.map((chapter) => chapter.id));
+  const [queue, setQueue] = useState<string[]>([]);
+  const [answer, setAnswer] = useState("");
+  const [graded, setGraded] = useState(false);
+  const [correct, setCorrect] = useState(false);
+  const [mistakeFilter, setMistakeFilter] = useState<MistakeFilter>("all");
+  const [mistakeSkill, setMistakeSkill] = useState<LearningEvent["skill"] | "all">("all");
+  const reviewCardsAtLoad = useRef(learning.reviewCards);
+  const dueErrors = dueMistakes(learning.mistakes);
+  const mistakePatterns = analyzeMistakePatterns(learning.mistakes);
+  const visibleMistakes = learning.mistakes
+    .filter(
+      (mistake) =>
+        (mistakeSkill === "all" || mistake.skill === mistakeSkill) &&
+        (mistakeFilter === "all" ||
+          (mistakeFilter === "due"
+            ? dueErrors.some((item) => item.id === mistake.id)
+            : mistakeFilter === "mastered"
+              ? (mistake.mastery ?? 5) >= 85
+              : (mistake.mastery ?? 5) < 85)),
+    )
+    .sort((a, b) => (b.errorCount ?? 1) - (a.errorCount ?? 1));
+  const allWords = data?.levels.flatMap((group) => group.words) ?? [];
+  const adventureReviewWords: HskDictionaryWord[] = vocabularyNetworkCategories
+    .filter((category) => selectedAdventure.includes(category.id))
+    .flatMap((category) => category.words.map((item) => ({ id: `adventure-review-${item.id}`, h: item.hanzi, py: item.pinyin, m: item.english, pos: `Adventure · ${category.title}`, r: "", q: 0, l: 0 })));
+  const wordById = new Map([...allWords, ...adventureReviewWords].map((word) => [word.id, word]));
+  const word = wordById.get(queue[0]);
+  const card = word ? learning.reviewCards[word.id] : undefined;
+
+  useEffect(() => {
+    let active = true;
+    import("./hsk-vocabulary.json")
+      .then((module) => {
+        if (!active) return;
+        const loaded = module.default as HskDictionaryData;
+        const due = new Set(dueReviewIds(reviewCardsAtLoad.current));
+        const hskBank = loaded.levels.filter((group) => unlockedHsk.includes(group.level)).flatMap((group) => group.words);
+        const adventureBank: HskDictionaryWord[] = vocabularyNetworkCategories
+          .filter((category) => unlockedAdventure.some((chapter) => chapter.id === category.id))
+          .flatMap((category) => category.words.map((item) => ({ id: `adventure-review-${item.id}`, h: item.hanzi, py: item.pinyin, m: item.english, pos: `Adventure · ${category.title}`, r: "", q: 0, l: 0 })));
+        const contentFirst = seededShuffle(hskBank.filter((item) => !/(particle|conjunction|modal|助词|连词)/i.test(`${item.pos} ${item.m}`)), "review-content");
+        const connectors = seededShuffle(hskBank.filter((item) => /(particle|conjunction|modal|助词|连词)/i.test(`${item.pos} ${item.m}`)), "review-connectors");
+        const hskReady = [...contentFirst, ...connectors];
+        const total = Math.min(hskReady.length + adventureBank.length, 300);
+        const bank = [...hskReady.slice(0, Math.ceil(total * .8)), ...seededShuffle(adventureBank, "review-adventure").slice(0, Math.floor(total * .2))];
+        setData(loaded);
+        setQueue(
+          [
+            ...bank.filter((item) => due.has(item.id)),
+            ...bank.filter((item) => !due.has(item.id)),
+          ].map((item) => item.id),
+        );
+      })
+      .catch(() => {
+        if (active)
+          setLoadError(
+            "The complete HSK review bank could not load. Please retry.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [unlockedAdventure, unlockedHsk]);
+
+  function buildCustomQueue(nextHsk = selectedHsk, nextAdventure = selectedAdventure) {
+    if (!data || nextHsk.length + nextAdventure.length === 0) return;
+    const hskBank = data.levels.filter((group) => nextHsk.includes(group.level)).flatMap((group) => group.words);
+    const adventureBank: HskDictionaryWord[] = vocabularyNetworkCategories.filter((category) => nextAdventure.includes(category.id)).flatMap((category) => category.words.map((item) => ({ id: `adventure-review-${item.id}`, h: item.hanzi, py: item.pinyin, m: item.english, pos: `Adventure · ${category.title}`, r: "", q: 0, l: 0 })));
+    const bank = seededShuffle([...hskBank, ...adventureBank], `custom-review-${Date.now()}`);
+    setQueue(bank.map((item) => item.id));
+    setAnswer("");setGraded(false);setCorrect(false);
+  }
+  function toggleReviewHsk(level: number) {
+    const next = selectedHsk.includes(level) ? selectedHsk.filter((item) => item !== level) : [...selectedHsk, level].sort();
+    if (next.length + selectedAdventure.length === 0) return;
+    setSelectedHsk(next);
+  }
+  function toggleReviewAdventure(id: string) {
+    const next = selectedAdventure.includes(id) ? selectedAdventure.filter((item) => item !== id) : [...selectedAdventure, id];
+    if (selectedHsk.length + next.length === 0) return;
+    setSelectedAdventure(next);
+  }
+
+  function chooseLevel(level: number | "all") {
+    setReviewLevel(level);
+    if (data) {
+      const bank = data.levels
+        .filter((group) => level === "all" || group.level === level)
+        .flatMap((group) => group.words);
+      const due = new Set(dueReviewIds(learning.reviewCards));
+      setQueue(
+        [
+          ...bank.filter((item) => due.has(item.id)),
+          ...bank.filter((item) => !due.has(item.id)),
+        ].map((item) => item.id),
+      );
+    }
+    setAnswer("");
+    setGraded(false);
+    setCorrect(false);
+  }
+  function checkAnswer() {
+    if (!word || !answer.trim() || graded) return;
+    const matched = recallMatches(answer, word.m);
+    setCorrect(matched);
+    setGraded(true);
+    rate(word.id, matched ? "good" : "again");
+  }
+  function nextWord() {
+    if (!word) return;
+    setQueue((current) => advanceRecallQueue(current, word.id, correct));
+    setAnswer("");
+    setGraded(false);
+    setCorrect(false);
+  }
+
+  return (
+    <div className="page-wrap subpage review-page">
+      <div className="subpage-title">
+        <p className="eyebrow">ACTIVE RECALL · COMPLETE HSK 1–6 BANK</p>
+        <h1>
+          Review & mistakes <span>复习</span>
+        </h1>
+        <p>
+          Answer before seeing the meaning. A wrong answer moves to the back of
+          this session so it returns after other words.
+        </p>
+      </div>
+      <div className="tabs">
+        <button
+          className={tab === "queue" ? "active" : ""}
+          onClick={() => setTab("queue")}
+        >
+          HSK word review <b>{allWords.length || "…"}</b>
+        </button>
+        <button
+          className={tab === "mistakes" ? "active" : ""}
+          onClick={() => setTab("mistakes")}
+        >
+          错题本 Mistakes <b>{dueErrors.length} due</b>
+        </button>
+      </div>
+      {tab === "queue" && (
+        <>
+          <section className="review-source-builder">
+            <header>
+              <div>
+                <small>RECALL SOURCES</small>
+                <strong>Balanced deck · 80% HSK + 20% Adventure</strong>
+                <p>Content words come first; connectors stay in the mix without taking over the session.</p>
+              </div>
+              <button onClick={() => setCustomOpen((value) => !value)}>{customOpen ? "Close choices" : "Customize sources"}</button>
+            </header>
+            {customOpen && <div className="review-source-options">
+              <section><b>Unlocked HSK levels</b><div>{unlockedHsk.map((level) => <button className={selectedHsk.includes(level) ? "active" : ""} onClick={() => toggleReviewHsk(level)} key={level}>HSK {level}</button>)}</div></section>
+              <section><b>Adventure chapters</b><div>{unlockedAdventure.map((chapter) => <button className={selectedAdventure.includes(chapter.id) ? "active" : ""} onClick={() => toggleReviewAdventure(chapter.id)} key={chapter.id}>{chapter.icon} {chapter.title}</button>)}</div></section>
+              <button className="primary" onClick={() => buildCustomQueue()}>Start custom recall →</button>
+              <small>At least one source must stay selected.</small>
+            </div>}
+          </section>
+          <div className="review-hsk-filter">
+            <button
+              className={reviewLevel === "all" ? "active" : ""}
+              onClick={() => chooseLevel("all")}
+            >
+              All HSK <b>{allWords.length || "…"}</b>
+            </button>
+            {[1, 2, 3, 4, 5, 6].map((level) => (
+              <button
+                className={reviewLevel === level ? "active" : ""}
+                onClick={() => chooseLevel(level)}
+                key={level}
+              >
+                HSK {level}
+                <b>
+                  {data?.levels.find((group) => group.level === level)?.words
+                    .length ?? "…"}
+                </b>
+              </button>
+            ))}
+          </div>
+          <div className="review-bank-note">
+            <span>全</span>
+            <p>
+              <strong>
+                {data
+                  ? `${allWords.length.toLocaleString()} categorized HSK entries ready`
+                  : "Loading the complete HSK 1–6 bank…"}
+              </strong>
+              <small>
+                Choose a level for a focused deck. Completed words leave the
+                session; missed words return at the end.
+              </small>
+            </p>
+            <b>{queue.length.toLocaleString()} left</b>
+          </div>
+          {loadError ? (
+            <div className="dictionary-load-error" role="alert">
+              <span>!</span>
+              <div>
+                <strong>Review bank unavailable</strong>
+                <p>{loadError}</p>
+              </div>
+            </div>
+          ) : word ? (
+            <>
+              <div className="mastery-strip">
+                <span>
+                      {word.l ? `HSK ${word.l}` : "Adventure"} · Mastery {card?.mastery ?? 10}%
+                </span>
+                <div>
+                  <i style={{ width: `${card?.mastery ?? 10}%` }} />
+                </div>
+                <b>{card?.repetitions ?? 0} reviews</b>
+              </div>
+              <section className="recall-card">
+                <button
+                  className="audio"
+                  onClick={() => speak(word.h)}
+                  aria-label={`Play ${word.h}`}
+                >
+                  ◖))
+                </button>
+                <small>WHAT DOES THIS WORD MEAN?</small>
+                <strong>{word.h}</strong>
+                <span>{word.py}</span>
+                <label htmlFor="recall-answer">
+                  Type the English meaning from memory
+                </label>
+                <div className="recall-answer-row">
+                  <input
+                    id="recall-answer"
+                    value={answer}
+                    disabled={graded}
+                    onChange={(event) => setAnswer(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") checkAnswer();
+                    }}
+                    placeholder="Your answer…"
+                    autoComplete="off"
+                  />
+                  <button
+                    disabled={!answer.trim() || graded}
+                    onClick={checkAnswer}
+                  >
+                    Check answer
+                  </button>
+                </div>
+                {graded && (
+                  <div
+                    className={`recall-feedback ${correct ? "good" : "try"}`}
+                  >
+                    <span>{correct ? "✓" : "↺"}</span>
+                    <p>
+                      <strong>
+                        {correct ? "Correct recall" : `Answer: ${word.m}`}
+                      </strong>
+                      <small>
+                        {correct
+                          ? "This word leaves today’s queue and follows its spaced schedule."
+                          : "Your answer was shown only after checking. This word has moved to the back of the session."}
+                      </small>
+                      {word.pos && (
+                        <b>
+                          Word type: {word.pos}
+                          {word.r ? ` · Radical: ${word.r}` : ""}
+                        </b>
+                      )}
+                    </p>
+                    <button onClick={nextWord}>
+                      {correct
+                        ? "Next word →"
+                        : "Continue; test me again later →"}
+                    </button>
+                  </div>
+                )}
+              </section>
+            </>
+          ) : data ? (
+            <EmptyReview />
+          ) : null}
+        </>
+      )}
+      {tab === "mistakes" &&
+        (learning.mistakes.length ? (
+          <>
+            <div className="mistake-overview">
+              <article>
+                <small>DUE NOW</small>
+                <strong>{dueErrors.length}</strong>
+                <span>targeted reviews</span>
+              </article>
+              <article>
+                <small>TOTAL ERRORS</small>
+                <strong>
+                  {learning.mistakes.reduce(
+                    (sum, mistake) => sum + (mistake.errorCount ?? 1),
+                    0,
+                  )}
+                </strong>
+                <span>across {learning.mistakes.length} patterns</span>
+              </article>
+              <article>
+                <small>RECOVERED</small>
+                <strong>
+                  {
+                    learning.mistakes.filter(
+                      (mistake) => (mistake.mastery ?? 5) >= 85,
+                    ).length
+                  }
+                </strong>
+                <span>strong across time</span>
+              </article>
+            </div>
+            <div className="mistake-training-note">
+              <span>5×</span>
+              <p>
+                <strong>Five-angle correction cycle</strong>
+                <small>
+                  Meaning, correct response, missing-word context, explanation,
+                  and final recall. A failed recall remains in the learning
+                  queue.
+                </small>
+              </p>
+            </div>
+            <section className="mistake-pattern-board">
+              <header>
+                <div>
+                  <small>ERROR PATTERN DETECTOR</small>
+                  <strong>Practice the cause, not only the question</strong>
+                </div>
+                <button onClick={() => {
+                  setMistakeSkill(mistakePatterns[0]?.skill ?? "all");
+                  setMistakeFilter("all");
+                }}>
+                  Practice weakest pattern →
+                </button>
+              </header>
+              <div>
+                <button className={mistakeSkill === "all" ? "active" : ""} onClick={() => setMistakeSkill("all")}>
+                  <b>全</b><span>All patterns<small>{learning.mistakes.length} saved</small></span>
+                </button>
+                {mistakePatterns.map((pattern) => (
+                  <button className={mistakeSkill === pattern.skill ? "active" : ""} onClick={() => setMistakeSkill(pattern.skill)} key={pattern.skill}>
+                    <b>{pattern.skill.slice(0, 1)}</b>
+                    <span>{pattern.label}<small>{pattern.count} patterns · {pattern.repeated} repeats</small></span>
+                  </button>
+                ))}
+              </div>
+            </section>
+            <div className="mistake-filters">
+              {(
+                [
+                  ["all", "All mistakes"],
+                  ["due", "Due now"],
+                  ["learning", "Still learning"],
+                  ["mastered", "Recovered"],
+                ] as [MistakeFilter, string][]
+              ).map(([id, label]) => (
+                <button
+                  className={mistakeFilter === id ? "active" : ""}
+                  onClick={() => setMistakeFilter(id)}
+                  key={id}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {visibleMistakes.length ? (
+              <div className="mistake-list enhanced">
+                {visibleMistakes.map((mistake, itemIndex) => (
+                  <MistakePracticeCard
+                    mistake={mistake}
+                    alternatives={learning.mistakes
+                      .filter((item) => item.id !== mistake.id)
+                      .map((item) => item.correction)}
+                    rate={rateMistake}
+                    openChapter={openChapter}
+                    saveCorrection={addPersonalWord}
+                    key={mistake.id ?? itemIndex}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-card compact">
+                <span>好</span>
+                <h2>No mistakes in this filter</h2>
+                <p>
+                  Choose another view or continue learning to create new
+                  evidence.
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="empty-card">
+            <span>好</span>
+            <h2>No saved mistakes yet</h2>
+            <p>
+              Wrong lesson and game answers will appear here for five-angle
+              correction practice.
+            </p>
+          </div>
+        ))}
+    </div>
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function LegacyReview({learning,rate,rateMistake,speak,openChapter,addPersonalWord}:{learning:LearningState;rate:(wordId:string,rating:ReviewRating)=>void;rateMistake:(mistakeId:string,correct:boolean)=>void;speak:(v:string)=>void;openChapter:(id:string)=>void;addPersonalWord:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}) {
-  type MistakeFilter='all'|'due'|'learning'|'mastered';const [tab,setTab]=useState<'queue'|'mistakes'>('queue');const [mistakeFilter,setMistakeFilter]=useState<MistakeFilter>('all');const [reviewLevel,setReviewLevel]=useState<number|'all'>('all');const [index,setIndex]=useState(0);const [flipped,setFlipped]=useState(false);const allDueIds=dueReviewIds(learning.reviewCards);const dueIds=allDueIds.filter(id=>reviewLevel==='all'||reviewVocabulary.find(word=>word.id===id)?.hsk===reviewLevel);const dueErrors=dueMistakes(learning.mistakes);const wordId=dueIds[index%Math.max(1,dueIds.length)];const word=reviewVocabulary.find(item=>item.id===wordId)??reviewVocabulary[0];const card=learning.reviewCards[word.id];const visibleMistakes=learning.mistakes.filter(mistake=>mistakeFilter==='all'||(mistakeFilter==='due'?dueErrors.some(item=>item.id===mistake.id):mistakeFilter==='mastered'?(mistake.mastery??5)>=85:(mistake.mastery??5)<85));
-  function next(rating:ReviewRating){rate(word.id,rating);setIndex(0);setFlipped(false)}
-  return <div className="page-wrap subpage review-page"><div className="subpage-title"><p className="eyebrow">CONNECTED MEMORY SYSTEM</p><h1>Review & mistakes <span>复习</span></h1><p>Choose HSK 1–6, review due vocabulary, then retrain saved mistakes through repeated recall.</p></div><div className="tabs"><button className={tab==='queue'?'active':''} onClick={()=>setTab('queue')}>Word review <b>{allDueIds.length}</b></button><button className={tab==='mistakes'?'active':''} onClick={()=>setTab('mistakes')}>错题本 Mistakes <b>{dueErrors.length} due</b></button></div>{tab==='queue'&&<><div className="review-hsk-filter"><button className={reviewLevel==='all'?'active':''} onClick={()=>{setReviewLevel('all');setIndex(0);setFlipped(false)}}>All due <b>{allDueIds.length}</b></button>{[1,2,3,4,5,6].map(level=><button className={reviewLevel===level?'active':''} onClick={()=>{setReviewLevel(level);setIndex(0);setFlipped(false)}} key={level}>HSK {level}<b>{allDueIds.filter(id=>reviewVocabulary.find(item=>item.id===id)?.hsk===level).length}</b></button>)}</div>{dueErrors.length>0&&<button className="mistake-due-banner" onClick={()=>{setTab('mistakes');setMistakeFilter('due')}}><span>错</span><div><small>TARGETED ERROR REVIEW</small><strong>{dueErrors.length} past mistake{dueErrors.length===1?' is':'s are'} due now</strong><p>Practice each weak pattern five times with varied prompts.</p></div><b>Review mistakes →</b></button>}{dueIds.length?<><div className="mastery-strip"><span>{word.hsk?`HSK ${word.hsk} · `:''}Mastery {card?.mastery??10}%</span><div><i style={{width:`${card?.mastery??10}%`}}/></div><b>{card?.repetitions??0} reviews</b></div><div className="flashcard" role="button" tabIndex={0} onClick={()=>setFlipped(!flipped)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' ')setFlipped(!flipped)}}><button className="audio" onClick={event=>{event.stopPropagation();speak(word.hanzi)}} aria-label="Play pronunciation">◖))</button>{!flipped?<div><small>{word.chapter.toUpperCase()} · DUE NOW</small><strong>{word.hanzi}</strong><span>{word.pinyin}</span><p>Tap to reveal meaning</p></div>:<div><small>MEANING</small><strong className="meaning">{word.english}</strong><p className="example">{word.example.hanzi}<br/>{word.example.pinyin&&<><span>{word.example.pinyin}</span><br/></>}{word.example.english}</p></div>}</div>{flipped&&<div className="rating"><p>How well did you remember?</p><div>{([['again','Again','10 min'],['hard','Hard','1+ day'],['good','Good','Adaptive'],['easy','Easy','Long gap']] as [ReviewRating,string,string][]).map(([rating,label,time])=><button key={rating} onClick={()=>next(rating)}>{label}<small>{time}</small></button>)}</div></div>}</>:<EmptyReview/>}</>}{tab==='mistakes'&&(learning.mistakes.length?<><div className="mistake-overview"><article><small>DUE NOW</small><strong>{dueErrors.length}</strong><span>targeted reviews</span></article><article><small>TOTAL ERRORS</small><strong>{learning.mistakes.reduce((sum,mistake)=>sum+(mistake.errorCount??1),0)}</strong><span>across {learning.mistakes.length} patterns</span></article><article><small>RECOVERED</small><strong>{learning.mistakes.filter(mistake=>(mistake.mastery??5)>=85).length}</strong><span>strong across time</span></article></div><div className="mistake-training-note"><span>5×</span><p><strong>Five-angle correction cycle</strong><small>Meaning, correct response, missing-word context, explanation, and final recall. Repeated success moves the mistake toward recovery.</small></p></div><div className="mistake-filters">{([['all','All mistakes'],['due','Due now'],['learning','Still learning'],['mastered','Recovered']] as [MistakeFilter,string][]).map(([id,label])=><button className={mistakeFilter===id?'active':''} onClick={()=>setMistakeFilter(id)} key={id}>{label}</button>)}</div>{visibleMistakes.length?<div className="mistake-list enhanced">{visibleMistakes.map((mistake,itemIndex)=><MistakePracticeCard mistake={mistake} alternatives={learning.mistakes.filter(item=>item.id!==mistake.id).map(item=>item.correction)} rate={rateMistake} openChapter={openChapter} saveCorrection={addPersonalWord} key={mistake.id??itemIndex}/>)}</div>:<div className="empty-card compact"><span>好</span><h2>No mistakes in this filter</h2><p>Choose another view or continue learning to create new evidence.</p></div>}</>:<div className="empty-card"><span>好</span><h2>No saved mistakes yet</h2><p>When an answer goes wrong, its explanation will appear here with targeted practice and a review schedule.</p></div>)}</div>
+function LegacyReview({
+  learning,
+  rate,
+  rateMistake,
+  speak,
+  openChapter,
+  addPersonalWord,
+}: {
+  learning: LearningState;
+  rate: (wordId: string, rating: ReviewRating) => void;
+  rateMistake: (mistakeId: string, correct: boolean) => void;
+  speak: (v: string) => void;
+  openChapter: (id: string) => void;
+  addPersonalWord: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  type MistakeFilter = "all" | "due" | "learning" | "mastered";
+  const [tab, setTab] = useState<"queue" | "mistakes">("queue");
+  const [mistakeFilter, setMistakeFilter] = useState<MistakeFilter>("all");
+  const [reviewLevel, setReviewLevel] = useState<number | "all">("all");
+  const [index, setIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const allDueIds = dueReviewIds(learning.reviewCards);
+  const dueIds = allDueIds.filter(
+    (id) =>
+      reviewLevel === "all" ||
+      reviewVocabulary.find((word) => word.id === id)?.hsk === reviewLevel,
+  );
+  const dueErrors = dueMistakes(learning.mistakes);
+  const wordId = dueIds[index % Math.max(1, dueIds.length)];
+  const word =
+    reviewVocabulary.find((item) => item.id === wordId) ?? reviewVocabulary[0];
+  const card = learning.reviewCards[word.id];
+  const visibleMistakes = learning.mistakes.filter(
+    (mistake) =>
+      mistakeFilter === "all" ||
+      (mistakeFilter === "due"
+        ? dueErrors.some((item) => item.id === mistake.id)
+        : mistakeFilter === "mastered"
+          ? (mistake.mastery ?? 5) >= 85
+          : (mistake.mastery ?? 5) < 85),
+  );
+  function next(rating: ReviewRating) {
+    rate(word.id, rating);
+    setIndex(0);
+    setFlipped(false);
+  }
+  return (
+    <div className="page-wrap subpage review-page">
+      <div className="subpage-title">
+        <p className="eyebrow">CONNECTED MEMORY SYSTEM</p>
+        <h1>
+          Review & mistakes <span>复习</span>
+        </h1>
+        <p>
+          Choose HSK 1–6, review due vocabulary, then retrain saved mistakes
+          through repeated recall.
+        </p>
+      </div>
+      <div className="tabs">
+        <button
+          className={tab === "queue" ? "active" : ""}
+          onClick={() => setTab("queue")}
+        >
+          Word review <b>{allDueIds.length}</b>
+        </button>
+        <button
+          className={tab === "mistakes" ? "active" : ""}
+          onClick={() => setTab("mistakes")}
+        >
+          错题本 Mistakes <b>{dueErrors.length} due</b>
+        </button>
+      </div>
+      {tab === "queue" && (
+        <>
+          <div className="review-hsk-filter">
+            <button
+              className={reviewLevel === "all" ? "active" : ""}
+              onClick={() => {
+                setReviewLevel("all");
+                setIndex(0);
+                setFlipped(false);
+              }}
+            >
+              All due <b>{allDueIds.length}</b>
+            </button>
+            {[1, 2, 3, 4, 5, 6].map((level) => (
+              <button
+                className={reviewLevel === level ? "active" : ""}
+                onClick={() => {
+                  setReviewLevel(level);
+                  setIndex(0);
+                  setFlipped(false);
+                }}
+                key={level}
+              >
+                HSK {level}
+                <b>
+                  {
+                    allDueIds.filter(
+                      (id) =>
+                        reviewVocabulary.find((item) => item.id === id)?.hsk ===
+                        level,
+                    ).length
+                  }
+                </b>
+              </button>
+            ))}
+          </div>
+          {dueErrors.length > 0 && (
+            <button
+              className="mistake-due-banner"
+              onClick={() => {
+                setTab("mistakes");
+                setMistakeFilter("due");
+              }}
+            >
+              <span>错</span>
+              <div>
+                <small>TARGETED ERROR REVIEW</small>
+                <strong>
+                  {dueErrors.length} past mistake
+                  {dueErrors.length === 1 ? " is" : "s are"} due now
+                </strong>
+                <p>
+                  Practice each weak pattern five times with varied prompts.
+                </p>
+              </div>
+              <b>Review mistakes →</b>
+            </button>
+          )}
+          {dueIds.length ? (
+            <>
+              <div className="mastery-strip">
+                <span>
+                  {word.hsk ? `HSK ${word.hsk} · ` : ""}Mastery{" "}
+                  {card?.mastery ?? 10}%
+                </span>
+                <div>
+                  <i style={{ width: `${card?.mastery ?? 10}%` }} />
+                </div>
+                <b>{card?.repetitions ?? 0} reviews</b>
+              </div>
+              <div
+                className="flashcard"
+                role="button"
+                tabIndex={0}
+                onClick={() => setFlipped(!flipped)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ")
+                    setFlipped(!flipped);
+                }}
+              >
+                <button
+                  className="audio"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    speak(word.hanzi);
+                  }}
+                  aria-label="Play pronunciation"
+                >
+                  ◖))
+                </button>
+                {!flipped ? (
+                  <div>
+                    <small>{word.chapter.toUpperCase()} · DUE NOW</small>
+                    <strong>{word.hanzi}</strong>
+                    <span>{word.pinyin}</span>
+                    <p>Tap to reveal meaning</p>
+                  </div>
+                ) : (
+                  <div>
+                    <small>MEANING</small>
+                    <strong className="meaning">{word.english}</strong>
+                    <p className="example">
+                      {word.example.hanzi}
+                      <br />
+                      {word.example.pinyin && (
+                        <>
+                          <span>{word.example.pinyin}</span>
+                          <br />
+                        </>
+                      )}
+                      {word.example.english}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {flipped && (
+                <div className="rating">
+                  <p>How well did you remember?</p>
+                  <div>
+                    {(
+                      [
+                        ["again", "Again", "10 min"],
+                        ["hard", "Hard", "1+ day"],
+                        ["good", "Good", "Adaptive"],
+                        ["easy", "Easy", "Long gap"],
+                      ] as [ReviewRating, string, string][]
+                    ).map(([rating, label, time]) => (
+                      <button key={rating} onClick={() => next(rating)}>
+                        {label}
+                        <small>{time}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <EmptyReview />
+          )}
+        </>
+      )}
+      {tab === "mistakes" &&
+        (learning.mistakes.length ? (
+          <>
+            <div className="mistake-overview">
+              <article>
+                <small>DUE NOW</small>
+                <strong>{dueErrors.length}</strong>
+                <span>targeted reviews</span>
+              </article>
+              <article>
+                <small>TOTAL ERRORS</small>
+                <strong>
+                  {learning.mistakes.reduce(
+                    (sum, mistake) => sum + (mistake.errorCount ?? 1),
+                    0,
+                  )}
+                </strong>
+                <span>across {learning.mistakes.length} patterns</span>
+              </article>
+              <article>
+                <small>RECOVERED</small>
+                <strong>
+                  {
+                    learning.mistakes.filter(
+                      (mistake) => (mistake.mastery ?? 5) >= 85,
+                    ).length
+                  }
+                </strong>
+                <span>strong across time</span>
+              </article>
+            </div>
+            <div className="mistake-training-note">
+              <span>5×</span>
+              <p>
+                <strong>Five-angle correction cycle</strong>
+                <small>
+                  Meaning, correct response, missing-word context, explanation,
+                  and final recall. Repeated success moves the mistake toward
+                  recovery.
+                </small>
+              </p>
+            </div>
+            <div className="mistake-filters">
+              {(
+                [
+                  ["all", "All mistakes"],
+                  ["due", "Due now"],
+                  ["learning", "Still learning"],
+                  ["mastered", "Recovered"],
+                ] as [MistakeFilter, string][]
+              ).map(([id, label]) => (
+                <button
+                  className={mistakeFilter === id ? "active" : ""}
+                  onClick={() => setMistakeFilter(id)}
+                  key={id}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {visibleMistakes.length ? (
+              <div className="mistake-list enhanced">
+                {visibleMistakes.map((mistake, itemIndex) => (
+                  <MistakePracticeCard
+                    mistake={mistake}
+                    alternatives={learning.mistakes
+                      .filter((item) => item.id !== mistake.id)
+                      .map((item) => item.correction)}
+                    rate={rateMistake}
+                    openChapter={openChapter}
+                    saveCorrection={addPersonalWord}
+                    key={mistake.id ?? itemIndex}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-card compact">
+                <span>好</span>
+                <h2>No mistakes in this filter</h2>
+                <p>
+                  Choose another view or continue learning to create new
+                  evidence.
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="empty-card">
+            <span>好</span>
+            <h2>No saved mistakes yet</h2>
+            <p>
+              When an answer goes wrong, its explanation will appear here with
+              targeted practice and a review schedule.
+            </p>
+          </div>
+        ))}
+    </div>
+  );
 }
-function MistakePracticeCard({mistake,alternatives,rate,openChapter,saveCorrection}:{mistake:Mistake;alternatives:string[];rate:(id:string,correct:boolean)=>void;openChapter:(id:string)=>void;saveCorrection:(word:Omit<PersonalWord,'id'|'createdAt'>)=>void}){
-  const [whyOpen,setWhyOpen]=useState(false);const [practicing,setPracticing]=useState(false);const [round,setRound]=useState(0);const [selected,setSelected]=useState('');const [graded,setGraded]=useState(false);const [sessionScore,setSessionScore]=useState(0);const chapter=adventureChapters.find(item=>item.id===mistake.chapterId)??adventureChapters[0];const mastery=mistake.mastery??5;const due=dueMistakes([mistake]).length>0;const canSave=/[\u3400-\u9fff]/.test(mistake.correction);const baseChoices=[mistake.correction,mistake.answer,alternatives.find(value=>value!==mistake.correction&&value!==mistake.answer),'I need to review the explanation'].filter((value,index,items):value is string=>!!value&&items.indexOf(value)===index);const choices=[...baseChoices.slice(round%baseChoices.length),...baseChoices.slice(0,round%baseChoices.length)];const prompts=[mistake.prompt,`Choose the corrected response for: ${mistake.prompt}`,`Complete the situation with the natural answer.`, `Which response follows this explanation: ${mistake.explanation??chapter.question.explanation}`,`Final recall: correct your original answer “${mistake.answer||'—'}”.`];const correct=selected===mistake.correction;
-  function check(){if(!selected)return;setGraded(true);if(correct)setSessionScore(value=>value+1);rate(mistake.id,correct)}
-  function nextRound(){if(round===4){setPracticing(false);setRound(0);setSelected('');setGraded(false);return}setRound(value=>value+1);setSelected('');setGraded(false)}
-  function start(){setPracticing(true);setRound(0);setSelected('');setGraded(false);setSessionScore(0)}
-  return <article className={`mistake-evidence-card ${due?'due':''}`}><header><div><span>{mistake.skill?.slice(0,2)??'错'}</span><p><small>{chapter.chinese} · {chapter.title} · {(mistake.skill??'Grammar').toUpperCase()}</small><strong>{mistakeMasteryLabel(mastery)} · {'★'.repeat(mistakeMasteryStars(mastery))}{'☆'.repeat(5-mistakeMasteryStars(mastery))}</strong></p></div><b>{due?'DUE NOW':`NEXT ${new Date(mistake.reviewDueAt??mistake.createdAt).toLocaleDateString()}`}</b></header><div className="mistake-copy"><h3>{mistake.prompt}</h3><p>Your answer: <del>{mistake.answer||'No answer'}</del></p><p>Use instead: <strong>{mistake.correction}</strong></p></div><div className="mistake-evidence"><span><b>{mistake.errorCount??1}</b> errors</span><span><b>{mistake.attempts??1}</b> attempts</span><span><b>{mastery}%</b> mastery</span><span><b>{mistake.successfulReviews??0}</b> successful recalls</span></div>{whyOpen&&<div className="why-wrong expanded"><b>Why was I wrong?</b><p>{mistake.explanation??chapter.question.explanation}</p><span>Correct pattern: <strong>{mistake.correction}</strong></span></div>}{practicing&&<div className="mistake-practice multi-round"><div className="mistake-round-head"><small>ANGLE {round+1} OF 5 · {['ORIGINAL CONTEXT','CORRECTION','MISSING RESPONSE','EXPLANATION','FINAL RECALL'][round]}</small><b>{sessionScore}/{round+(graded?1:0)} correct</b></div><i><em style={{width:`${(round+(graded?1:0))/5*100}%`}}/></i><h4>{prompts[round]}</h4><div>{choices.map(choice=><button disabled={graded} className={`${selected===choice?'selected ':''}${graded&&choice===mistake.correction?'correct ':''}${graded&&selected===choice&&!correct?'wrong':''}`} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!graded?<button disabled={!selected} onClick={check}>Check response</button>:<div className={correct?'mistake-feedback good':'mistake-feedback try'}><p><strong>{correct?'✓ Correct recall':`Use: ${mistake.correction}`}</strong><span>{mistake.explanation??'Compare the original prompt with the corrected response.'}</span></p><button onClick={nextRound}>{round===4?'Finish five-angle review':'Next angle →'}</button></div>}</div>}<footer><button onClick={()=>setWhyOpen(!whyOpen)}>{whyOpen?'Hide explanation':'Why was I wrong?'}</button>{canSave&&<button onClick={()=>saveCorrection({hanzi:mistake.correction,pinyin:'',english:`Correction: ${mistake.prompt}`})}>Add to flashcards</button>}<button onClick={()=>openChapter(chapter.id)}>Open lesson</button><button className="primary" onClick={start}>{due?'Start 5× due review':'Practice 5 angles'}</button></footer></article>
+function MistakePracticeCard({
+  mistake,
+  alternatives,
+  rate,
+  openChapter,
+  saveCorrection,
+}: {
+  mistake: Mistake;
+  alternatives: string[];
+  rate: (id: string, correct: boolean) => void;
+  openChapter: (id: string) => void;
+  saveCorrection: (word: Omit<PersonalWord, "id" | "createdAt">) => void;
+}) {
+  const [whyOpen, setWhyOpen] = useState(false);
+  const [practicing, setPracticing] = useState(false);
+  const [round, setRound] = useState(0);
+  const [selected, setSelected] = useState("");
+  const [graded, setGraded] = useState(false);
+  const [sessionScore, setSessionScore] = useState(0);
+  const chapter =
+    adventureChapters.find((item) => item.id === mistake.chapterId) ??
+    adventureChapters[0];
+  const mastery = mistake.mastery ?? 5;
+  const due = dueMistakes([mistake]).length > 0;
+  const canSave = /[\u3400-\u9fff]/.test(mistake.correction);
+  const baseChoices = [
+    mistake.correction,
+    mistake.answer,
+    alternatives.find(
+      (value) => value !== mistake.correction && value !== mistake.answer,
+    ),
+    "I need to review the explanation",
+  ].filter(
+    (value, index, items): value is string =>
+      !!value && items.indexOf(value) === index,
+  );
+  const choices = [
+    ...baseChoices.slice(round % baseChoices.length),
+    ...baseChoices.slice(0, round % baseChoices.length),
+  ];
+  const prompts = [
+    mistake.prompt,
+    `Choose the corrected response for: ${mistake.prompt}`,
+    `Complete the situation with the natural answer.`,
+    `Which response follows this explanation: ${mistake.explanation ?? chapter.question.explanation}`,
+    `Final recall: correct your original answer “${mistake.answer || "—"}”.`,
+  ];
+  const correct = selected === mistake.correction;
+  function check() {
+    if (!selected) return;
+    setGraded(true);
+    if (correct) setSessionScore((value) => value + 1);
+    rate(mistake.id, correct);
+  }
+  function nextRound() {
+    if (round === 4) {
+      setPracticing(false);
+      setRound(0);
+      setSelected("");
+      setGraded(false);
+      return;
+    }
+    setRound((value) => value + 1);
+    setSelected("");
+    setGraded(false);
+  }
+  function start() {
+    setPracticing(true);
+    setRound(0);
+    setSelected("");
+    setGraded(false);
+    setSessionScore(0);
+  }
+  return (
+    <article className={`mistake-evidence-card ${due ? "due" : ""}`}>
+      <header>
+        <div>
+          <span>{mistake.skill?.slice(0, 2) ?? "错"}</span>
+          <p>
+            <small>
+              {chapter.chinese} · {chapter.title} ·{" "}
+              {(mistake.skill ?? "Grammar").toUpperCase()}
+            </small>
+            <strong>
+              {mistakeMasteryLabel(mastery)} ·{" "}
+              {"★".repeat(mistakeMasteryStars(mastery))}
+              {"☆".repeat(5 - mistakeMasteryStars(mastery))}
+            </strong>
+          </p>
+        </div>
+        <b>
+          {due
+            ? "DUE NOW"
+            : `NEXT ${new Date(mistake.reviewDueAt ?? mistake.createdAt).toLocaleDateString()}`}
+        </b>
+      </header>
+      <div className="mistake-copy">
+        <h3>{mistake.prompt}</h3>
+        <p>
+          Your answer: <del>{mistake.answer || "No answer"}</del>
+        </p>
+        <p>
+          Use instead: <strong>{mistake.correction}</strong>
+        </p>
+      </div>
+      <div className="mistake-evidence">
+        <span>
+          <b>{mistake.errorCount ?? 1}</b> errors
+        </span>
+        <span>
+          <b>{mistake.attempts ?? 1}</b> attempts
+        </span>
+        <span>
+          <b>{mastery}%</b> mastery
+        </span>
+        <span>
+          <b>{mistake.successfulReviews ?? 0}</b> successful recalls
+        </span>
+      </div>
+      {whyOpen && (
+        <div className="why-wrong expanded">
+          <b>Why was I wrong?</b>
+          <p>{mistake.explanation ?? chapter.question.explanation}</p>
+          <span>
+            Correct pattern: <strong>{mistake.correction}</strong>
+          </span>
+        </div>
+      )}
+      {practicing && (
+        <div className="mistake-practice multi-round">
+          <div className="mistake-round-head">
+            <small>
+              ANGLE {round + 1} OF 5 ·{" "}
+              {
+                [
+                  "ORIGINAL CONTEXT",
+                  "CORRECTION",
+                  "MISSING RESPONSE",
+                  "EXPLANATION",
+                  "FINAL RECALL",
+                ][round]
+              }
+            </small>
+            <b>
+              {sessionScore}/{round + (graded ? 1 : 0)} correct
+            </b>
+          </div>
+          <i>
+            <em
+              style={{ width: `${((round + (graded ? 1 : 0)) / 5) * 100}%` }}
+            />
+          </i>
+          <h4>{prompts[round]}</h4>
+          <div>
+            {choices.map((choice) => (
+              <button
+                disabled={graded}
+                className={`${selected === choice ? "selected " : ""}${graded && choice === mistake.correction ? "correct " : ""}${graded && selected === choice && !correct ? "wrong" : ""}`}
+                onClick={() => setSelected(choice)}
+                key={choice}
+              >
+                {choice}
+              </button>
+            ))}
+          </div>
+          {!graded ? (
+            <button disabled={!selected} onClick={check}>
+              Check response
+            </button>
+          ) : (
+            <div
+              className={
+                correct ? "mistake-feedback good" : "mistake-feedback try"
+              }
+            >
+              <p>
+                <strong>
+                  {correct ? "✓ Correct recall" : `Use: ${mistake.correction}`}
+                </strong>
+                <span>
+                  {mistake.explanation ??
+                    "Compare the original prompt with the corrected response."}
+                </span>
+              </p>
+              <button onClick={nextRound}>
+                {round === 4 ? "Finish five-angle review" : "Next angle →"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <footer>
+        <button onClick={() => setWhyOpen(!whyOpen)}>
+          {whyOpen ? "Hide explanation" : "Why was I wrong?"}
+        </button>
+        {canSave && (
+          <button
+            onClick={() =>
+              saveCorrection({
+                hanzi: mistake.correction,
+                pinyin: "",
+                english: `Correction: ${mistake.prompt}`,
+              })
+            }
+          >
+            Add to flashcards
+          </button>
+        )}
+        <button onClick={() => openChapter(chapter.id)}>Open lesson</button>
+        <button className="primary" onClick={start}>
+          {due ? "Start 5× due review" : "Practice 5 angles"}
+        </button>
+      </footer>
+    </article>
+  );
 }
-function EmptyReview(){return <div className="empty-card"><span>好</span><h2>Review complete</h2><p>Your next cards will appear here when they are due.</p></div>}
+function EmptyReview() {
+  return (
+    <div className="empty-card">
+      <span>好</span>
+      <h2>Review complete</h2>
+      <p>Your next cards will appear here when they are due.</p>
+    </div>
+  );
+}
 
-const hskBackgrounds=[
-  {id:'hsk-bg-jade',name:'Classic Jade',image:''},
-  {id:'hsk-bg-bund',name:'Shanghai · The Bund',image:'/landmarks/the-bund-shanghai.jpg'},
-  {id:'hsk-bg-great-wall',name:'Beijing · Great Wall',image:'/landmarks/mutianyu-great-wall.jpg'},
-  {id:'hsk-bg-west-lake',name:'Hangzhou · West Lake',image:'/landmarks/west-lake-hangzhou.jpg'},
-  {id:'hsk-bg-fuzimiao',name:'Nanjing · Fuzimiao',image:'/landmarks/fuzimiao-nanjing.jpg'},
-  {id:'hsk-bg-zhangjiajie',name:'Hunan · Zhangjiajie',image:'/landmarks/zhangjiajie.jpg'},
-  {id:'hsk-bg-temple',name:'Beijing · Temple of Heaven',image:'/landmarks/temple-heaven.jpg'},
-  {id:'hsk-bg-terracotta',name:'Xi’an · Terracotta Army',image:'/landmarks/terracotta-xian.jpg'},
-  {id:'hsk-bg-li-river',name:'Guilin · Li River',image:'/landmarks/li-river-guilin.jpg'},
-  {id:'hsk-bg-canton',name:'Guangzhou · Canton Tower',image:'/landmarks/canton-tower.jpg'},
-  {id:'hsk-bg-panda',name:'Chengdu · Panda Base',image:'/landmarks/chengdu-panda.jpg'},
-  {id:'hsk-bg-harbin',name:'Harbin · Ice World',image:'/landmarks/harbin-ice.jpg'},
-  {id:'hsk-bg-suzhou',name:'Suzhou · Pingjiang Road',image:'/landmarks/pingjiang-suzhou.jpg'},
-  {id:'hsk-bg-chongqing',name:'Chongqing · Hongya Cave',image:'/landmarks/hongya-chongqing.jpg'},
-  {id:'hsk-bg-shenzhen',name:'Shenzhen · Shenzhen Bay',image:'/landmarks/shenzhen-bay.jpg'},
+const hskBackgrounds = [
+  { id: "hsk-bg-jade", name: "Classic Jade", image: "" },
+  {
+    id: "hsk-bg-bund",
+    name: "Shanghai · The Bund",
+    image: "/landmarks/the-bund-shanghai.jpg",
+  },
+  {
+    id: "hsk-bg-great-wall",
+    name: "Beijing · Great Wall",
+    image: "/landmarks/mutianyu-great-wall.jpg",
+  },
+  {
+    id: "hsk-bg-west-lake",
+    name: "Hangzhou · West Lake",
+    image: "/landmarks/west-lake-hangzhou.jpg",
+  },
+  {
+    id: "hsk-bg-fuzimiao",
+    name: "Nanjing · Fuzimiao",
+    image: "/landmarks/fuzimiao-nanjing.jpg",
+  },
+  {
+    id: "hsk-bg-zhangjiajie",
+    name: "Hunan · Zhangjiajie",
+    image: "/landmarks/zhangjiajie.jpg",
+  },
+  {
+    id: "hsk-bg-temple",
+    name: "Beijing · Temple of Heaven",
+    image: "/landmarks/temple-heaven.jpg",
+  },
+  {
+    id: "hsk-bg-terracotta",
+    name: "Xi’an · Terracotta Army",
+    image: "/landmarks/terracotta-xian.jpg",
+  },
+  {
+    id: "hsk-bg-li-river",
+    name: "Guilin · Li River",
+    image: "/landmarks/li-river-guilin.jpg",
+  },
+  {
+    id: "hsk-bg-canton",
+    name: "Guangzhou · Canton Tower",
+    image: "/landmarks/canton-tower.jpg",
+  },
+  {
+    id: "hsk-bg-panda",
+    name: "Chengdu · Panda Base",
+    image: "/landmarks/chengdu-panda.jpg",
+  },
+  {
+    id: "hsk-bg-harbin",
+    name: "Harbin · Ice World",
+    image: "/landmarks/harbin-ice.jpg",
+  },
+  {
+    id: "hsk-bg-suzhou",
+    name: "Suzhou · Pingjiang Road",
+    image: "/landmarks/pingjiang-suzhou.jpg",
+  },
+  {
+    id: "hsk-bg-chongqing",
+    name: "Chongqing · Hongya Cave",
+    image: "/landmarks/hongya-chongqing.jpg",
+  },
+  {
+    id: "hsk-bg-shenzhen",
+    name: "Shenzhen · Shenzhen Bay",
+    image: "/landmarks/shenzhen-bay.jpg",
+  },
 ];
 
-function EnhancedHskReadinessDashboard({profile,learning,setBackground,setAuto,setPlaylist}:{profile:Profile|null;learning:LearningState;setBackground:(id:string)=>void;setAuto:(enabled:boolean)=>void;setPlaylist:(ids:string[])=>void}){
-  const owned=useMemo(()=>hskBackgrounds.filter(item=>item.id==='hsk-bg-jade'||learning.inventory.cosmetics.includes(item.id)),[learning.inventory.cosmetics]);
-  const rotation=useMemo(()=>{const ids=availableBackgroundRotation(owned.map(item=>item.id),learning.inventory.hskBackgroundPlaylist,learning.inventory.equippedHskBackground);return ids.map(id=>owned.find(item=>item.id===id)!).filter(Boolean)},[learning.inventory.equippedHskBackground,learning.inventory.hskBackgroundPlaylist,owned]);
-  const [activeId,setActiveId]=useState(learning.inventory.equippedHskBackground);
-  const index=Math.max(0,owned.findIndex(item=>item.id===activeId));
-  useEffect(()=>{if(!learning.inventory.hskBackgroundAuto||rotation.length<2)return;const timer=window.setInterval(()=>setActiveId(current=>{const currentIndex=Math.max(0,rotation.findIndex(item=>item.id===current));const next=rotation[(currentIndex+1)%rotation.length].id;setBackground(next);return next}),6500);return()=>window.clearInterval(timer)},[learning.inventory.hskBackgroundAuto,rotation,setBackground]);
-  const current=owned[index]??owned[0];
-  function choose(next:number){const safe=(next+owned.length)%owned.length;setActiveId(owned[safe].id);setBackground(owned[safe].id)}
-  function toggleRotation(id:string){setPlaylist(toggleBackgroundRotation(owned.map(item=>item.id),learning.inventory.hskBackgroundPlaylist,id))}
-  return <section className={`hsk-background-shell ${current.image?'photo':''}`} style={current.image?{backgroundImage:`linear-gradient(115deg,rgba(8,42,34,.93),rgba(20,74,62,.78)),url(${current.image})`}:undefined}><div className="hsk-background-controls"><div><small>HSK PATH BACKGROUND</small><strong>{current.name}</strong><span>{owned.length} owned · {rotation.length} in rotation</span></div><div><button disabled={owned.length<2} onClick={()=>choose(index-1)}>←</button><button className={learning.inventory.hskBackgroundAuto?'active':''} disabled={rotation.length<2} onClick={()=>setAuto(!learning.inventory.hskBackgroundAuto)}>{learning.inventory.hskBackgroundAuto?'Auto on':'Auto off'}</button><button disabled={owned.length<2} onClick={()=>choose(index+1)}>→</button></div></div><div className="hsk-background-picker" aria-label="Choose HSK background cities">{owned.map(item=><button className={`${item.id===current.id?'current ':''}${rotation.some(choice=>choice.id===item.id)?'rotating':''}`} key={item.id} onClick={()=>{setActiveId(item.id);setBackground(item.id)}}><span>{item.id===current.id?'●':'○'}</span><strong>{item.name}</strong><small onClick={event=>{event.stopPropagation();toggleRotation(item.id)}}>{rotation.some(choice=>choice.id===item.id)?'✓ Auto':'＋ Auto'}</small></button>)}</div><HskReadinessDashboard profile={profile} learning={learning}/></section>
+function EnhancedHskReadinessDashboard({
+  profile,
+  learning,
+  setBackground,
+  setAuto,
+  setPlaylist,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+  setBackground: (id: string) => void;
+  setAuto: (enabled: boolean) => void;
+  setPlaylist: (ids: string[]) => void;
+}) {
+  const owned = useMemo(
+    () =>
+      hskBackgrounds.filter(
+        (item) =>
+          item.id === "hsk-bg-jade" ||
+          learning.inventory.cosmetics.includes(item.id),
+      ),
+    [learning.inventory.cosmetics],
+  );
+  const rotation = useMemo(() => {
+    const ids = availableBackgroundRotation(
+      owned.map((item) => item.id),
+      learning.inventory.hskBackgroundPlaylist,
+      learning.inventory.equippedHskBackground,
+    );
+    return ids
+      .map((id) => owned.find((item) => item.id === id)!)
+      .filter(Boolean);
+  }, [
+    learning.inventory.equippedHskBackground,
+    learning.inventory.hskBackgroundPlaylist,
+    owned,
+  ]);
+  const [activeId, setActiveId] = useState(
+    learning.inventory.equippedHskBackground,
+  );
+  const index = Math.max(
+    0,
+    owned.findIndex((item) => item.id === activeId),
+  );
+  useEffect(() => {
+    if (!learning.inventory.hskBackgroundAuto || rotation.length < 2) return;
+    const timer = window.setInterval(
+      () =>
+        setActiveId((current) => {
+          const currentIndex = Math.max(
+            0,
+            rotation.findIndex((item) => item.id === current),
+          );
+          const next = rotation[(currentIndex + 1) % rotation.length].id;
+          setBackground(next);
+          return next;
+        }),
+      6500,
+    );
+    return () => window.clearInterval(timer);
+  }, [learning.inventory.hskBackgroundAuto, rotation, setBackground]);
+  const current = owned[index] ?? owned[0];
+  function choose(next: number) {
+    const safe = (next + owned.length) % owned.length;
+    setActiveId(owned[safe].id);
+    setBackground(owned[safe].id);
+  }
+  function toggleRotation(id: string) {
+    setPlaylist(
+      toggleBackgroundRotation(
+        owned.map((item) => item.id),
+        learning.inventory.hskBackgroundPlaylist,
+        id,
+      ),
+    );
+  }
+  return (
+    <section
+      className={`hsk-background-shell ${current.image ? "photo" : ""}`}
+      style={
+        current.image
+          ? {
+              backgroundImage: `linear-gradient(115deg,rgba(8,42,34,.93),rgba(20,74,62,.78)),url(${current.image})`,
+            }
+          : undefined
+      }
+    >
+      <div className="hsk-background-controls">
+        <div>
+          <small>HSK PATH BACKGROUND</small>
+          <strong>{current.name}</strong>
+          <span>
+            {owned.length} owned · {rotation.length} in rotation
+          </span>
+        </div>
+        <div>
+          <button disabled={owned.length < 2} onClick={() => choose(index - 1)}>
+            ←
+          </button>
+          <button
+            className={learning.inventory.hskBackgroundAuto ? "active" : ""}
+            disabled={rotation.length < 2}
+            onClick={() => setAuto(!learning.inventory.hskBackgroundAuto)}
+          >
+            {learning.inventory.hskBackgroundAuto ? "Auto on" : "Auto off"}
+          </button>
+          <button disabled={owned.length < 2} onClick={() => choose(index + 1)}>
+            →
+          </button>
+        </div>
+      </div>
+      <div
+        className="hsk-background-picker"
+        aria-label="Choose HSK background cities"
+      >
+        {owned.map((item) => (
+          <button
+            className={`${item.id === current.id ? "current " : ""}${rotation.some((choice) => choice.id === item.id) ? "rotating" : ""}`}
+            key={item.id}
+            onClick={() => {
+              setActiveId(item.id);
+              setBackground(item.id);
+            }}
+          >
+            <span>{item.id === current.id ? "●" : "○"}</span>
+            <strong>{item.name}</strong>
+            <small
+              onClick={(event) => {
+                event.stopPropagation();
+                toggleRotation(item.id);
+              }}
+            >
+              {rotation.some((choice) => choice.id === item.id)
+                ? "✓ Auto"
+                : "＋ Auto"}
+            </small>
+          </button>
+        ))}
+      </div>
+      <HskReadinessDashboard profile={profile} learning={learning} />
+    </section>
+  );
 }
 
-function HskReadinessDashboard({profile,learning}:{profile:Profile|null;learning:LearningState}){const evidence=Object.values(calculateSkillEvidence(learning.events,learning.lastActiveDate||undefined));const base=Math.round(evidence.reduce((sum,item)=>sum+item.score,0)/Math.max(1,evidence.length));const reviewed=learning.events.filter(event=>event.type==='review').length;const targets=[150,300,600,1200,2500,5000];const currentLevel=profile?.hsk??1;const levels=[1,2,3,4,5,6].map(level=>{const library=textbookWordCollections.find(collection=>collection.level===level)?.words.length??0;const targetWords=targets[level-1];const readiness=Math.min(100,Math.round(base*(level<=currentLevel?1:Math.max(.28,.7-(level-currentLevel)*.1))));const practiced=Math.min(targetWords,Math.round((learning.wordsPracticed+reviewed)*Math.max(.2,1-Math.abs(level-currentLevel)*.12)));return{level,library,targetWords,readiness,practiced,state:level<currentLevel?'foundation':level===currentLevel?'current':'up next'}});const target=levels[currentLevel-1];return <section className="hsk-readiness-dashboard standalone"><header><div className="hsk-readiness-intro"><p className="eyebrow">HSK READINESS · 学习地图</p><h2>Your HSK learning path</h2><p>A six-level roadmap built from vocabulary coverage, accuracy, spaced review, active days, listening, grammar, reading, and speaking evidence.</p><div className="hsk-route">{levels.map(item=><span className={item.level<=currentLevel?'active':''} key={item.level}><b>{item.level<currentLevel?'✓':item.level}</b><small>HSK {item.level}</small></span>)}</div></div><div className="hsk-readiness-score"><span>Current target</span><strong>{target.readiness}%</strong><small>ready for HSK {target.level}</small><i><em style={{width:`${target.readiness}%`}}/></i></div></header><div className="hsk-readiness-grid">{levels.map(item=><article className={item.level===currentLevel?'target':''} key={item.level}><div className="hsk-level-head"><span>HSK {item.level}<small>{item.state}</small></span><b>{item.readiness}%</b></div><i className="hsk-level-progress"><em style={{width:`${item.readiness}%`}}/></i><div className="hsk-level-metrics"><span><b>{item.practiced}</b><small>words practiced</small></span><span><b>{item.targetWords.toLocaleString()}</b><small>target vocabulary</small></span><span><b>{item.library}</b><small>guided course samples</small></span></div><p>{item.readiness<20?'Start with recognition and short listening.':item.readiness<55?'Strengthen recall across different skills.':'Add timed practice and longer reading.'}</p></article>)}</div><footer><span><small>Next milestone</small><b>{target.readiness<25?'Build a 7-day review rhythm':target.readiness<60?'Mix listening, recall, and grammar':'Complete two timed mock sessions'}</b></span><span><small>Learning evidence</small><b>{learning.events.length} activities · {new Set(learning.activityDates).size} active days</b></span><span><small>Course direction</small><b>{Math.max(0,target.targetWords-target.practiced).toLocaleString()} target words remain for HSK {target.level}</b></span></footer></section>}
-
-function Progress({profile,learning}:{profile:Profile|null;learning:LearningState}) {
-  const completed=learning.completed.length; const evidenceMap=calculateSkillEvidence(learning.events,learning.lastActiveDate||undefined); const skills=Object.entries(evidenceMap);
-  const achievements=[{icon:'字',name:'First Words',unlocked:learning.wordsPracticed>0},{icon:'五',name:'50 Words',unlocked:learning.wordsPracticed>=50},{icon:'百',name:'100 Words',unlocked:learning.wordsPracticed>=100},{icon:'千',name:'1,000 Reviews',unlocked:learning.events.filter(event=>event.type==='review').length>=1000},{icon:'芽',name:'Three-Day Start',unlocked:learning.streak>=3},{icon:'火',name:'7-Day Rhythm',unlocked:learning.streak>=7},{icon:'双',name:'Two-Week Habit',unlocked:learning.streak>=14},{icon:'月',name:'30-Day Rhythm',unlocked:learning.streak>=30},{icon:'季',name:'80-Day Legend',unlocked:learning.streak>=80},{icon:'图',name:'City Explorer',unlocked:completed>=3},{icon:'路',name:'Halfway Traveller',unlocked:completed>=10},{icon:'冠',name:'First Boss',unlocked:learning.bossWins.length>0},{icon:'芽',name:'Easy Explorer',unlocked:learning.difficultyWins.some(item=>item.endsWith(':easy'))},{icon:'衡',name:'Normal Navigator',unlocked:learning.difficultyWins.some(item=>item.endsWith(':normal'))},{icon:'峰',name:'Hard Mode Victor',unlocked:learning.difficultyWins.some(item=>item.endsWith(':hard'))},{icon:'峻',name:'Five Hard Clears',unlocked:learning.difficultyWins.filter(item=>item.endsWith(':hard')).length>=5},{icon:'极',name:'All-Mode Master',unlocked:adventureChapters.some(chapter=>(['easy','normal','hard'] as AdventureDifficulty[]).every(mode=>learning.difficultyWins.includes(`${chapter.id}:${mode}`)))},{icon:'王',name:'Boss Hunter',unlocked:learning.bossWins.length>=10},{icon:'世',name:'World Ready',unlocked:completed===adventureChapters.length},{icon:'专',name:'Career Path',unlocked:!!profile?.career},{icon:'错',name:'Learn from Mistakes',unlocked:learning.mistakes.length>0},{icon:'清',name:'Mistake Cleaner',unlocked:learning.mistakes.length>0&&dueMistakes(learning.mistakes).length===0},{icon:'词',name:'Word Collector',unlocked:learning.favorites.length+learning.personalWords.length>=10},{icon:'藏',name:'Library Curator',unlocked:learning.favorites.length+learning.personalWords.length>=50},{icon:'听',name:'Listening Habit',unlocked:learning.events.filter(event=>event.skill==='Listening').length>=20},{icon:'耳',name:'Listening Marathon',unlocked:learning.events.filter(event=>event.skill==='Listening').length>=100},{icon:'法',name:'Grammar Builder',unlocked:learning.events.filter(event=>event.skill==='Grammar').length>=25},{icon:'读',name:'Reading Trail',unlocked:learning.events.filter(event=>event.skill==='Reading').length>=25},{icon:'说',name:'Speaking Courage',unlocked:learning.events.filter(event=>event.type==='speaking').length>=10},{icon:'声',name:'Voice Explorer',unlocked:learning.inventory.voicePacks.length>0},{icon:'故',name:'Story Reader',unlocked:learning.events.filter(event=>event.type==='story').length>=10},{icon:'游',name:'Game Strategist',unlocked:learning.gameScores.length>=20},{icon:'满',name:'Perfect Game',unlocked:learning.gameScores.some(item=>item.score===item.total&&item.total>0)},{icon:'宝',name:'Gem Saver',unlocked:learning.diamonds>=200},{icon:'装',name:'Style Collector',unlocked:learning.inventory.cosmetics.length>=3},{icon:'景',name:'Scenery Curator',unlocked:learning.inventory.cosmetics.filter(item=>item.startsWith('hsk-bg-')).length>=3},{icon:'归',name:'Comeback Learner',unlocked:learning.events.some(event=>event.id.includes('Comeback'))}];
-  const weakest=skills.reduce((lowest,current)=>current[1].score<lowest[1].score?current:lowest,skills[0]);
-  const reportAnchor=learning.events.reduce((latest,event)=>Math.max(latest,new Date(event.createdAt).getTime()),learning.lastActiveDate?new Date(`${learning.lastActiveDate}T23:59:59`).getTime():0);const weekStart=reportAnchor-7*86_400_000;const weekEvents=learning.events.filter(event=>new Date(event.createdAt).getTime()>=weekStart);const accuracy=Math.round(weekEvents.filter(event=>event.correct).length/Math.max(1,weekEvents.length)*100);const best=skills.reduce((highest,current)=>current[1].score>highest[1].score?current:highest,skills[0]);const mid=Math.ceil(weekEvents.length/2);const olderScores=calculateSkillScores(weekEvents.slice(0,mid));const newerScores=calculateSkillScores(weekEvents.slice(mid));const improved=(Object.keys(newerScores) as LearningEvent['skill'][]).map(skill=>[skill,newerScores[skill]-olderScores[skill]] as [string,number]).sort((a,b)=>b[1]-a[1])[0];const gameAccuracy=Math.round(learning.gameScores.reduce((sum,item)=>sum+item.score,0)/Math.max(1,learning.gameScores.reduce((sum,item)=>sum+item.total,0))*100);const personalBests=learning.gameScores.reduce<Record<string,number>>((bestByGame,result)=>({...bestByGame,[result.game]:Math.max(bestByGame[result.game]??0,result.score/Math.max(1,result.total))}),{});const level=getLevelProgress(learning.xp);
-  return <div className="page-wrap subpage progress-page"><div className="subpage-title"><p className="eyebrow">MEASURABLE LEARNING</p><h1>Your progress <span>学习进度</span></h1><p>Ability scores grow from accurate, varied practice sustained across many different days.</p></div><div className="stat-row"><article><small>CHINESE TRACK</small><strong>HSK {profile?.hsk??3}</strong><span>HSK-style difficulty</span></article><article><small>PLAYER LEVEL</small><strong>Level {level.level}</strong><span>{level.remainingXp} XP to next level</span></article><article><small>ADVENTURE</small><strong>{completed}/{adventureChapters.length}</strong><span>Chapters mastered</span></article><article><small>GAME ACCURACY</small><strong>{gameAccuracy}%</strong><span>{learning.gameScores.length} saved results</span></article></div><div className="progress-layout"><section className="card skill-card"><div className="section-head"><div><p className="eyebrow">CHINESE ABILITIES</p><h3>Long-term skill evidence</h3></div><span className="skill-tag">Cautious by design</span></div><p className="skill-model-copy">A productive day helps, but it cannot prove fluency. Scores require repeated correct work, spaced practice, and different kinds of activities.</p><div className="skill-method"><span><b>100</b><small>attempts for depth</small></span><span><b>30</b><small>active days</small></span><span><b>60</b><small>day evidence span</small></span><span><b>4</b><small>activity types</small></span></div><div className="skill-list detailed">{skills.map(([name,item])=><article key={name}><header><span><strong>{name}</strong><small>{item.status}</small></span><b>{item.score}</b></header><div className="skill-evidence-bar"><i style={{width:`${item.score}%`}}/></div><footer><span>{item.attempts} attempts</span><span>{item.activeDays} days</span><span>{item.activityTypes} modes</span><span>{item.accuracy}% correct</span></footer><p>{item.nextMilestone}</p></article>)}</div><div className="skill-honesty-note"><span>证</span><p><strong>Evidence, not a fluency certificate</strong><small>Limited data stays low, and inactive skills gradually soften until practice resumes.</small></p></div></section><section className="card week-card"><p className="eyebrow">YOUR CHINESE WEEK</p><h3>Small steps, real gains</h3><div className="week-numbers"><span><b>{weekEvents.length}</b>learning activities</span><span><b>{accuracy}%</b>answer accuracy</span><span><b>{learning.minutesStudied}</b>minutes total</span></div><div className="weekly-insights"><span><small>BEST SKILL</small><strong>{best[0]} · {best[1].score}</strong></span><span><small>MOST IMPROVED</small><strong>{improved[0]} · {improved[1]>=0?'+':''}{improved[1]}</strong></span><span><small>STORIES</small><strong>{learning.events.filter(event=>event.type==='story').length} completed</strong></span></div><div className="next-focus"><small>NEXT WEEK RECOMMENDATION</small><strong>Build evidence in {weakest[0]}</strong><p>{weakest[1].nextMilestone}. Mix it with spaced review instead of completing everything in one sitting.</p></div></section></div><section className="achievement-section"><p className="eyebrow">MEANINGFUL MILESTONES</p><h2>Achievements</h2><div>{achievements.map(item=><article className={item.unlocked?'unlocked':'locked'} key={item.name}><span>{item.icon}</span><strong>{item.name}</strong><small>{item.unlocked?'Unlocked':'Keep learning'}</small></article>)}</div></section>{learning.gameScores.length>0&&<section className="game-history"><div><p className="eyebrow">SAVED GAME RESULTS</p><h2>Recent performance</h2></div><div>{learning.gameScores.slice(0,6).map(result=>{const accuracy=result.score/Math.max(1,result.total);const isPb=accuracy>=personalBests[result.game];return <article key={result.id}><span>{result.game.includes('Boss')?'冠':'游'}</span><div><strong>{result.game}{isPb&&<em className="personal-best">PB</em>}</strong><small>{new Date(result.createdAt).toLocaleDateString()} · {Math.round(accuracy*100)}% accuracy</small></div><b>{result.score}/{result.total}</b></article>})}</div></section>}</div>
+function HskReadinessDashboard({
+  profile,
+  learning,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+}) {
+  const evidence = Object.values(
+    calculateSkillEvidence(
+      learning.events,
+      learning.lastActiveDate || undefined,
+    ),
+  );
+  const base = Math.round(
+    evidence.reduce((sum, item) => sum + item.score, 0) /
+      Math.max(1, evidence.length),
+  );
+  const reviewed = learning.events.filter(
+    (event) => event.type === "review",
+  ).length;
+  const targets = [150, 300, 600, 1200, 2500, 5000];
+  const currentLevel = profile?.hsk ?? 1;
+  const levels = [1, 2, 3, 4, 5, 6].map((level) => {
+    const library =
+      textbookWordCollections.find((collection) => collection.level === level)
+        ?.words.length ?? 0;
+    const targetWords = targets[level - 1];
+    const readiness = Math.min(
+      100,
+      Math.round(
+        base *
+          (level <= currentLevel
+            ? 1
+            : Math.max(0.28, 0.7 - (level - currentLevel) * 0.1)),
+      ),
+    );
+    const practiced = Math.min(
+      targetWords,
+      Math.round(
+        (learning.wordsPracticed + reviewed) *
+          Math.max(0.2, 1 - Math.abs(level - currentLevel) * 0.12),
+      ),
+    );
+    return {
+      level,
+      library,
+      targetWords,
+      readiness,
+      practiced,
+      state:
+        level < currentLevel
+          ? "foundation"
+          : level === currentLevel
+            ? "current"
+            : "up next",
+    };
+  });
+  const target = levels[currentLevel - 1];
+  return (
+    <section className="hsk-readiness-dashboard standalone">
+      <header>
+        <div className="hsk-readiness-intro">
+          <p className="eyebrow">HSK READINESS · 学习地图</p>
+          <h2>Your HSK learning path</h2>
+          <p>
+            A six-level roadmap built from vocabulary coverage, accuracy, spaced
+            review, active days, listening, grammar, reading, and speaking
+            evidence.
+          </p>
+          <div className="hsk-route">
+            {levels.map((item) => (
+              <span
+                className={item.level <= currentLevel ? "active" : ""}
+                key={item.level}
+              >
+                <b>{item.level < currentLevel ? "✓" : item.level}</b>
+                <small>HSK {item.level}</small>
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="hsk-readiness-score">
+          <span>Current target</span>
+          <strong>{target.readiness}%</strong>
+          <small>ready for HSK {target.level}</small>
+          <i>
+            <em style={{ width: `${target.readiness}%` }} />
+          </i>
+        </div>
+      </header>
+      <div className="hsk-readiness-grid">
+        {levels.map((item) => (
+          <article
+            className={item.level === currentLevel ? "target" : ""}
+            key={item.level}
+          >
+            <div className="hsk-level-head">
+              <span>
+                HSK {item.level}
+                <small>{item.state}</small>
+              </span>
+              <b>{item.readiness}%</b>
+            </div>
+            <i className="hsk-level-progress">
+              <em style={{ width: `${item.readiness}%` }} />
+            </i>
+            <div className="hsk-level-metrics">
+              <span>
+                <b>{item.practiced}</b>
+                <small>words practiced</small>
+              </span>
+              <span>
+                <b>{item.targetWords.toLocaleString()}</b>
+                <small>target vocabulary</small>
+              </span>
+              <span>
+                <b>{item.library}</b>
+                <small>guided course samples</small>
+              </span>
+            </div>
+            <p>
+              {item.readiness < 20
+                ? "Start with recognition and short listening."
+                : item.readiness < 55
+                  ? "Strengthen recall across different skills."
+                  : "Add timed practice and longer reading."}
+            </p>
+          </article>
+        ))}
+      </div>
+      <footer>
+        <span>
+          <small>Next milestone</small>
+          <b>
+            {target.readiness < 25
+              ? "Build a 7-day review rhythm"
+              : target.readiness < 60
+                ? "Mix listening, recall, and grammar"
+                : "Complete two timed mock sessions"}
+          </b>
+        </span>
+        <span>
+          <small>Learning evidence</small>
+          <b>
+            {learning.events.length} activities ·{" "}
+            {new Set(learning.activityDates).size} active days
+          </b>
+        </span>
+        <span>
+          <small>Course direction</small>
+          <b>
+            {Math.max(
+              0,
+              target.targetWords - target.practiced,
+            ).toLocaleString()}{" "}
+            target words remain for HSK {target.level}
+          </b>
+        </span>
+      </footer>
+    </section>
+  );
 }
 
-function LessonModal({chapter,difficulty,savedStep,close,finish,updateProgress,speak}:{chapter:Chapter;difficulty:AdventureDifficulty;savedStep:number;close:()=>void;finish:(chapter:Chapter,results:ChapterLessonResult[],difficulty:AdventureDifficulty)=>void;updateProgress:(chapterId:string,progress:number,nextStep:number)=>void;speak:(value:string)=>void}) {
-  const pack=chapterLearningPacks[chapter.id as keyof typeof chapterLearningPacks];const mode=adventureDifficultyConfig[difficulty];const [step,setStep]=useState(()=>savedStep>=5?0:Math.max(0,Math.min(4,savedStep)));const [selected,setSelected]=useState('');const [graded,setGraded]=useState(false);const [built,setBuilt]=useState<string[]>([]);const [results,setResults]=useState<ChapterLessonResult[]>([]);const stages=[['词','Words'],['法','Grammar'],['听','Listen'],['句','Build'],['用','Apply'],['成','Complete']];const grammarChoices=seededShuffle(pack.grammar.question.choices,`${chapter.id}-${difficulty}-grammar`);const listeningChoices=seededShuffle(pack.listening.choices,`${chapter.id}-${difficulty}-listening`);const applicationChoices=seededShuffle(chapter.question.choices,`${chapter.id}-${difficulty}-application`);const grammarCorrect=selected===pack.grammar.question.answer;const listeningCorrect=selected===pack.listening.answer;const productionCorrect=built.join('')===pack.production.target.join('');const applicationAnswer=chapter.question.choices.find(choice=>choice.id===chapter.question.answer)?.text??'';const applicationCorrect=selected===applicationAnswer;
-  function advance(result?:ChapterLessonResult){if(result)setResults(items=>[...items,result]);updateProgress(chapter.id,chapterStageProgress(step),step+1);setStep(step+1);setSelected('');setGraded(false);setBuilt([])}
-  function result(stage:ChapterLessonResult['stage'],skill:ChapterLessonResult['skill'],correct:boolean,prompt:string,answer:string,correction:string,explanation:string):ChapterLessonResult{return{stage,skill,correct,prompt,answer,correction,explanation}}
-  const accuracy=chapterAccuracy(results);const base=difficulty==='hard'?55:difficulty==='normal'?35:25;const predictedXp=accuracy>=75?base:Math.max(15,base-10);const lessonGems=difficulty==='hard'?8:difficulty==='normal'?5:3;
-  return <div className="modal-backdrop chapter-lesson-backdrop" role="dialog" aria-modal="true" aria-label={`${chapter.title} ${mode.label} structured lesson`}><section className={`lesson-modal chapter-lesson-modal lesson-${difficulty}`}><header><div><span>{chapter.chinese} · {chapter.title} · {mode.label}</span><div className="lesson-progress"><i style={{width:`${chapterStageProgress(step)}%`}}/></div><b>{step+1}/{stages.length}</b></div><button onClick={close} aria-label="Close lesson">×</button></header><nav className="chapter-stage-rail" aria-label="Lesson stages">{stages.map(([icon,label],index)=><span className={index===step?'current':index<step?'done':''} key={label}><i>{index<step?'✓':icon}</i><small>{label}</small></span>)}</nav>
-    {step===0&&<div className="lesson-body chapter-discover"><p className="eyebrow">DISCOVER · 3 USEFUL WORDS</p><h2>{chapter.mission}</h2><p className="lesson-intro">Listen, read, and notice each word inside a useful sentence.</p><div className="vocab-list expanded">{chapter.vocabulary.map(word=><article key={word.id}><button onClick={()=>speak(word.hanzi)} aria-label={`Play ${word.hanzi}`}>◖))</button><strong>{word.hanzi}</strong><span>{word.pinyin}</span><b>{word.english}</b><p>{word.example.hanzi}<small>{word.example.english}</small></p></article>)}</div><button className="primary lesson-next" onClick={()=>advance()}>Notice the grammar →</button></div>}
-    {step===1&&<div className="lesson-body chapter-grammar"><p className="eyebrow">NOTICE · {mode.label.toUpperCase()} GRAMMAR</p><h2>{pack.grammar.title}</h2><div className="chapter-pattern"><small>PATTERN</small><strong>{pack.grammar.pattern}</strong><p>{pack.grammar.explanation}</p><button onClick={()=>speak(pack.grammar.example)}>▶ {pack.grammar.example}</button></div><h3>{pack.grammar.question.prompt}</h3><div className="chapter-choice-list">{grammarChoices.map(choice=><button disabled={graded} className={`${selected===choice?'selected ':''}${graded&&choice===pack.grammar.question.answer?'correct ':''}${graded&&selected===choice&&!grammarCorrect?'wrong':''}`} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!graded?<button className="primary lesson-next" disabled={!selected} onClick={()=>setGraded(true)}>Check grammar</button>:<div className={`chapter-feedback ${grammarCorrect?'good':'try'}`}><strong>{grammarCorrect?'✓ Pattern understood':`Use: ${pack.grammar.question.answer}`}</strong><p>{pack.grammar.question.explanation}</p><button onClick={()=>advance(result('grammar','Grammar',grammarCorrect,pack.grammar.question.prompt,selected,pack.grammar.question.answer,pack.grammar.question.explanation))}>Continue to listening →</button></div>}</div>}
-    {step===2&&<div className="lesson-body chapter-listening"><p className="eyebrow">UNDERSTAND · {difficulty==='easy'?'SUPPORTED LISTENING':'LISTEN WITHOUT TEXT'}</p><h2>Hear it in context</h2><button className="chapter-big-audio" onClick={()=>speak(pack.listening.audio)}><span>▶</span><div><strong>Play Chinese conversation</strong><small>{difficulty==='easy'?`Hint: ${pack.listening.audio}`:'Replay as many times as needed'}</small></div></button><h3>{pack.listening.prompt}</h3><div className="chapter-choice-list">{listeningChoices.map(choice=><button disabled={graded} className={`${selected===choice?'selected ':''}${graded&&choice===pack.listening.answer?'correct ':''}${graded&&selected===choice&&!listeningCorrect?'wrong':''}`} onClick={()=>setSelected(choice)} key={choice}>{choice}</button>)}</div>{!graded?<button className="primary lesson-next" disabled={!selected} onClick={()=>setGraded(true)}>Check listening</button>:<div className={`chapter-feedback ${listeningCorrect?'good':'try'}`}><strong>{listeningCorrect?'✓ Meaning understood':`Best answer: ${pack.listening.answer}`}</strong><p>{pack.listening.explanation}</p><button onClick={()=>advance(result('listening','Listening',listeningCorrect,pack.listening.prompt,selected,pack.listening.answer,pack.listening.explanation))}>Build the sentence →</button></div>}</div>}
-    {step===3&&<div className="lesson-body chapter-production"><p className="eyebrow">PRACTICE · PRODUCE THE SENTENCE</p><h2>{pack.production.prompt}</h2><p className="lesson-intro">{pack.production.translation}</p><div className="chapter-answer-zone">{built.length?built.map((piece,index)=><button disabled={graded} onClick={()=>setBuilt(built.filter((_,itemIndex)=>itemIndex!==index))} key={`${piece}-${index}`}>{piece}</button>):<span>Tap the chunks below in natural Chinese order</span>}</div><div className="chapter-piece-bank">{pack.production.pieces.map((piece,index)=><button disabled={graded||built.includes(piece)} onClick={()=>setBuilt([...built,piece])} key={`${piece}-${index}`}>{piece}</button>)}</div>{!graded?<button className="primary lesson-next" disabled={built.length!==pack.production.target.length} onClick={()=>setGraded(true)}>Check sentence</button>:<div className={`chapter-feedback ${productionCorrect?'good':'try'}`}><strong>{productionCorrect?'✓ Natural Chinese order':`Natural order: ${pack.production.target.join('')}`}</strong><p>Production practice requires recalling the complete phrase, not only recognizing it.</p><button onClick={()=>advance(result('production','Grammar',productionCorrect,pack.production.prompt,built.join(''),pack.production.target.join(''),'Chinese sentence order follows the chapter pattern shown earlier.'))}>Apply it in real life →</button></div>}</div>}
-    {step===4&&<div className="lesson-body chapter-application"><p className="eyebrow">APPLY · {mode.label.toUpperCase()} REAL-LIFE DECISION</p><h2>{chapter.question.prompt}</h2><button className="prompt-audio" onClick={()=>speak(chapter.question.chinesePrompt)}>◖)) Hear the key phrase</button><div className="chapter-choice-list contextual">{applicationChoices.map(choice=><button disabled={graded} className={`${selected===choice.text?'selected ':''}${graded&&choice.text===applicationAnswer?'correct ':''}${graded&&selected===choice.text&&!applicationCorrect?'wrong':''}`} onClick={()=>setSelected(choice.text)} key={choice.id}><strong>{choice.text}</strong>{difficulty!=='hard'&&<small>{choice.pinyin}</small>}</button>)}</div>{!graded?<button className="primary lesson-next" disabled={!selected} onClick={()=>setGraded(true)}>Check response</button>:<div className={`chapter-feedback ${applicationCorrect?'good':'try'}`}><strong>{applicationCorrect?'✓ Ready for the situation':`Natural response: ${applicationAnswer}`}</strong><p>{chapter.question.explanation}</p><button onClick={()=>advance(result('application','Speaking',applicationCorrect,chapter.question.prompt,selected,applicationAnswer,chapter.question.explanation))}>See mission result →</button></div>}</div>}
-    {step===5&&<div className="lesson-body complete chapter-complete"><div className="complete-mark">✓</div><p className="eyebrow">{mode.label.toUpperCase()} · LEARN → UNDERSTAND → PRODUCE → APPLY</p><h2>Mission complete!</h2><p>You practiced vocabulary plus {results.length} scored language stages. Incorrect answers will be added to your Mistake Book.</p><div className="chapter-result-summary"><article><small>THIS RUN</small><strong>{accuracy}%</strong><span>stage accuracy</span></article><article><small>SKILLS</small><strong>{new Set(results.map(item=>item.skill)).size+1}</strong><span>abilities practiced</span></article><article><small>REWARD</small><strong>+{predictedXp}</strong><span>{mode.label} completion XP</span></article></div><div className="reward-row"><span><b>{difficulty==='hard'?5:3}</b>words practiced</span><span><b>{results.filter(item=>!item.correct).length}</b>mistakes to revisit</span><span><b>+{lessonGems} ◆</b>first completion</span></div><button className="primary" onClick={()=>finish(chapter,results,difficulty)}>Save mission & return →</button></div>}
-  </section></div>
+function Progress({
+  profile,
+  learning,
+}: {
+  profile: Profile | null;
+  learning: LearningState;
+}) {
+  const completed = learning.completed.length;
+  const evidenceMap = calculateSkillEvidence(
+    learning.events,
+    learning.lastActiveDate || undefined,
+  );
+  const skills = Object.entries(evidenceMap);
+  const achievements = [
+    { icon: "字", name: "First Words", unlocked: learning.wordsPracticed > 0 },
+    { icon: "五", name: "50 Words", unlocked: learning.wordsPracticed >= 50 },
+    { icon: "百", name: "100 Words", unlocked: learning.wordsPracticed >= 100 },
+    {
+      icon: "千",
+      name: "1,000 Reviews",
+      unlocked:
+        learning.events.filter((event) => event.type === "review").length >=
+        1000,
+    },
+    { icon: "芽", name: "Three-Day Start", unlocked: learning.streak >= 3 },
+    { icon: "火", name: "7-Day Rhythm", unlocked: learning.streak >= 7 },
+    { icon: "双", name: "Two-Week Habit", unlocked: learning.streak >= 14 },
+    { icon: "月", name: "30-Day Rhythm", unlocked: learning.streak >= 30 },
+    { icon: "季", name: "80-Day Legend", unlocked: learning.streak >= 80 },
+    { icon: "图", name: "City Explorer", unlocked: completed >= 3 },
+    { icon: "路", name: "Halfway Traveller", unlocked: completed >= 10 },
+    { icon: "冠", name: "First Boss", unlocked: learning.bossWins.length > 0 },
+    {
+      icon: "芽",
+      name: "Easy Explorer",
+      unlocked: learning.difficultyWins.some((item) => item.endsWith(":easy")),
+    },
+    {
+      icon: "衡",
+      name: "Normal Navigator",
+      unlocked: learning.difficultyWins.some((item) =>
+        item.endsWith(":normal"),
+      ),
+    },
+    {
+      icon: "峰",
+      name: "Hard Mode Victor",
+      unlocked: learning.difficultyWins.some((item) => item.endsWith(":hard")),
+    },
+    {
+      icon: "峻",
+      name: "Five Hard Clears",
+      unlocked:
+        learning.difficultyWins.filter((item) => item.endsWith(":hard"))
+          .length >= 5,
+    },
+    {
+      icon: "极",
+      name: "All-Mode Master",
+      unlocked: adventureChapters.some((chapter) =>
+        (["easy", "normal", "hard"] as AdventureDifficulty[]).every((mode) =>
+          learning.difficultyWins.includes(`${chapter.id}:${mode}`),
+        ),
+      ),
+    },
+    {
+      icon: "王",
+      name: "Boss Hunter",
+      unlocked: learning.bossWins.length >= 10,
+    },
+    {
+      icon: "世",
+      name: "World Ready",
+      unlocked: completed === adventureChapters.length,
+    },
+    { icon: "专", name: "Career Path", unlocked: !!profile?.career },
+    {
+      icon: "错",
+      name: "Learn from Mistakes",
+      unlocked: learning.mistakes.length > 0,
+    },
+    {
+      icon: "清",
+      name: "Mistake Cleaner",
+      unlocked:
+        learning.mistakes.length > 0 &&
+        dueMistakes(learning.mistakes).length === 0,
+    },
+    {
+      icon: "词",
+      name: "Word Collector",
+      unlocked: learning.favorites.length + learning.personalWords.length >= 10,
+    },
+    {
+      icon: "藏",
+      name: "Library Curator",
+      unlocked: learning.favorites.length + learning.personalWords.length >= 50,
+    },
+    {
+      icon: "听",
+      name: "Listening Habit",
+      unlocked:
+        learning.events.filter((event) => event.skill === "Listening").length >=
+        20,
+    },
+    {
+      icon: "耳",
+      name: "Listening Marathon",
+      unlocked:
+        learning.events.filter((event) => event.skill === "Listening").length >=
+        100,
+    },
+    {
+      icon: "法",
+      name: "Grammar Builder",
+      unlocked:
+        learning.events.filter((event) => event.skill === "Grammar").length >=
+        25,
+    },
+    {
+      icon: "读",
+      name: "Reading Trail",
+      unlocked:
+        learning.events.filter((event) => event.skill === "Reading").length >=
+        25,
+    },
+    {
+      icon: "说",
+      name: "Speaking Courage",
+      unlocked:
+        learning.events.filter((event) => event.type === "speaking").length >=
+        10,
+    },
+    {
+      icon: "声",
+      name: "Voice Explorer",
+      unlocked: learning.inventory.voicePacks.length > 0,
+    },
+    {
+      icon: "故",
+      name: "Story Reader",
+      unlocked:
+        learning.events.filter((event) => event.type === "story").length >= 10,
+    },
+    {
+      icon: "游",
+      name: "Game Strategist",
+      unlocked: learning.gameScores.length >= 20,
+    },
+    {
+      icon: "满",
+      name: "Perfect Game",
+      unlocked: learning.gameScores.some(
+        (item) => item.score === item.total && item.total > 0,
+      ),
+    },
+    { icon: "宝", name: "Gem Saver", unlocked: learning.diamonds >= 200 },
+    {
+      icon: "装",
+      name: "Style Collector",
+      unlocked: learning.inventory.cosmetics.length >= 3,
+    },
+    {
+      icon: "景",
+      name: "Scenery Curator",
+      unlocked:
+        learning.inventory.cosmetics.filter((item) =>
+          item.startsWith("hsk-bg-"),
+        ).length >= 3,
+    },
+    {
+      icon: "归",
+      name: "Comeback Learner",
+      unlocked: learning.events.some((event) => event.id.includes("Comeback")),
+    },
+  ];
+  const weakest = skills.reduce(
+    (lowest, current) =>
+      current[1].score < lowest[1].score ? current : lowest,
+    skills[0],
+  );
+  const reportAnchor = learning.events.reduce(
+    (latest, event) => Math.max(latest, new Date(event.createdAt).getTime()),
+    learning.lastActiveDate
+      ? new Date(`${learning.lastActiveDate}T23:59:59`).getTime()
+      : 0,
+  );
+  const weekStart = reportAnchor - 7 * 86_400_000;
+  const weekEvents = learning.events.filter(
+    (event) => new Date(event.createdAt).getTime() >= weekStart,
+  );
+  const fullWeeklyReport = weeklyLearningReport({
+    events: learning.events,
+    cards: learning.reviewCards,
+    mistakes: learning.mistakes,
+    now: new Date(reportAnchor || 0),
+  });
+  const accuracy = Math.round(
+    (weekEvents.filter((event) => event.correct).length /
+      Math.max(1, weekEvents.length)) *
+      100,
+  );
+  const best = skills.reduce(
+    (highest, current) =>
+      current[1].score > highest[1].score ? current : highest,
+    skills[0],
+  );
+  const mid = Math.ceil(weekEvents.length / 2);
+  const olderScores = calculateSkillScores(weekEvents.slice(0, mid));
+  const newerScores = calculateSkillScores(weekEvents.slice(mid));
+  const improved = (Object.keys(newerScores) as LearningEvent["skill"][])
+    .map(
+      (skill) =>
+        [skill, newerScores[skill] - olderScores[skill]] as [string, number],
+    )
+    .sort((a, b) => b[1] - a[1])[0];
+  const gameAccuracy = Math.round(
+    (learning.gameScores.reduce((sum, item) => sum + item.score, 0) /
+      Math.max(
+        1,
+        learning.gameScores.reduce((sum, item) => sum + item.total, 0),
+      )) *
+      100,
+  );
+  const personalBests = learning.gameScores.reduce<Record<string, number>>(
+    (bestByGame, result) => ({
+      ...bestByGame,
+      [result.game]: Math.max(
+        bestByGame[result.game] ?? 0,
+        result.score / Math.max(1, result.total),
+      ),
+    }),
+    {},
+  );
+  const level = getLevelProgress(learning.xp);
+  return (
+    <div className="page-wrap subpage progress-page">
+      <div className="subpage-title">
+        <p className="eyebrow">MEASURABLE LEARNING</p>
+        <h1>
+          Your progress <span>学习进度</span>
+        </h1>
+        <p>
+          Ability scores grow from accurate, varied practice sustained across
+          many different days.
+        </p>
+      </div>
+      <div className="stat-row">
+        <article>
+          <small>CHINESE TRACK</small>
+          <strong>HSK {profile?.hsk ?? 3}</strong>
+          <span>HSK-style difficulty</span>
+        </article>
+        <article>
+          <small>PLAYER LEVEL</small>
+          <strong>Level {level.level}</strong>
+          <span>{level.remainingXp} XP to next level</span>
+        </article>
+        <article>
+          <small>ADVENTURE</small>
+          <strong>
+            {completed}/{adventureChapters.length}
+          </strong>
+          <span>Chapters mastered</span>
+        </article>
+        <article>
+          <small>GAME ACCURACY</small>
+          <strong>{gameAccuracy}%</strong>
+          <span>{learning.gameScores.length} saved results</span>
+        </article>
+      </div>
+      <div className="progress-layout">
+        <section className="card skill-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">CHINESE ABILITIES</p>
+              <h3>Long-term skill evidence</h3>
+            </div>
+            <span className="skill-tag">Cautious by design</span>
+          </div>
+          <p className="skill-model-copy">
+            A productive day helps, but it cannot prove fluency. Scores require
+            repeated correct work, spaced practice, and different kinds of
+            activities.
+          </p>
+          <div className="skill-method">
+            <span>
+              <b>100</b>
+              <small>attempts for depth</small>
+            </span>
+            <span>
+              <b>30</b>
+              <small>active days</small>
+            </span>
+            <span>
+              <b>60</b>
+              <small>day evidence span</small>
+            </span>
+            <span>
+              <b>4</b>
+              <small>activity types</small>
+            </span>
+          </div>
+          <div className="skill-list detailed">
+            {skills.map(([name, item]) => (
+              <article key={name}>
+                <header>
+                  <span>
+                    <strong>{name}</strong>
+                    <small>{item.status}</small>
+                  </span>
+                  <b>{item.score}</b>
+                </header>
+                <div className="skill-evidence-bar">
+                  <i style={{ width: `${item.score}%` }} />
+                </div>
+                <footer>
+                  <span>{item.attempts} attempts</span>
+                  <span>{item.activeDays} days</span>
+                  <span>{item.activityTypes} modes</span>
+                  <span>{item.accuracy}% correct</span>
+                </footer>
+                <p>{item.nextMilestone}</p>
+              </article>
+            ))}
+          </div>
+          <div className="skill-honesty-note">
+            <span>证</span>
+            <p>
+              <strong>Evidence, not a fluency certificate</strong>
+              <small>
+                Limited data stays low, and inactive skills gradually soften
+                until practice resumes.
+              </small>
+            </p>
+          </div>
+        </section>
+        <section className="card week-card">
+          <p className="eyebrow">YOUR CHINESE WEEK</p>
+          <h3>Small steps, real gains</h3>
+          <p className="weekly-report-summary">
+            A practical report of memory, accuracy, and the error pattern that should guide your next week.
+          </p>
+          <div className="week-numbers">
+            <span>
+              <b>{weekEvents.length}</b>learning activities
+            </span>
+            <span>
+              <b>{accuracy}%</b>answer accuracy
+            </span>
+            <span>
+              <b>{learning.minutesStudied}</b>minutes total
+            </span>
+          </div>
+          <div className="weekly-mastery-row">
+            <span><small>ACTIVE DAYS</small><strong>{fullWeeklyReport.activeDays}/7</strong></span>
+            <span><small>MASTERED WORDS</small><strong>{fullWeeklyReport.mastered}</strong></span>
+            <span><small>NEEDS REVIEW</small><strong>{fullWeeklyReport.needsReview}</strong></span>
+          </div>
+          {fullWeeklyReport.topPattern && (
+            <div className="weekly-pattern-alert">
+              <span>错</span>
+              <p>
+                <small>MOST COMMON ERROR PATTERN</small>
+                <strong>{fullWeeklyReport.topPattern.label}</strong>
+                <b>{fullWeeklyReport.topPattern.count} saved patterns · focus on {fullWeeklyReport.topPattern.skill.toLowerCase()} next.</b>
+              </p>
+            </div>
+          )}
+          <div className="weekly-insights">
+            <span>
+              <small>BEST SKILL</small>
+              <strong>
+                {best[0]} · {best[1].score}
+              </strong>
+            </span>
+            <span>
+              <small>MOST IMPROVED</small>
+              <strong>
+                {improved[0]} · {improved[1] >= 0 ? "+" : ""}
+                {improved[1]}
+              </strong>
+            </span>
+            <span>
+              <small>STORIES</small>
+              <strong>
+                {
+                  learning.events.filter((event) => event.type === "story")
+                    .length
+                }{" "}
+                completed
+              </strong>
+            </span>
+          </div>
+          <div className="next-focus">
+            <small>NEXT WEEK RECOMMENDATION</small>
+            <strong>Build evidence in {weakest[0]}</strong>
+            <p>
+              {weakest[1].nextMilestone}. Mix it with spaced review instead of
+              completing everything in one sitting.
+            </p>
+          </div>
+        </section>
+      </div>
+      <section className="achievement-section">
+        <p className="eyebrow">MEANINGFUL MILESTONES</p>
+        <h2>Achievements</h2>
+        <div>
+          {achievements.map((item) => (
+            <article
+              className={item.unlocked ? "unlocked" : "locked"}
+              key={item.name}
+            >
+              <span>{item.icon}</span>
+              <strong>{item.name}</strong>
+              <small>{item.unlocked ? "Unlocked" : "Keep learning"}</small>
+            </article>
+          ))}
+        </div>
+      </section>
+      {learning.gameScores.length > 0 && (
+        <section className="game-history">
+          <div>
+            <p className="eyebrow">SAVED GAME RESULTS</p>
+            <h2>Recent performance</h2>
+          </div>
+          <div>
+            {learning.gameScores.slice(0, 6).map((result) => {
+              const accuracy = result.score / Math.max(1, result.total);
+              const isPb = accuracy >= personalBests[result.game];
+              return (
+                <article key={result.id}>
+                  <span>{result.game.includes("Boss") ? "冠" : "游"}</span>
+                  <div>
+                    <strong>
+                      {result.game}
+                      {isPb && <em className="personal-best">PB</em>}
+                    </strong>
+                    <small>
+                      {new Date(result.createdAt).toLocaleDateString()} ·{" "}
+                      {Math.round(accuracy * 100)}% accuracy
+                    </small>
+                  </div>
+                  <b>
+                    {result.score}/{result.total}
+                  </b>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  );
 }
 
-function Onboarding({current,save,close}:{current:Profile|null;save:(p:Profile)=>void;close?:()=>void}) { const [step,setStep]=useState(0);const [name,setName]=useState(current?.name??'');const [goals,setGoals]=useState<string[]>(current?.goals??['Daily Conversation']);const [daily,setDaily]=useState(current?.dailyMinutes??10);const [hsk,setHsk]=useState(current?.hsk??3);const [path,setPath]=useState<Profile['path']>(current?.path??'General');const goalOptions=['Travel','Study in China','University','Work','Business','HSK Preparation','Daily Conversation','Chinese Culture'];function toggle(goal:string){setGoals(goals.includes(goal)?goals.filter(g=>g!==goal):[...goals,goal])}function done(){save({name:name.trim()||'Learner',goals,dailyMinutes:daily,hsk,path})}return <div className="modal-backdrop onboarding-backdrop" role="dialog" aria-modal="true" aria-label="Personalize your learning"><section className="onboarding-modal"><header><div className="brand"><span className="brand-mark">龙</span><span>Lóng</span></div>{close&&<button onClick={close} aria-label="Close">×</button>}</header><div className="onboarding-progress">{[0,1,2,3].map(i=><i className={i<=step?'active':''} key={i}/>)}</div>{step===0&&<div className="onboarding-body"><p className="eyebrow">STEP 1 OF 4</p><h2>Why are you learning Chinese?</h2><p>Choose every goal that matters. Your daily experience will adapt.</p><label className="name-field">What should we call you?<input value={name} onChange={e=>setName(e.target.value)} maxLength={24}/></label><div className="option-grid goals">{goalOptions.map(goal=><button className={goals.includes(goal)?'selected':''} onClick={()=>toggle(goal)} key={goal}>{goals.includes(goal)?'✓ ':''}{goal}</button>)}</div></div>}{step===1&&<div className="onboarding-body"><p className="eyebrow">STEP 2 OF 4</p><h2>Choose a healthy daily rhythm</h2><p>This shapes mission length, not your Chinese proficiency.</p><div className="option-grid daily">{[[5,'Casual'],[10,'Regular'],[20,'Serious'],[30,'Intensive']].map(([minutes,label])=><button className={daily===minutes?'selected':''} onClick={()=>setDaily(Number(minutes))} key={minutes}><strong>{label}</strong><span>{minutes} minutes/day</span></button>)}</div></div>}{step===2&&<div className="onboarding-body"><p className="eyebrow">STEP 3 OF 4</p><h2>Choose your starting track</h2><p>HSK difficulty stays separate from your player level and XP.</p><div className="hsk-grid">{[1,2,3,4,5,6].map(level=><button className={hsk===level?'selected':''} onClick={()=>setHsk(level)} key={level}><span>{['🌱','🌿','🌳','🚀','🔥','🏆'][level-1]}</span>HSK {level}</button>)}</div></div>}{step===3&&<div className="onboarding-body"><p className="eyebrow">STEP 4 OF 4</p><h2>Chinese for the life you want</h2><p>General Chinese stays central; this adds relevant content later.</p><div className="path-options">{(Object.keys(specializationContent) as Profile['path'][]).map(item=>{const icon:Record<Profile['path'],string>={General:'日','Computer Science':'码','International Business':'商','Medicine & Health':'医',Engineering:'工','Academic Research':'研','Tourism & Hospitality':'旅'};return <button className={path===item?'selected':''} onClick={()=>setPath(item)} key={item}><span>{icon[item]}</span><div><strong>{specializationContent[item].label}</strong><small>{specializationContent[item].chinese} · {specializationContent[item].next}</small></div></button>})}</div></div>}<footer><button className="back" disabled={step===0} onClick={()=>setStep(step-1)}>← Back</button>{step<3?<button className="primary" disabled={step===0&&!goals.length} onClick={()=>setStep(step+1)}>Continue →</button>:<button className="primary" onClick={done}>{current?'Save changes':'Enter my Chinese world'} →</button>}</footer></section></div> }
+function LessonModal({
+  chapter,
+  difficulty,
+  savedStep,
+  close,
+  finish,
+  updateProgress,
+  speak,
+}: {
+  chapter: Chapter;
+  difficulty: AdventureDifficulty;
+  savedStep: number;
+  close: () => void;
+  finish: (
+    chapter: Chapter,
+    results: ChapterLessonResult[],
+    difficulty: AdventureDifficulty,
+  ) => void;
+  updateProgress: (
+    chapterId: string,
+    progress: number,
+    nextStep: number,
+  ) => void;
+  speak: (value: string) => void;
+}) {
+  const pack =
+    chapterLearningPacks[chapter.id as keyof typeof chapterLearningPacks];
+  const mode = adventureDifficultyConfig[difficulty];
+  const [step, setStep] = useState(() =>
+    savedStep >= 5 ? 0 : Math.max(0, Math.min(4, savedStep)),
+  );
+  const [selected, setSelected] = useState("");
+  const [graded, setGraded] = useState(false);
+  const [built, setBuilt] = useState<string[]>([]);
+  const [results, setResults] = useState<ChapterLessonResult[]>([]);
+  const stages = [
+    ["词", "Words"],
+    ["法", "Grammar"],
+    ["听", "Listen"],
+    ["句", "Build"],
+    ["用", "Apply"],
+    ["成", "Complete"],
+  ];
+  const grammarChoices = seededShuffle(
+    pack.grammar.question.choices,
+    `${chapter.id}-${difficulty}-grammar`,
+  );
+  const listeningChoices = seededShuffle(
+    pack.listening.choices,
+    `${chapter.id}-${difficulty}-listening`,
+  );
+  const applicationChoices = seededShuffle(
+    chapter.question.choices,
+    `${chapter.id}-${difficulty}-application`,
+  );
+  const grammarCorrect = selected === pack.grammar.question.answer;
+  const listeningCorrect = selected === pack.listening.answer;
+  const productionCorrect = built.join("") === pack.production.target.join("");
+  const applicationAnswer =
+    chapter.question.choices.find(
+      (choice) => choice.id === chapter.question.answer,
+    )?.text ?? "";
+  const applicationCorrect = selected === applicationAnswer;
+  function advance(result?: ChapterLessonResult) {
+    if (result) setResults((items) => [...items, result]);
+    updateProgress(chapter.id, chapterStageProgress(step), step + 1);
+    setStep(step + 1);
+    setSelected("");
+    setGraded(false);
+    setBuilt([]);
+  }
+  function result(
+    stage: ChapterLessonResult["stage"],
+    skill: ChapterLessonResult["skill"],
+    correct: boolean,
+    prompt: string,
+    answer: string,
+    correction: string,
+    explanation: string,
+  ): ChapterLessonResult {
+    return { stage, skill, correct, prompt, answer, correction, explanation };
+  }
+  const accuracy = chapterAccuracy(results);
+  const base = difficulty === "hard" ? 55 : difficulty === "normal" ? 35 : 25;
+  const predictedXp = accuracy >= 75 ? base : Math.max(15, base - 10);
+  const lessonGems =
+    difficulty === "hard" ? 8 : difficulty === "normal" ? 5 : 3;
+  return (
+    <div
+      className="modal-backdrop chapter-lesson-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${chapter.title} ${mode.label} structured lesson`}
+    >
+      <section
+        className={`lesson-modal chapter-lesson-modal lesson-${difficulty}`}
+      >
+        <header>
+          <div>
+            <span>
+              {chapter.chinese} · {chapter.title} · {mode.label}
+            </span>
+            <div className="lesson-progress">
+              <i style={{ width: `${chapterStageProgress(step)}%` }} />
+            </div>
+            <b>
+              {step + 1}/{stages.length}
+            </b>
+          </div>
+          <button onClick={close} aria-label="Close lesson">
+            ×
+          </button>
+        </header>
+        <nav className="chapter-stage-rail" aria-label="Lesson stages">
+          {stages.map(([icon, label], index) => (
+            <span
+              className={
+                index === step ? "current" : index < step ? "done" : ""
+              }
+              key={label}
+            >
+              <i>{index < step ? "✓" : icon}</i>
+              <small>{label}</small>
+            </span>
+          ))}
+        </nav>
+        {step === 0 && (
+          <div className="lesson-body chapter-discover">
+            <p className="eyebrow">DISCOVER · 3 USEFUL WORDS</p>
+            <h2>{chapter.mission}</h2>
+            <p className="lesson-intro">
+              Listen, read, and notice each word inside a useful sentence.
+            </p>
+            <div className="vocab-list expanded">
+              {chapter.vocabulary.map((word) => (
+                <article key={word.id}>
+                  <button
+                    onClick={() => speak(word.hanzi)}
+                    aria-label={`Play ${word.hanzi}`}
+                  >
+                    ◖))
+                  </button>
+                  <strong>{word.hanzi}</strong>
+                  <span>{word.pinyin}</span>
+                  <b>{word.english}</b>
+                  <p>
+                    {word.example.hanzi}
+                    <small>{word.example.english}</small>
+                  </p>
+                </article>
+              ))}
+            </div>
+            <button className="primary lesson-next" onClick={() => advance()}>
+              Notice the grammar →
+            </button>
+          </div>
+        )}
+        {step === 1 && (
+          <div className="lesson-body chapter-grammar">
+            <p className="eyebrow">
+              NOTICE · {mode.label.toUpperCase()} GRAMMAR
+            </p>
+            <h2>{pack.grammar.title}</h2>
+            <div className="chapter-pattern">
+              <small>PATTERN</small>
+              <strong>{pack.grammar.pattern}</strong>
+              <p>{pack.grammar.explanation}</p>
+              <button onClick={() => speak(pack.grammar.example)}>
+                ▶ {pack.grammar.example}
+              </button>
+            </div>
+            <h3>{pack.grammar.question.prompt}</h3>
+            <div className="chapter-choice-list">
+              {grammarChoices.map((choice) => (
+                <button
+                  disabled={graded}
+                  className={`${selected === choice ? "selected " : ""}${graded && choice === pack.grammar.question.answer ? "correct " : ""}${graded && selected === choice && !grammarCorrect ? "wrong" : ""}`}
+                  onClick={() => setSelected(choice)}
+                  key={choice}
+                >
+                  {choice}
+                </button>
+              ))}
+            </div>
+            {!graded ? (
+              <button
+                className="primary lesson-next"
+                disabled={!selected}
+                onClick={() => setGraded(true)}
+              >
+                Check grammar
+              </button>
+            ) : (
+              <div
+                className={`chapter-feedback ${grammarCorrect ? "good" : "try"}`}
+              >
+                <strong>
+                  {grammarCorrect
+                    ? "✓ Pattern understood"
+                    : `Use: ${pack.grammar.question.answer}`}
+                </strong>
+                <p>{pack.grammar.question.explanation}</p>
+                <button
+                  onClick={() =>
+                    advance(
+                      result(
+                        "grammar",
+                        "Grammar",
+                        grammarCorrect,
+                        pack.grammar.question.prompt,
+                        selected,
+                        pack.grammar.question.answer,
+                        pack.grammar.question.explanation,
+                      ),
+                    )
+                  }
+                >
+                  Continue to listening →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {step === 2 && (
+          <div className="lesson-body chapter-listening">
+            <p className="eyebrow">
+              UNDERSTAND ·{" "}
+              {difficulty === "easy"
+                ? "SUPPORTED LISTENING"
+                : "LISTEN WITHOUT TEXT"}
+            </p>
+            <h2>Hear it in context</h2>
+            <button
+              className="chapter-big-audio"
+              onClick={() => speak(pack.listening.audio)}
+            >
+              <span>▶</span>
+              <div>
+                <strong>Play Chinese conversation</strong>
+                <small>
+                  {difficulty === "easy"
+                    ? `Hint: ${pack.listening.audio}`
+                    : "Replay as many times as needed"}
+                </small>
+              </div>
+            </button>
+            <h3>{pack.listening.prompt}</h3>
+            <div className="chapter-choice-list">
+              {listeningChoices.map((choice) => (
+                <button
+                  disabled={graded}
+                  className={`${selected === choice ? "selected " : ""}${graded && choice === pack.listening.answer ? "correct " : ""}${graded && selected === choice && !listeningCorrect ? "wrong" : ""}`}
+                  onClick={() => setSelected(choice)}
+                  key={choice}
+                >
+                  {choice}
+                </button>
+              ))}
+            </div>
+            {!graded ? (
+              <button
+                className="primary lesson-next"
+                disabled={!selected}
+                onClick={() => setGraded(true)}
+              >
+                Check listening
+              </button>
+            ) : (
+              <div
+                className={`chapter-feedback ${listeningCorrect ? "good" : "try"}`}
+              >
+                <strong>
+                  {listeningCorrect
+                    ? "✓ Meaning understood"
+                    : `Best answer: ${pack.listening.answer}`}
+                </strong>
+                <p>{pack.listening.explanation}</p>
+                <button
+                  onClick={() =>
+                    advance(
+                      result(
+                        "listening",
+                        "Listening",
+                        listeningCorrect,
+                        pack.listening.prompt,
+                        selected,
+                        pack.listening.answer,
+                        pack.listening.explanation,
+                      ),
+                    )
+                  }
+                >
+                  Build the sentence →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {step === 3 && (
+          <div className="lesson-body chapter-production">
+            <p className="eyebrow">PRACTICE · PRODUCE THE SENTENCE</p>
+            <h2>{pack.production.prompt}</h2>
+            <p className="lesson-intro">{pack.production.translation}</p>
+            <div className="chapter-answer-zone">
+              {built.length ? (
+                built.map((piece, index) => (
+                  <button
+                    disabled={graded}
+                    onClick={() =>
+                      setBuilt(
+                        built.filter((_, itemIndex) => itemIndex !== index),
+                      )
+                    }
+                    key={`${piece}-${index}`}
+                  >
+                    {piece}
+                  </button>
+                ))
+              ) : (
+                <span>Tap the chunks below in natural Chinese order</span>
+              )}
+            </div>
+            <div className="chapter-piece-bank">
+              {pack.production.pieces.map((piece, index) => (
+                <button
+                  disabled={graded || built.includes(piece)}
+                  onClick={() => setBuilt([...built, piece])}
+                  key={`${piece}-${index}`}
+                >
+                  {piece}
+                </button>
+              ))}
+            </div>
+            {!graded ? (
+              <button
+                className="primary lesson-next"
+                disabled={built.length !== pack.production.target.length}
+                onClick={() => setGraded(true)}
+              >
+                Check sentence
+              </button>
+            ) : (
+              <div
+                className={`chapter-feedback ${productionCorrect ? "good" : "try"}`}
+              >
+                <strong>
+                  {productionCorrect
+                    ? "✓ Natural Chinese order"
+                    : `Natural order: ${pack.production.target.join("")}`}
+                </strong>
+                <p>
+                  Production practice requires recalling the complete phrase,
+                  not only recognizing it.
+                </p>
+                <button
+                  onClick={() =>
+                    advance(
+                      result(
+                        "production",
+                        "Grammar",
+                        productionCorrect,
+                        pack.production.prompt,
+                        built.join(""),
+                        pack.production.target.join(""),
+                        "Chinese sentence order follows the chapter pattern shown earlier.",
+                      ),
+                    )
+                  }
+                >
+                  Apply it in real life →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {step === 4 && (
+          <div className="lesson-body chapter-application">
+            <p className="eyebrow">
+              APPLY · {mode.label.toUpperCase()} REAL-LIFE DECISION
+            </p>
+            <h2>{chapter.question.prompt}</h2>
+            <button
+              className="prompt-audio"
+              onClick={() => speak(chapter.question.chinesePrompt)}
+            >
+              ◖)) Hear the key phrase
+            </button>
+            <div className="chapter-choice-list contextual">
+              {applicationChoices.map((choice) => (
+                <button
+                  disabled={graded}
+                  className={`${selected === choice.text ? "selected " : ""}${graded && choice.text === applicationAnswer ? "correct " : ""}${graded && selected === choice.text && !applicationCorrect ? "wrong" : ""}`}
+                  onClick={() => setSelected(choice.text)}
+                  key={choice.id}
+                >
+                  <strong>{choice.text}</strong>
+                  {difficulty !== "hard" && <small>{choice.pinyin}</small>}
+                </button>
+              ))}
+            </div>
+            {!graded ? (
+              <button
+                className="primary lesson-next"
+                disabled={!selected}
+                onClick={() => setGraded(true)}
+              >
+                Check response
+              </button>
+            ) : (
+              <div
+                className={`chapter-feedback ${applicationCorrect ? "good" : "try"}`}
+              >
+                <strong>
+                  {applicationCorrect
+                    ? "✓ Ready for the situation"
+                    : `Natural response: ${applicationAnswer}`}
+                </strong>
+                <p>{chapter.question.explanation}</p>
+                <button
+                  onClick={() =>
+                    advance(
+                      result(
+                        "application",
+                        "Speaking",
+                        applicationCorrect,
+                        chapter.question.prompt,
+                        selected,
+                        applicationAnswer,
+                        chapter.question.explanation,
+                      ),
+                    )
+                  }
+                >
+                  See mission result →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {step === 5 && (
+          <div className="lesson-body complete chapter-complete">
+            <div className="complete-mark">✓</div>
+            <p className="eyebrow">
+              {mode.label.toUpperCase()} · LEARN → UNDERSTAND → PRODUCE → APPLY
+            </p>
+            <h2>Mission complete!</h2>
+            <p>
+              You practiced vocabulary plus {results.length} scored language
+              stages. Incorrect answers will be added to your Mistake Book.
+            </p>
+            <div className="chapter-result-summary">
+              <article>
+                <small>THIS RUN</small>
+                <strong>{accuracy}%</strong>
+                <span>stage accuracy</span>
+              </article>
+              <article>
+                <small>SKILLS</small>
+                <strong>
+                  {new Set(results.map((item) => item.skill)).size + 1}
+                </strong>
+                <span>abilities practiced</span>
+              </article>
+              <article>
+                <small>REWARD</small>
+                <strong>+{predictedXp}</strong>
+                <span>{mode.label} completion XP</span>
+              </article>
+            </div>
+            <div className="reward-row">
+              <span>
+                <b>{difficulty === "hard" ? 5 : 3}</b>words practiced
+              </span>
+              <span>
+                <b>{results.filter((item) => !item.correct).length}</b>mistakes
+                to revisit
+              </span>
+              <span>
+                <b>+{lessonGems} ◆</b>first completion
+              </span>
+            </div>
+            <button
+              className="primary"
+              onClick={() => finish(chapter, results, difficulty)}
+            >
+              Save mission & return →
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
 
-function VoiceSettings({prefs,voices,save,test,close}:{prefs:VoicePrefs;voices:SpeechSynthesisVoice[];save:(p:VoicePrefs)=>void;test:(p:VoicePrefs)=>void;close:()=>void}) {
-  const [draft,setDraft]=useState(prefs); const [tested,setTested]=useState(false); const regionalVoices=voicesForAccent(voices,draft.accent); const resolved=resolvePreferredVoice(voices,draft);
-  const accents:[VoicePrefs['accent'],string,string][]=[['zh-CN','Mainland','普通话 · Pǔtōnghuà'],['zh-TW','Taiwan','台湾国语 · Táiwān'],['zh-HK','Hong Kong','粤语口音 · Hong Kong']];
-  function setPreference(next:Pick<VoicePrefs,'accent'|'style'>){const match=resolvePreferredVoice(voices,{...draft,...next,voiceName:'',voiceURI:''});setDraft({...draft,...next,voiceName:match.verifiedStyle?match.voice?.name??'':'',voiceURI:match.verifiedStyle&&match.voice?voiceKey(match.voice):''});setTested(false)}
-  function chooseExact(key:string){const voice=regionalVoices.find(item=>voiceKey(item)===key);const known=voice?voiceStyleOf(voice.name):'unknown';setDraft({...draft,voiceName:voice?.name??'',voiceURI:voice?voiceKey(voice):'',style:known==='unknown'?draft.style:known});setTested(false)}
-  return <div className="modal-backdrop voice-backdrop" role="dialog" aria-modal="true" aria-label="Voice and accent settings"><section className="voice-modal"><header><div><p className="eyebrow">AUDIO & PRONUNCIATION</p><h2>Choose your Chinese voice</h2><p>The player now locks to the exact installed voice you test and save.</p></div><button onClick={close} aria-label="Close voice settings">×</button></header><div className="voice-body"><section><label>Accent / region</label><div className="accent-options">{accents.map(([id,name,chinese])=><button className={draft.accent===id?'selected':''} onClick={()=>setPreference({accent:id,style:draft.style})} key={id}><span>{id.replace('zh-','')}</span><strong>{name}</strong><small>{chinese}</small></button>)}</div></section><section><label>Voice preference</label><div className="gender-options"><button className={draft.style==='female'?'selected':''} onClick={()=>setPreference({accent:draft.accent,style:'female'})}><span>女</span><div><strong>Female voice</strong><small>{regionalVoices.some(voice=>voiceStyleOf(voice.name)==='female')?'Verified installed match':'Not identified by this device'}</small></div></button><button className={draft.style==='male'?'selected':''} onClick={()=>setPreference({accent:draft.accent,style:'male'})}><span>男</span><div><strong>Male voice</strong><small>{regionalVoices.some(voice=>voiceStyleOf(voice.name)==='male')?'Verified installed match':'Not identified by this device'}</small></div></button></div><p className="voice-note">Browsers do not expose a universal gender field. Known voices are matched safely; an unknown voice is never silently relabeled as female or male.</p></section><section className="exact-voice"><label htmlFor="voice-select">Exact installed voice</label><select id="voice-select" value={draft.voiceURI} onChange={e=>chooseExact(e.target.value)}><option value="">Best verified match</option>{regionalVoices.map(voice=>{const style=voiceStyleOf(voice.name);return <option value={voiceKey(voice)} key={voiceKey(voice)}>{voice.name} · {voice.lang}{style==='unknown'?' · gender not reported':` · ${style}`}</option>})}</select>{!regionalVoices.length&&<p>No exact {draft.accent} voice was reported. Install that language voice in your device settings or choose another region.</p>}{resolved.voice&&<div className={`voice-resolution ${resolved.verifiedStyle?'verified':'unverified'}`}><span>{resolved.verifiedStyle?'✓':'!'}</span><p><strong>{resolved.voice.name}</strong><small>{resolved.voice.lang} · {resolved.exact?'exact voice locked':resolved.verifiedStyle?`verified ${draft.style} match`:'gender not reported by device'}</small></p></div>}</section><section><label>Learning speed</label><div className="speed-options">{[[.62,'Slow','Tone focus'],[.76,'Clear','Recommended'],[.9,'Natural','Conversation']].map(([speed,name,note])=><button className={draft.speed===speed?'selected':''} onClick={()=>{setDraft({...draft,speed:Number(speed)});setTested(false)}} key={speed}><strong>{name}</strong><small>{note}</small></button>)}</div></section><button className="voice-test" onClick={()=>{test(draft);setTested(true)}}><span>{tested?'✓':'▶'}</span><div><strong>{tested?'Test playing with the locked voice':'Test this exact voice'}</strong><small>{resolved.voice?`${resolved.voice.name} · `:''}你好，欢迎来到你的中文世界。</small></div></button></div><footer><button onClick={close}>Cancel</button><button className="save-voice" disabled={!tested} onClick={()=>{save(draft);close()}}>Save tested voice</button></footer></section></div>
+function Onboarding({
+  current,
+  save,
+  close,
+}: {
+  current: Profile | null;
+  save: (p: Profile) => void;
+  close?: () => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState(current?.name ?? "");
+  const [goals, setGoals] = useState<string[]>(
+    current?.goals ?? ["Daily Conversation"],
+  );
+  const [daily, setDaily] = useState(current?.dailyMinutes ?? 10);
+  const [hsk, setHsk] = useState(current?.hsk ?? 3);
+  const [path, setPath] = useState<Profile["path"]>(current?.path ?? "General");
+  const goalOptions = [
+    "Travel",
+    "Study in China",
+    "University",
+    "Work",
+    "Business",
+    "HSK Preparation",
+    "Daily Conversation",
+    "Chinese Culture",
+  ];
+  function toggle(goal: string) {
+    setGoals(
+      goals.includes(goal) ? goals.filter((g) => g !== goal) : [...goals, goal],
+    );
+  }
+  function done() {
+    save({
+      name: name.trim() || "Learner",
+      goals,
+      dailyMinutes: daily,
+      hsk,
+      path,
+    });
+  }
+  return (
+    <div
+      className="modal-backdrop onboarding-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Personalize your learning"
+    >
+      <section className="onboarding-modal">
+        <header>
+          <div className="brand">
+            <span className="brand-mark">龙</span>
+            <span>Lóng</span>
+          </div>
+          {close && (
+            <button onClick={close} aria-label="Close">
+              ×
+            </button>
+          )}
+        </header>
+        <div className="onboarding-progress">
+          {[0, 1, 2, 3].map((i) => (
+            <i className={i <= step ? "active" : ""} key={i} />
+          ))}
+        </div>
+        {step === 0 && (
+          <div className="onboarding-body">
+            <p className="eyebrow">STEP 1 OF 4</p>
+            <h2>Why are you learning Chinese?</h2>
+            <p>
+              Choose every goal that matters. Your daily experience will adapt.
+            </p>
+            <label className="name-field">
+              What should we call you?
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={24}
+              />
+            </label>
+            <div className="option-grid goals">
+              {goalOptions.map((goal) => (
+                <button
+                  className={goals.includes(goal) ? "selected" : ""}
+                  onClick={() => toggle(goal)}
+                  key={goal}
+                >
+                  {goals.includes(goal) ? "✓ " : ""}
+                  {goal}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {step === 1 && (
+          <div className="onboarding-body">
+            <p className="eyebrow">STEP 2 OF 4</p>
+            <h2>Choose a healthy daily rhythm</h2>
+            <p>This shapes mission length, not your Chinese proficiency.</p>
+            <div className="option-grid daily">
+              {[
+                [5, "Casual"],
+                [10, "Regular"],
+                [20, "Serious"],
+                [30, "Intensive"],
+              ].map(([minutes, label]) => (
+                <button
+                  className={daily === minutes ? "selected" : ""}
+                  onClick={() => setDaily(Number(minutes))}
+                  key={minutes}
+                >
+                  <strong>{label}</strong>
+                  <span>{minutes} minutes/day</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {step === 2 && (
+          <div className="onboarding-body">
+            <p className="eyebrow">STEP 3 OF 4</p>
+            <h2>Choose your starting track</h2>
+            <p>HSK difficulty stays separate from your player level and XP.</p>
+            <div className="hsk-grid">
+              {[1, 2, 3, 4, 5, 6].map((level) => (
+                <button
+                  className={hsk === level ? "selected" : ""}
+                  onClick={() => setHsk(level)}
+                  key={level}
+                >
+                  <span>{["🌱", "🌿", "🌳", "🚀", "🔥", "🏆"][level - 1]}</span>
+                  HSK {level}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {step === 3 && (
+          <div className="onboarding-body">
+            <p className="eyebrow">STEP 4 OF 4</p>
+            <h2>Chinese for the life you want</h2>
+            <p>
+              General Chinese stays central; this adds relevant content later.
+            </p>
+            <div className="path-options">
+              {(Object.keys(specializationContent) as Profile["path"][]).map(
+                (item) => {
+                  const icon: Record<Profile["path"], string> = {
+                    General: "日",
+                    "Computer Science": "码",
+                    "International Business": "商",
+                    "Medicine & Health": "医",
+                    Engineering: "工",
+                    "Academic Research": "研",
+                    "Tourism & Hospitality": "旅",
+                  };
+                  return (
+                    <button
+                      className={path === item ? "selected" : ""}
+                      onClick={() => setPath(item)}
+                      key={item}
+                    >
+                      <span>{icon[item]}</span>
+                      <div>
+                        <strong>{specializationContent[item].label}</strong>
+                        <small>
+                          {specializationContent[item].chinese} ·{" "}
+                          {specializationContent[item].next}
+                        </small>
+                      </div>
+                    </button>
+                  );
+                },
+              )}
+            </div>
+          </div>
+        )}
+        <footer>
+          <button
+            className="back"
+            disabled={step === 0}
+            onClick={() => setStep(step - 1)}
+          >
+            ← Back
+          </button>
+          {step < 3 ? (
+            <button
+              className="primary"
+              disabled={step === 0 && !goals.length}
+              onClick={() => setStep(step + 1)}
+            >
+              Continue →
+            </button>
+          ) : (
+            <button className="primary" onClick={done}>
+              {current ? "Save changes" : "Enter my Chinese world"} →
+            </button>
+          )}
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function VoiceSettings({
+  prefs,
+  voices,
+  save,
+  test,
+  close,
+}: {
+  prefs: VoicePrefs;
+  voices: SpeechSynthesisVoice[];
+  save: (p: VoicePrefs) => void;
+  test: (p: VoicePrefs) => void;
+  close: () => void;
+}) {
+  const [draft, setDraft] = useState(prefs);
+  const [tested, setTested] = useState(false);
+  const regionalVoices = voicesForAccent(voices, draft.accent);
+  const resolved = resolvePreferredVoice(voices, draft);
+  const accents: [VoicePrefs["accent"], string, string][] = [
+    ["zh-CN", "Mainland", "普通话 · Pǔtōnghuà"],
+    ["zh-TW", "Taiwan", "台湾国语 · Táiwān"],
+    ["zh-HK", "Hong Kong", "粤语口音 · Hong Kong"],
+  ];
+  function setPreference(next: Pick<VoicePrefs, "accent" | "style">) {
+    const match = resolvePreferredVoice(voices, {
+      ...draft,
+      ...next,
+      voiceName: "",
+      voiceURI: "",
+    });
+    setDraft({
+      ...draft,
+      ...next,
+      voiceName: match.verifiedStyle ? (match.voice?.name ?? "") : "",
+      voiceURI: match.verifiedStyle && match.voice ? voiceKey(match.voice) : "",
+    });
+    setTested(false);
+  }
+  function chooseExact(key: string) {
+    const voice = regionalVoices.find((item) => voiceKey(item) === key);
+    const known = voice ? voiceStyleOf(voice.name) : "unknown";
+    setDraft({
+      ...draft,
+      voiceName: voice?.name ?? "",
+      voiceURI: voice ? voiceKey(voice) : "",
+      style: known === "unknown" ? draft.style : known,
+    });
+    setTested(false);
+  }
+  return (
+    <div
+      className="modal-backdrop voice-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Voice and accent settings"
+    >
+      <section className="voice-modal">
+        <header>
+          <div>
+            <p className="eyebrow">AUDIO & PRONUNCIATION</p>
+            <h2>Choose your Chinese voice</h2>
+            <p>
+              The player now locks to the exact installed voice you test and
+              save.
+            </p>
+          </div>
+          <button onClick={close} aria-label="Close voice settings">
+            ×
+          </button>
+        </header>
+        <div className="voice-body">
+          <section>
+            <label>Accent / region</label>
+            <div className="accent-options">
+              {accents.map(([id, name, chinese]) => (
+                <button
+                  className={draft.accent === id ? "selected" : ""}
+                  onClick={() =>
+                    setPreference({ accent: id, style: draft.style })
+                  }
+                  key={id}
+                >
+                  <span>{id.replace("zh-", "")}</span>
+                  <strong>{name}</strong>
+                  <small>{chinese}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+          <section>
+            <label>Voice preference</label>
+            <div className="gender-options">
+              <button
+                className={draft.style === "female" ? "selected" : ""}
+                onClick={() =>
+                  setPreference({ accent: draft.accent, style: "female" })
+                }
+              >
+                <span>女</span>
+                <div>
+                  <strong>Female voice</strong>
+                  <small>
+                    {regionalVoices.some(
+                      (voice) => voiceStyleOf(voice.name) === "female",
+                    )
+                      ? "Verified installed match"
+                      : "Not identified by this device"}
+                  </small>
+                </div>
+              </button>
+              <button
+                className={draft.style === "male" ? "selected" : ""}
+                onClick={() =>
+                  setPreference({ accent: draft.accent, style: "male" })
+                }
+              >
+                <span>男</span>
+                <div>
+                  <strong>Male voice</strong>
+                  <small>
+                    {regionalVoices.some(
+                      (voice) => voiceStyleOf(voice.name) === "male",
+                    )
+                      ? "Verified installed match"
+                      : "Not identified by this device"}
+                  </small>
+                </div>
+              </button>
+            </div>
+            <p className="voice-note">
+              Browsers do not expose a universal gender field. Known voices are
+              matched safely; an unknown voice is never silently relabeled as
+              female or male.
+            </p>
+          </section>
+          <section className="exact-voice">
+            <label htmlFor="voice-select">Exact installed voice</label>
+            <select
+              id="voice-select"
+              value={draft.voiceURI}
+              onChange={(e) => chooseExact(e.target.value)}
+            >
+              <option value="">Best verified match</option>
+              {regionalVoices.map((voice) => {
+                const style = voiceStyleOf(voice.name);
+                return (
+                  <option value={voiceKey(voice)} key={voiceKey(voice)}>
+                    {voice.name} · {voice.lang}
+                    {style === "unknown"
+                      ? " · gender not reported"
+                      : ` · ${style}`}
+                  </option>
+                );
+              })}
+            </select>
+            {!regionalVoices.length && (
+              <p>
+                No exact {draft.accent} voice was reported. Install that
+                language voice in your device settings or choose another region.
+              </p>
+            )}
+            {resolved.voice && (
+              <div
+                className={`voice-resolution ${resolved.verifiedStyle ? "verified" : "unverified"}`}
+              >
+                <span>{resolved.verifiedStyle ? "✓" : "!"}</span>
+                <p>
+                  <strong>{resolved.voice.name}</strong>
+                  <small>
+                    {resolved.voice.lang} ·{" "}
+                    {resolved.exact
+                      ? "exact voice locked"
+                      : resolved.verifiedStyle
+                        ? `verified ${draft.style} match`
+                        : "gender not reported by device"}
+                  </small>
+                </p>
+              </div>
+            )}
+          </section>
+          <section>
+            <label>Learning speed</label>
+            <div className="speed-options">
+              {[
+                [0.62, "Slow", "Tone focus"],
+                [0.76, "Clear", "Recommended"],
+                [0.9, "Natural", "Conversation"],
+              ].map(([speed, name, note]) => (
+                <button
+                  className={draft.speed === speed ? "selected" : ""}
+                  onClick={() => {
+                    setDraft({ ...draft, speed: Number(speed) });
+                    setTested(false);
+                  }}
+                  key={speed}
+                >
+                  <strong>{name}</strong>
+                  <small>{note}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+          <button
+            className="voice-test"
+            onClick={() => {
+              test(draft);
+              setTested(true);
+            }}
+          >
+            <span>{tested ? "✓" : "▶"}</span>
+            <div>
+              <strong>
+                {tested
+                  ? "Test playing with the locked voice"
+                  : "Test this exact voice"}
+              </strong>
+              <small>
+                {resolved.voice ? `${resolved.voice.name} · ` : ""}
+                你好，欢迎来到你的中文世界。
+              </small>
+            </div>
+          </button>
+        </div>
+        <footer>
+          <button onClick={close}>Cancel</button>
+          <button
+            className="save-voice"
+            disabled={!tested}
+            onClick={() => {
+              save(draft);
+              close();
+            }}
+          >
+            Save tested voice
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
 // Retained as an exported-compatible legacy reader while the textbook library is the active Stories surface.

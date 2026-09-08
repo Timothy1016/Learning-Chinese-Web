@@ -1,4 +1,4 @@
-const CACHE = 'long-shell-v4';
+const CACHE = 'long-shell-v6';
 const SHELL = ['/', '/offline.html', '/manifest.webmanifest', '/favicon.svg'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(Promise.all([

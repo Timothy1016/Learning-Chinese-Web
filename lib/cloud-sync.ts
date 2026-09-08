@@ -95,6 +95,20 @@ export async function signOutCloud(): Promise<void> {
   if (result.error) throw result.error;
 }
 
+export async function signOutAllCloud(): Promise<void> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return;
+  const result = await client.auth.signOut({ scope: 'global' });
+  if (result.error) throw result.error;
+}
+
+export async function signOutOtherCloudDevices(): Promise<void> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return;
+  const result = await client.auth.signOut({ scope: 'others' });
+  if (result.error) throw result.error;
+}
+
 export async function publishLeaderboardProfile(displayName:string,xp:number,hsk:number,streak:number):Promise<void>{
   const client=getSupabaseBrowserClient();if(!client)throw new Error('Cloud sync is not configured yet.');
   const {data:{user},error}=await client.auth.getUser();if(error||!user)throw error??new Error('Sign in before joining the leaderboard.');
